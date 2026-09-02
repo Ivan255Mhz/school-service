@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C#: Делегаты, события и лямбды</title>
+<style>
+    :root {
+        --bg-color: #1e1e1e;
+        --text-color: #d4d4d4;
+        --accent-color: #569cd6;
+        --accent-hover: #4ea8f4;
+        --card-bg: #252526;
+        --card-bg-2: #2b2b2c;
+        --code-bg: #0b0b0b;
+        --keyword: #c586c0;
+        --string: #ce9178;
+        --comment: #6a9955;
+        --number: #b5cea8;
+        --type: #4ec9b0;
+        --func: #dcdcaa;
+        --border: #3a3a3a;
+        --good: #4caf50;
+        --bad: #e06c75;
+        --warn: #d7ba7d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+
+    #progress-bar {
+        position: fixed; top: 0; left: 0; height: 4px; width: 0%;
+        background: linear-gradient(90deg, var(--accent-color), #c586c0);
+        z-index: 1000; transition: width 0.1s ease-out;
+    }
+
+    nav#toc {
+        position: sticky; top: 4px;
+        background-color: rgba(37,37,38,0.97);
+        backdrop-filter: blur(4px);
+        border-bottom: 1px solid var(--border);
+        z-index: 900;
+        display: flex; flex-wrap: wrap; gap: 4px;
+        padding: 10px 16px; justify-content: center;
+    }
+    nav#toc a {
+        color: #9da5b4; text-decoration: none; font-size: 0.85em;
+        padding: 6px 12px; border-radius: 4px; border: 1px solid transparent;
+        white-space: nowrap; transition: color 0.2s, border-color 0.2s;
+    }
+    nav#toc a:hover { color: var(--accent-hover); }
+    nav#toc a.active {
+        color: var(--accent-color); border-color: var(--accent-color);
+        background: rgba(86,156,214,0.08);
+    }
+
+    header {
+        background-color: var(--card-bg); padding: 50px 20px 40px;
+        text-align: center; border-bottom: 2px solid var(--accent-color);
+    }
+    header h1 { margin: 0; font-size: 2.4em; color: var(--accent-color); }
+    header p.subtitle { font-size: 1.15em; color: #888; margin-top: 8px; }
+
+    #overall-progress-wrap { max-width: 400px; margin: 20px auto 0; }
+    #overall-progress-track { background: #111; border-radius: 20px; height: 10px; overflow: hidden; border: 1px solid var(--border); }
+    #overall-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-color), #c586c0); transition: width 0.25s ease-out; }
+    #overall-progress-label { font-size: 0.8em; color: #777; margin-top: 6px; }
+
+    .container { max-width: 920px; margin: 40px auto; padding: 0 20px; }
+
+    section {
+        background-color: var(--card-bg); border-radius: 8px; padding: 30px;
+        margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        scroll-margin-top: 70px;
+    }
+    section > .badge {
+        display: inline-block; font-size: 0.72em; letter-spacing: 0.03em;
+        color: #8f9aa8; background: #1c1c1d; border: 1px solid var(--border);
+        padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+    }
+
+    h2 { color: var(--accent-color); border-bottom: 1px solid #444; padding-bottom: 10px; margin-top: 0; }
+    h3 { color: #ddd; }
+    h4 { color: #bbb; margin-bottom: 6px; }
+    code { font-family: 'Consolas', 'Courier New', monospace; }
+
+    pre {
+        background-color: var(--code-bg); padding: 15px; border-radius: 5px;
+        overflow-x: auto; border: 1px solid #333; font-size: 0.92em;
+    }
+
+    .kw { color: var(--keyword); }
+    .str { color: var(--string); }
+    .com { color: var(--comment); }
+    .num { color: var(--number); }
+    .typ { color: var(--type); }
+    .func { color: var(--func); }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #444; padding: 10px; text-align: left; vertical-align: top; }
+    th { background-color: #333; color: var(--accent-color); }
+
+    .btn {
+        background-color: var(--accent-color); color: #fff; border: none;
+        padding: 10px 20px; cursor: pointer; border-radius: 4px;
+        font-size: 0.95em; font-weight: bold; transition: background 0.2s, transform 0.1s;
+    }
+    .btn:hover { background-color: var(--accent-hover); }
+    .btn:active { transform: scale(0.97); }
+    .btn.secondary { background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); }
+    .btn.secondary:hover { background: rgba(86,156,214,0.1); }
+    .btn.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
+    .btn.danger:hover { background: rgba(224,108,117,0.1); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+
+    .solution { display: none; margin-top: 15px; animation: fadeIn 0.4s; border-left: 3px solid var(--type); padding-left: 14px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .highlight { border-left: 4px solid #c586c0; padding-left: 15px; margin-top: 20px; }
+    .task { background: var(--card-bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+    .task h3 { margin-top: 0; }
+
+    .playground { background: var(--card-bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-top: 20px; }
+    .playground-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+    .playground-controls label { font-size: 0.85em; color: #aaa; display: flex; flex-direction: column; gap: 4px; }
+    .playground-controls input[type="text"], .playground-controls input[type="number"], .playground-controls select {
+        background: #1c1c1d; color: var(--text-color); border: 1px solid var(--border);
+        padding: 7px 10px; border-radius: 4px; min-width: 120px; font-family: inherit;
+    }
+
+    .code-box {
+        background: var(--code-bg); border: 1px solid #333; border-radius: 5px;
+        padding: 14px; font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.9em; margin-bottom: 16px; white-space: pre-wrap;
+    }
+
+    .console {
+        background: #050505; border: 1px solid #333; border-radius: 5px;
+        padding: 12px 14px; font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.88em; min-height: 90px; max-height: 220px; overflow-y: auto;
+    }
+    .console .line { padding: 3px 0; border-bottom: 1px dashed #1f1f1f; }
+    .console .line:last-child { border-bottom: none; }
+    .console .prefix { color: #6a9955; }
+    .console .placeholder { color: #555; font-style: italic; }
+    .console .error-line { color: var(--bad); }
+    .console .success-line { color: var(--good); }
+
+    /* Delegate chain visual */
+    .delegate-chain { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; align-items: center; }
+    .delegate-node {
+        background: #1c1c1d; border: 2px solid var(--border); border-radius: 8px;
+        padding: 10px 16px; text-align: center; font-size: 0.85em; transition: all 0.2s;
+    }
+    .delegate-node.active { border-color: var(--accent-color); background: rgba(86,156,214,0.1); }
+    .delegate-node .name { color: var(--type); font-weight: bold; }
+    .delegate-node .desc { color: #888; font-size: 0.8em; margin-top: 4px; }
+    .delegate-arrow { color: var(--accent-color); font-size: 1.2em; }
+
+    /* Event visual */
+    .event-flow { display: flex; flex-direction: column; gap: 0; margin: 16px 0; }
+    .event-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+    .event-publisher {
+        background: rgba(86,156,214,0.1); border: 1px solid var(--accent-color);
+        border-radius: 6px; padding: 8px 14px; font-size: 0.85em; color: var(--accent-color);
+    }
+    .event-fire {
+        color: var(--bad); font-weight: bold; font-size: 0.85em;
+    }
+    .event-subscriber {
+        background: rgba(76,175,80,0.1); border: 1px solid var(--good);
+        border-radius: 6px; padding: 8px 14px; font-size: 0.85em; color: var(--good);
+    }
+
+    /* Sort game */
+    .sort-chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+    .sort-chip {
+        background: var(--card-bg-2); border: 1px solid var(--border);
+        padding: 8px 14px; border-radius: 20px; cursor: pointer;
+        font-size: 0.85em; transition: all 0.15s;
+    }
+    .sort-chip.selected { border-color: var(--accent-color); background: rgba(86,156,214,0.15); }
+    .sort-chip.placed { display: none; }
+    .sort-zones { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+    .sort-zone { flex: 1; min-width: 220px; border: 2px dashed var(--border); border-radius: 6px; padding: 12px; min-height: 120px; }
+    .sort-zone strong { display: block; color: var(--type); margin-bottom: 8px; }
+    .sort-zone .placed-item {
+        background: rgba(76,175,80,0.1); border: 1px solid var(--good); border-radius: 4px;
+        padding: 5px 8px; margin-bottom: 6px; font-size: 0.83em;
+    }
+    #sort-status { margin-top: 12px; color: #888; font-size: 0.9em; }
+
+    /* Quiz */
+    .quiz-question { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .quiz-question:last-child { border-bottom: none; }
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .quiz-option {
+        background: var(--card-bg-2); border: 1px solid var(--border); color: var(--text-color);
+        text-align: left; padding: 10px 14px; border-radius: 5px; cursor: pointer;
+        font-size: 0.95em; transition: border-color 0.15s, background 0.15s;
+    }
+    .quiz-option:hover:not(:disabled) { border-color: var(--accent-color); }
+    .quiz-option.correct { border-color: var(--good); background: rgba(76,175,80,0.15); }
+    .quiz-option.incorrect { border-color: var(--bad); background: rgba(224,108,117,0.15); }
+    .quiz-option:disabled { cursor: default; }
+    .quiz-feedback { margin-top: 8px; font-size: 0.88em; min-height: 1.2em; }
+    .quiz-feedback.good { color: var(--good); }
+    .quiz-feedback.bad { color: var(--bad); }
+    #quiz-score-box { text-align: center; padding: 16px; border: 1px dashed var(--border); border-radius: 6px; margin-top: 10px; display: none; }
+    #quiz-score-box.show { display: block; }
+
+    footer { text-align: center; color: #666; font-size: 0.85em; padding: 30px 20px 50px; }
+
+    @media (max-width: 600px) {
+        header h1 { font-size: 1.6em; }
+        nav#toc { gap: 2px; padding: 8px; }
+        nav#toc a { font-size: 0.72em; padding: 5px 8px; }
+        .delegate-chain { flex-direction: column; align-items: stretch; }
+        .delegate-arrow { transform: rotate(90deg); }
+    }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<header>
+    <h1>C#: Делегаты, события и лямбды</h1>
+    <p class="subtitle">Функции как переменные, событийная модель и короткий синтаксис</p>
+    <div id="overall-progress-wrap">
+        <div id="overall-progress-track"><div id="overall-progress-fill"></div></div>
+        <div id="overall-progress-label">Прогресс чтения: 0%</div>
+    </div>
+</header>
+
+<nav id="toc">
+    <a href="#s1" data-target="s1">1. Что такое делегат</a>
+    <a href="#s2" data-target="s2">2. Action, Func, Predicate</a>
+    <a href="#s3" data-target="s3">3. Lambda-выражения</a>
+    <a href="#s4" data-target="s4">4. Цепочки делегатов</a>
+    <a href="#s5" data-target="s5">5. События (event)</a>
+    <a href="#s6" data-target="s6">6. Песочница: делегаты</a>
+    <a href="#s7" data-target="s7">7. Песочница: события</a>
+    <a href="#s8" data-target="s8">8. Игра: делегат или event?</a>
+    <a href="#s9" data-target="s9">9. Практика</a>
+    <a href="#s10" data-target="s10">10. Итоговый тест</a>
+</nav>
+
+<div class="container">
+
+    <section id="s1">
+        <span class="badge">ADVANCED · ДЕЛЕГАТЫ</span>
+        <h2>1. Что такое делегат</h2>
+        <p>Делегат — это <strong>тип данных</strong>, который описывает сигнатуру метода (какие параметры принимает и что возвращает). Переменная делегата может хранить <em>ссылку на метод</em> и вызывать его.</p>
+
+        <div class="highlight">
+            <h3>Аналогия</h3>
+            <p>Делегат — это «адресат» на конверте. Вы пишете адрес (имя метода), и письмо (вызов) доставляется нужному получателю.</p>
+        </div>
+
+        <h3>Объявление делегата</h3>
+<pre><code><span class="com">// Объявляем тип делегата: принимает два int, возвращает int</span>
+<span class="kw">public delegate int</span> <span class="typ">MathOperation</span>(<span class="kw">int</span> a, <span class="kw">int</span> b);
+
+<span class="com">// Метод, подходящий под эту сигнатуру</span>
+<span class="kw">static int</span> <span class="func">Add</span>(<span class="kw">int</span> a, <span class="kw">int</span> b) => a + b;
+<span class="kw">static int</span> <span class="func">Multiply</span>(<span class="kw">int</span> a, <span class="kw">int</span> b) => a * b;
+
+<span class="com">// Использование</span>
+<span class="typ">MathOperation</span> op = Add;           <span class="com">// op ссылается на Add</span>
+<span class="kw">int</span> result = op(<span class="num">3</span>, <span class="num">4</span>);           <span class="com">// 7</span>
+
+op = Multiply;                    <span class="com">// теперь op ссылается на Multiply</span>
+result = op(<span class="num">3</span>, <span class="num">4</span>);               <span class="com">// 12</span></code></pre>
+
+        <h3>Делегат как параметр метода</h3>
+        <p>Самое полезное — передавать методы как аргументы другим методам.</p>
+<pre><code><span class="kw">static int</span> <span class="func">Apply</span>(<span class="kw">int</span> a, <span class="kw">int</span> b, <span class="typ">MathOperation</span> operation) {
+    <span class="kw">return</span> <span class="func">operation</span>(a, b);
+}
+
+<span class="kw">int</span> sum = <span class="func">Apply</span>(<span class="num">5</span>, <span class="num">3</span>, Add);       <span class="com">// 8</span>
+<span class="kw">int</span> product = <span class="func">Apply</span>(<span class="num">5</span>, <span class="num">3</span>, Multiply); <span class="com">// 15</span></code></pre>
+
+        <h3>Делегат как переменная — ключевая идея</h3>
+        <table>
+            <tr><th>Обычный вызов</th><th>Через делегат</th></tr>
+            <tr><td><code>Add(3, 4)</code> — вызов конкретного метода</td><td><code>op(3, 4)</code> — вызов «через переменную»</td></tr>
+            <tr><td>Метод известен на этапе компиляции</td><td>Метод можно подставить в runtime</td></tr>
+            <tr><td>Нельзя заменить на другой метод</td><td>Можно переключить в любой момент</td></tr>
+        </table>
+    </section>
+
+    <section id="s2">
+        <span class="badge">ADVANCED · ДЕЛЕГАТЫ</span>
+        <h2>2. Action, Func, Predicate</h2>
+        <p>В C# уже есть готовые обобщённые делегаты — объявлять свой не нужно в 90% случаев.</p>
+
+        <table>
+            <tr><th>Делегат</th><th>Возвращает</th><th>Параметры</th><th>Когда использовать</th></tr>
+            <tr>
+                <td><code>Action</code></td>
+                <td><code>void</code> (ничего)</td>
+                <td>0–16 параметров</td>
+                <td>Когда нужно просто выполнить действие</td>
+            </tr>
+            <tr>
+                <td><code>Action&lt;T&gt;</code></td>
+                <td><code>void</code></td>
+                <td>1+ параметр</td>
+                <td><code>Action&lt;int&gt;</code> — метод с одним int-параметром</td>
+            </tr>
+            <tr>
+                <td><code>Func&lt;TResult&gt;</code></td>
+                <td>Возвращает <code>TResult</code></td>
+                <td>0 параметров</td>
+                <td><code>Func&lt;int&gt;</code> — метод без параметров, возвращающий int</td>
+            </tr>
+            <tr>
+                <td><code>Func&lt;T, TResult&gt;</code></td>
+                <td>Возвращает <code>TResult</code></td>
+                <td>1+ параметр</td>
+                <td><code>Func&lt;int, string&gt;</code> — принимает int, возвращает string</td>
+            </tr>
+            <tr>
+                <td><code>Predicate&lt;T&gt;</code></td>
+                <td><code>bool</code></td>
+                <td>1 параметр</td>
+                <td>Для условий фильтрации: <code>Predicate&lt;int&gt;</code></td>
+            </tr>
+        </table>
+
+<pre><code><span class="com">// Action — ничего не возвращает</span>
+<span class="typ">Action</span> greet = () => Console.<span class="func">WriteLine</span>(<span class="str">"Привет!"</span>);
+<span class="typ">Action</span>&lt;<span class="kw">string</span>&gt; greetName = name => Console.<span class="func">WriteLine</span>(<span class="str">$"Привет, {name}!"</span>);
+
+<span class="com">// Func — возвращает значение (последний тип参数 — возвращаемый)</span>
+<span class="typ">Func</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>&gt; square = x => x * x;
+<span class="typ">Func</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>, <span class="kw">int</span>&gt; add = (a, b) => a + b;
+
+<span class="com">// Predicate — возвращает bool</span>
+<span class="typ">Predicate</span>&lt;<span class="kw">int</span>&gt; isEven = n => n % <span class="num">2</span> == <span class="num">0</span>;
+
+<span class="com">// Вызов</span>
+<span class="func">greet</span>();                  <span class="com">// Привет!</span>
+<span class="func">greetName</span>(<span class="str">"Alex"</span>);        <span class="com">// Привет, Alex!</span>
+<span class="kw">int</span> sq = <span class="func">square</span>(<span class="num">5</span>);       <span class="com">// 25</span>
+<span class="kw">bool</span> even = <span class="func">isEven</span>(<span class="num">4</span>);    <span class="com">// true</span></code></pre>
+
+        <h3>Почему не свой делегат?</h3>
+        <p>Объявление <code>delegate void MyAction&lt;T&gt;(T item)</code> — это лишняя строка. <code>Action&lt;T&gt;</code> делает то же самое и известен всем разработчикам.</p>
+    </section>
+
+    <section id="s3">
+        <span class="badge">ADVANCED · ЛЯМБДЫ</span>
+        <h2>3. Lambda-выражения</h2>
+        <p>Лямбда — это анонимная функция (без имени), которая может быть передана как делегат. Синтаксис: <code>(параметры) => тело</code>.</p>
+
+        <h3>Полный синтаксис vs короткий</h3>
+<pre><code><span class="com">// Полный синтаксис (явная типизация)</span>
+<span class="typ">Func</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>, <span class="kw">int</span>&gt; add = (<span class="kw">int</span> a, <span class="kw">int</span> b) => { <span class="kw">return</span> a + b; };
+
+<span class="com">// Типы выводятся компилятором</span>
+<span class="typ">Func</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>, <span class="kw">int</span>&gt; add2 = (a, b) => a + b;
+
+<span class="com">// Один параметр — скобки необязательны</span>
+<span class="typ">Func</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>&gt; square = x => x * x;
+
+<span class="com">// Нет параметров — пустые скобки</span>
+<span class="typ">Action</span> greet = () => Console.<span class="func">WriteLine</span>(<span class="str">"Hi!"</span>);
+
+<span class="com">// Несколько строк в теле — фигурные скобки + return</span>
+<span class="typ">Func</span>&lt;<span class="kw">int</span>, <span class="kw">string</span>&gt; describe = n => {
+    <span class="kw">if</span> (n > <span class="num">0</span>) <span class="kw">return</span> <span class="str">$"Положительное: {n}"</span>;
+    <span class="kw">if</span> (n < <span class="num">0</span>) <span class="kw">return</span> <span class="str">$"Отрицательное: {n}"</span>;
+    <span class="kw">return</span> <span class="str">"Ноль"</span>;
+};</code></pre>
+
+        <h3>Лямбда в контексте</h3>
+        <p>Лямбды раскрывают свой потенциал в методах, которые принимают делегаты:</p>
+<pre><code><span class="typ">List</span>&lt;<span class="kw">int</span>&gt; nums = <span class="kw">new</span> <span class="typ">List</span>&lt;<span class="kw">int</span>&gt; { <span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span> };
+
+<span class="com">// Вместо отдельного метода — сразу лямбда</span>
+<span class="kw">var</span> evens = nums.<span class="func">Where</span>(n => n % <span class="num">2</span> == <span class="num">0</span>).<span class="func">ToList</span>();  <span class="com">// {2, 4}</span>
+
+nums.<span class="func">ForEach</span>(n => Console.<span class="func">WriteLine</span>(n));
+
+<span class="com">// Сортировка по кастомному критерию</span>
+<span class="typ">List</span>&lt;<span class="kw">string</span>&gt; names = <span class="kw">new</span> <span class="typ">List</span>&lt;<span class="kw">string</span>&gt; { <span class="str">"Bob"</span>, <span class="str">"Alice"</span>, <span class="str">"Charlie"</span> };
+names.<span class="func">Sort</span>((a, b) => a.Length.CompareTo(b.Length)); <span class="com">// по длине имени</span></code></pre>
+    </section>
+
+    <section id="s4">
+        <span class="badge">ADVANCED · ДЕЛЕГАТЫ</span>
+        <h2>4. Цепочки делегатов (multicast)</h2>
+        <p>Делегат может хранить ссылку <strong>не на один метод, а на несколько</strong>. Это называется multicast delegate. Вызываются все методы по очереди.</p>
+
+<pre><code><span class="typ">Action</span> onGameStart = <span class="kw">null</span>;
+onGameStart += PlayMusic;      <span class="com">// добавляем метод</span>
+onGameStart += ShowIntro;
+onGameStart += LoadSave;
+
+onGameStart(); <span class="com">// вызовет все три метода по порядку</span></code></pre>
+
+        <h3>Операторы += и -=</h3>
+        <table>
+            <tr><th>Оператор</th><th>Что делает</th></tr>
+            <tr><td><code>del += Method</code></td><td>Добавляет метод в цепочку</td></tr>
+            <tr><td><code>del -= Method</code></td><td>Удаляет метод из цепочки</td></tr>
+            <tr><td><code>del?.Invoke()</code></td><td>Безопасный вызов (если del == null, не упадёт)</td></tr>
+        </table>
+
+<pre><code><span class="typ">Action</span> actions = Hello;
+actions += World;
+
+<span class="func">actions</span>();   <span class="com">// Hello\nWorld</span>
+
+actions -= Hello;
+<span class="func">actions</span>();   <span class="com">// World</span>
+
+<span class="com">// Безопасный вызов — если цепочка пуста, не выбросит исключение</span>
+actions = <span class="kw">null</span>;
+actions?.<span class="func">Invoke</span>();  <span class="com">// ничего не произойдёт</span></code></pre>
+
+        <div class="highlight">
+            <h3>Цепочка визуально</h3>
+            <div class="delegate-chain" id="delegate-chain">
+                <div class="delegate-node" data-idx="0">
+                    <div class="name">PlayMusic()</div>
+                    <div class="desc">Музыка запущена</div>
+                </div>
+                <span class="delegate-arrow">→</span>
+                <div class="delegate-node" data-idx="1">
+                    <div class="name">ShowIntro()</div>
+                    <div class="desc">Интро показано</div>
+                </div>
+                <span class="delegate-arrow">→</span>
+                <div class="delegate-node" data-idx="2">
+                    <div class="name">LoadSave()</div>
+                    <div class="desc">Сохранение загружено</div>
+                </div>
+            </div>
+            <button class="btn secondary" id="chain-demo-btn">▶ Вызвать делегат</button>
+        </div>
+    </section>
+
+    <section id="s5">
+        <span class="badge">ADVANCED · СОБЫТИЯ</span>
+        <h2>5. События (event)</h2>
+        <p>Событие — это обёртка над делегатом, которая <strong>запрещает</strong> внешнему коду вызывать делегат напрямую или перезаписывать цепочку. Событие можно только подписывать (<code>+=</code>) и отписывать (<code>-=</code>).</p>
+
+<pre><code><span class="kw">public class</span> <span class="typ">Button</span> {
+    <span class="com">// Событие — только подписка/отписка извне</span>
+    <span class="kw">public event</span> <span class="typ">Action</span> OnClick;
+
+    <span class="com">// Вызвать событие может только сам класс</span>
+    <span class="kw">public void</span> <span class="func">Click</span>() {
+        Console.<span class="func">WriteLine</span>(<span class="str">"Кнопка нажата!"</span>);
+        OnClick?.<span class="func">Invoke</span>();
+    }
+}
+
+<span class="com">// Использование</span>
+<span class="typ">Button</span> btn = <span class="kw">new</span> <span class="typ">Button</span>();
+btn.OnClick += () => Console.<span class="func">WriteLine</span>(<span class="str">"Обработчик 1"</span>);
+btn.OnClick += () => Console.<span class="func">WriteLine</span>(<span class="str">"Обработчик 2"</span>);
+btn.<span class="func">Click</span>();  <span class="com">// вызовет оба обработчика</span>
+
+<span class="com">// btn.OnClick(); — ОШИБКА: нельзя вызвать событие извне</span>
+<span class="com">// btn.OnClick = null; — ОШИБКА: нельзя перезаписать</span></code></pre>
+
+        <h3>event vs обычный делегат</h3>
+        <table>
+            <tr><th>Обычный делегат</th><th>С event</th></tr>
+            <tr><td><code>del = Method</code> — можно перезаписать</td><td><code>event += Method</code> — нельзя перезаписать</td></tr>
+            <tr><td><code>del()</code> — можно вызвать извне</td><td>Только внутри класса</td></tr>
+            <tr><td>Любой может сломать цепочку</td><td>Инкапсуляция — никто не сбросит подписчиков</td></tr>
+        </table>
+
+        <h3>Паттерн «издатель-подписчик»</h3>
+        <div class="event-flow">
+            <div class="event-row">
+                <div class="event-publisher">Button (издатель)</div>
+                <div class="event-fire">→ OnClick?.Invoke() →</div>
+                <div class="event-subscriber">Обработчик 1 (подписчик)</div>
+            </div>
+            <div class="event-row">
+                <div class="event-publisher" style="visibility:hidden;">Button</div>
+                <div class="event-fire" style="visibility:hidden;">→</div>
+                <div class="event-subscriber">Обработчик 2 (подписчик)</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="s6">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>6. Песочница: Делегаты</h2>
+        <p>Настройте делегат и посмотрите, как работает цепочка вызовов в реальном времени.</p>
+
+        <div class="playground">
+            <div class="playground-controls">
+                <label>Тип делегата
+                    <select id="del-type-select">
+                        <option value="action">Action (void)</option>
+                        <option value="func-int">Func&lt;int&gt; (возвращает int)</option>
+                        <option value="func-str">Func&lt;string, string&gt;</option>
+                    </select>
+                </label>
+                <button class="btn secondary" id="del-add-btn">+ Добавить метод</button>
+                <button class="btn" id="del-invoke-btn">▶ Invoke()</button>
+                <button class="btn danger" id="del-clear-btn">Очистить</button>
+            </div>
+
+            <div class="code-box" id="del-code-box"></div>
+
+            <p style="font-size:0.85em; color:#999; margin-bottom:6px;">Цепочка: <span id="del-chain-count">0</span> методов</p>
+            <div id="del-chain-visual" class="delegate-chain"></div>
+
+            <div class="console" id="del-console">
+                <div class="line placeholder">// Результат Invoke() появится здесь...</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="s7">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>7. Песочница: События</h2>
+        <p>Эмуляция кнопки. Подпишитесь на событие <code>OnClick</code> и нажмите кнопку — обработчики сработают.</p>
+
+        <div class="playground">
+            <div class="playground-controls">
+                <button class="btn" id="event-btn">🔘 Нажми меня</button>
+                <button class="btn secondary" id="event-sub-btn">+ Подписаться</button>
+                <button class="btn danger" id="event-unsub-btn">- Отписаться</button>
+                <button class="btn secondary" id="event-clear-btn">Очистить лог</button>
+            </div>
+
+            <div class="code-box" id="event-code-box">
+<span class="typ">Button</span> btn = <span class="kw">new</span> <span class="typ">Button</span>();
+btn.OnClick += () => Console.<span class="func">WriteLine</span>(<span class="str">"Handler 1"</span>);
+btn.OnClick += () => Console.<span class="func">WriteLine</span>(<span class="str">"Handler 2"</span>);
+btn.<span class="func">Click</span>(); <span class="com">// вызовет оба</span></div>
+
+            <p style="font-size:0.85em; color:#999; margin-bottom:6px;">Подписчиков: <span id="event-sub-count">0</span></p>
+            <div id="event-subs-visual" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+
+            <div class="console" id="event-console">
+                <div class="line placeholder">// Лог событий появится здесь...</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="s8">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>8. Игра: делегат или event?</h2>
+        <p>Распределите код по категориям: обычный делегат или событие.</p>
+
+        <div class="sort-chips" id="sort-chips"></div>
+        <div class="sort-zones">
+            <div class="sort-zone" data-zone="delegate"><strong>Обычный делегат</strong><div class="zone-items"></div></div>
+            <div class="sort-zone" data-zone="event"><strong>Событие (event)</strong><div class="zone-items"></div></div>
+        </div>
+        <p id="sort-status"></p>
+    </section>
+
+    <section id="s9">
+        <span class="badge">ПРАКТИКА</span>
+        <h2>9. Практические задания</h2>
+
+        <div class="task">
+            <h3>Задание 1: Метод с делегатом</h3>
+            <p>Напишите метод <code>Filter&lt;T&gt;(List&lt;T&gt; items, Predicate&lt;T&gt; condition)</code>, который возвращает новый список элементов, прошедших фильтр.</p>
+            <button class="btn" onclick="toggleSolution('sol1', this)">Показать решение</button>
+            <div id="sol1" class="solution">
+<pre><code><span class="kw">static</span> <span class="typ">List</span>&lt;T&gt; <span class="func">Filter</span>&lt;T&gt;(<span class="typ">List</span>&lt;T&gt; items, <span class="typ">Predicate</span>&lt;T&gt; condition) {
+    <span class="typ">List</span>&lt;T&gt; result = <span class="kw">new</span> <span class="typ">List</span>&lt;T&gt;();
+    <span class="kw">foreach</span> (T item <span class="kw">in</span> items) {
+        <span class="kw">if</span> (<span class="func">condition</span>(item))
+            result.<span class="func">Add</span>(item);
+    }
+    <span class="kw">return</span> result;
+}
+
+<span class="com">// Использование</span>
+<span class="kw">var</span> nums = <span class="kw">new</span> <span class="typ">List</span>&lt;<span class="kw">int</span>&gt; { <span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span> };
+<span class="kw">var</span> evens = <span class="func">Filter</span>(nums, n => n % <span class="num">2</span> == <span class="num">0</span>); <span class="com">// {2, 4}</span></code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 2: Событие таймера</h3>
+            <p>Создайте класс <code>Timer</code> с событием <code>OnTick</code>. Метод <code>Start()</code> увеличивает счётчик и вызывает событие каждую секунду (симуляция).</p>
+            <button class="btn" onclick="toggleSolution('sol2', this)">Показать решение</button>
+            <div id="sol2" class="solution">
+<pre><code><span class="kw">public class</span> <span class="typ">GameTimer</span> {
+    <span class="kw">public event</span> <span class="typ">Action</span>&lt;<span class="kw">int</span>&gt; OnTick;
+    <span class="kw">private int</span> ticks = <span class="num">0</span>;
+
+    <span class="kw">public void</span> <span class="func">Start</span>() {
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i < <span class="num">5</span>; i++) {
+            ticks++;
+            OnTick?.<span class="func">Invoke</span>(ticks);
+        }
+    }
+}
+
+<span class="kw">var</span> timer = <span class="kw">new</span> <span class="typ">GameTimer</span>();
+timer.OnTick += t => Console.<span class="func">WriteLine</span>(<span class="str">$"Тик: {t}"</span>);
+timer.<span class="func">Start</span>(); <span class="com">// 1, 2, 3, 4, 5</span></code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 3: Action как параметр</h3>
+            <p>Напишите метод <code>Repeat(int count, Action action)</code>, который вызывает переданный <code>action</code> заданное количество раз.</p>
+            <button class="btn" onclick="toggleSolution('sol3', this)">Показать решение</button>
+            <div id="sol3" class="solution">
+<pre><code><span class="kw">static void</span> <span class="func">Repeat</span>(<span class="kw">int</span> count, <span class="typ">Action</span> action) {
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i < count; i++) {
+        <span class="func">action</span>();
+    }
+}
+
+<span class="com">// Использование</span>
+<span class="func">Repeat</span>(<span class="num">3</span>, () => Console.<span class="func">WriteLine</span>(<span class="str">"Привет!"</span>));
+<span class="com">// Привет! Привет! Привет!</span></code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 4: Лямбда-сортировка</h3>
+            <p>Дан список объектов <code>List&lt;Player&gt;</code>. Отсортируйте их по убыванию здоровья с помощью лямбды.</p>
+            <button class="btn" onclick="toggleSolution('sol4', this)">Показать решение</button>
+            <div id="sol4" class="solution">
+<pre><code><span class="kw">public class</span> <span class="typ">Player</span> {
+    <span class="kw">public string</span> Name { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public int</span> Health { <span class="kw">get</span>; <span class="kw">set</span>; }
+}
+
+players.<span class="func">Sort</span>((a, b) => b.Health.CompareTo(a.Health));
+<span class="com">// или через LINQ:</span>
+<span class="kw">var</span> sorted = players.<span class="func">OrderByDescending</span>(p => p.Health).<span class="func">ToList</span>();</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section id="s10">
+        <span class="badge">ИТОГОВЫЙ ТЕСТ</span>
+        <h2>10. Проверь себя</h2>
+        <p>Пройдите тест по делегатам, событиям и лямбдам.</p>
+
+        <div id="quiz-container"></div>
+
+        <button class="btn secondary" id="quiz-reset" style="margin-top:10px;">Пройти заново</button>
+        <div id="quiz-score-box"></div>
+    </section>
+
+</div>
+
+<footer>Урок про делегаты, события и лямбда-выражения в C#.</footer>
+
+<script>
+    /* ---------- Toggle solutions ---------- */
+    function toggleSolution(id, btn) {
+        var el = document.getElementById(id);
+        var isOpen = el.style.display === "block";
+        el.style.display = isOpen ? "none" : "block";
+        if (btn) btn.textContent = isOpen ? "Показать решение" : "Скрыть решение";
+    }
+
+    /* ---------- Progress bar ---------- */
+    var topProgressBar = document.getElementById('progress-bar');
+    var overallFill = document.getElementById('overall-progress-fill');
+    var overallLabel = document.getElementById('overall-progress-label');
+
+    function updateProgress() {
+        var scrollTop = window.scrollY;
+        var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        var pct = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
+        topProgressBar.style.width = pct + '%';
+        overallFill.style.width = pct + '%';
+        overallLabel.textContent = 'Прогресс чтения: ' + Math.round(pct) + '%';
+    }
+    window.addEventListener('scroll', updateProgress);
+    updateProgress();
+
+    /* ---------- Active nav ---------- */
+    var navLinks = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+    var sectionEls = navLinks.map(function(a) { return document.getElementById(a.dataset.target); });
+
+    function updateActiveNav() {
+        var scrollPos = window.scrollY + 100;
+        var activeIndex = 0;
+        for (var i = 0; i < sectionEls.length; i++) {
+            if (sectionEls[i] && sectionEls[i].offsetTop <= scrollPos) activeIndex = i;
+        }
+        navLinks.forEach(function(a, i) { a.classList.toggle('active', i === activeIndex); });
+    }
+    window.addEventListener('scroll', updateActiveNav);
+    updateActiveNav();
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    /* ---------- Section 4: delegate chain demo ---------- */
+    var chainNodes = document.querySelectorAll('#delegate-chain .delegate-node');
+    var chainBtn = document.getElementById('chain-demo-btn');
+    var chainStep = 0;
+
+    chainBtn.addEventListener('click', function() {
+        chainNodes.forEach(function(n) { n.classList.remove('active'); });
+        chainStep = 0;
+        chainBtn.disabled = true;
+
+        function step() {
+            if (chainStep >= chainNodes.length) {
+                chainBtn.disabled = false;
+                return;
+            }
+            chainNodes[chainStep].classList.add('active');
+            chainStep++;
+            setTimeout(step, 500);
+        }
+        step();
+    });
+
+    /* ---------- Section 6: delegate playground ---------- */
+    var delMethods = [];
+    var delTypeSelect = document.getElementById('del-type-select');
+    var delCodeBox = document.getElementById('del-code-box');
+    var delChainVisual = document.getElementById('del-chain-visual');
+    var delChainCount = document.getElementById('del-chain-count');
+    var delConsole = document.getElementById('del-console');
+    var methodCounter = 0;
+
+    var delTemplates = {
+        'action': { decl: 'Action', retType: 'void', sig: '() => { }' },
+        'func-int': { decl: 'Func&lt;int&gt;', retType: 'int', sig: '() => { return 42; }' },
+        'func-str': { decl: 'Func&lt;string, string&gt;', retType: 'string', sig: '(s) => s.ToUpper()' }
+    };
+
+    function renderDelCode() {
+        var t = delTemplates[delTypeSelect.value];
+        var lines = [];
+        lines.push('<span class="typ">' + t.decl + '</span> chain = <span class="kw">null</span>;');
+        delMethods.forEach(function(m) {
+            lines.push('chain += ' + m.name + ';');
+        });
+        lines.push('');
+        lines.push('<span class="com">// Вызов:</span>');
+        if (delTypeSelect.value === 'action') {
+            lines.push('chain();');
+        } else {
+            lines.push('<span class="kw">var</span> result = chain();');
+        }
+        delCodeBox.innerHTML = lines.join('\n');
+    }
+
+    function renderDelChain() {
+        delChainCount.textContent = delMethods.length;
+        delChainVisual.innerHTML = '';
+        delMethods.forEach(function(m, i) {
+            if (i > 0) {
+                var arrow = document.createElement('span');
+                arrow.className = 'delegate-arrow';
+                arrow.textContent = '→';
+                delChainVisual.appendChild(arrow);
+            }
+            var node = document.createElement('div');
+            node.className = 'delegate-node';
+            node.innerHTML = '<div class="name">' + escapeHtml(m.name) + '()</div><div class="desc">' + escapeHtml(m.output) + '</div>';
+            delChainVisual.appendChild(node);
+        });
+        if (delMethods.length === 0) {
+            delChainVisual.innerHTML = '<span style="color:#666; font-size:0.85em;">Цепочка пуста — добавьте метод</span>';
+        }
+        renderDelCode();
+    }
+
+    document.getElementById('del-add-btn').addEventListener('click', function() {
+        methodCounter++;
+        var t = delTypeSelect.value;
+        var name = 'Method' + methodCounter;
+        var output = '';
+        if (t === 'action') {
+            output = 'void — ничего';
+        } else if (t === 'func-int') {
+            output = 'int: ' + (Math.floor(Math.random() * 100) + 1);
+        } else {
+            output = 'string: "Result"';
+        }
+        delMethods.push({ name: name, output: output });
+        renderDelChain();
+    });
+
+    document.getElementById('del-invoke-btn').addEventListener('click', function() {
+        if (delMethods.length === 0) {
+            delConsole.innerHTML = '<div class="line placeholder">// Цепочка пуста — добавьте хотя бы один метод.</div>';
+            return;
+        }
+        delConsole.innerHTML = '';
+        delMethods.forEach(function(m, i) {
+            setTimeout(function() {
+                var line = document.createElement('div');
+                line.className = 'line';
+                var output = '';
+                if (delTypeSelect.value === 'action') {
+                    output = m.name + '() → void (вызван)';
+                } else if (delTypeSelect.value === 'func-int') {
+                    var num = m.output.split(': ')[1];
+                    output = m.name + '() → ' + num;
+                } else {
+                    output = m.name + '() → "Result"';
+                }
+                line.innerHTML = '<span class="prefix">&gt;</span> ' + escapeHtml(output);
+                delConsole.appendChild(line);
+                delConsole.scrollTop = delConsole.scrollHeight;
+            }, i * 180);
+        });
+    });
+
+    document.getElementById('del-clear-btn').addEventListener('click', function() {
+        delMethods = [];
+        methodCounter = 0;
+        renderDelChain();
+        delConsole.innerHTML = '<div class="line placeholder">// Результат Invoke() появится здесь...</div>';
+    });
+
+    delTypeSelect.addEventListener('change', function() {
+        delMethods = [];
+        methodCounter = 0;
+        renderDelChain();
+    });
+
+    renderDelChain();
+
+    /* ---------- Section 7: event playground ---------- */
+    var eventSubs = [];
+    var eventConsole = document.getElementById('event-console');
+    var eventSubCount = document.getElementById('event-sub-count');
+    var eventSubsVisual = document.getElementById('event-subs-visual');
+    var eventBtn = document.getElementById('event-btn');
+    var subCounter = 0;
+
+    function renderEventSubs() {
+        eventSubCount.textContent = eventSubs.length;
+        eventSubsVisual.innerHTML = '';
+        eventSubs.forEach(function(s, i) {
+            var tag = document.createElement('span');
+            tag.style.cssText = 'background:rgba(76,175,80,0.1); border:1px solid var(--good); border-radius:4px; padding:3px 8px; font-size:0.8em;';
+            tag.textContent = 'Handler ' + s.id;
+            eventSubsVisual.appendChild(tag);
+        });
+    }
+
+    document.getElementById('event-sub-btn').addEventListener('click', function() {
+        subCounter++;
+        eventSubs.push({ id: subCounter });
+        renderEventSubs();
+        var line = document.createElement('div');
+        line.className = 'line success-line';
+        line.innerHTML = '<span class="prefix">&gt;</span> btn.OnClick += Handler' + subCounter + '; <span style="color:#6a9955;">// подписка</span>';
+        eventConsole.innerHTML = '';
+        eventConsole.appendChild(line);
+    });
+
+    document.getElementById('event-unsub-btn').addEventListener('click', function() {
+        if (eventSubs.length === 0) return;
+        var removed = eventSubs.pop();
+        renderEventSubs();
+        var line = document.createElement('div');
+        line.className = 'line';
+        line.innerHTML = '<span class="prefix">&gt;</span> btn.OnClick -= Handler' + removed.id + '; <span style="color:#6a9955;">// отписка</span>';
+        eventConsole.innerHTML = '';
+        eventConsole.appendChild(line);
+    });
+
+    eventBtn.addEventListener('click', function() {
+        eventConsole.innerHTML = '';
+        if (eventSubs.length === 0) {
+            var line = document.createElement('div');
+            line.className = 'line placeholder';
+            line.innerHTML = '// Событие OnClick не имеет подписчиков. Подпишитесь хотя бы на одно.';
+            eventConsole.appendChild(line);
+            return;
+        }
+
+        var fireLine = document.createElement('div');
+        fireLine.className = 'line';
+        fireLine.innerHTML = '<span class="prefix" style="color:var(--bad);">⚡</span> OnClick?.Invoke() — вызов события';
+        eventConsole.appendChild(fireLine);
+
+        eventSubs.forEach(function(s, i) {
+            setTimeout(function() {
+                var line = document.createElement('div');
+                line.className = 'line success-line';
+                line.innerHTML = '<span class="prefix">&gt;</span> Handler' + s.id + '() — обработчик выполнен';
+                eventConsole.appendChild(line);
+                eventConsole.scrollTop = eventConsole.scrollHeight;
+            }, (i + 1) * 150);
+        });
+    });
+
+    document.getElementById('event-clear-btn').addEventListener('click', function() {
+        eventConsole.innerHTML = '<div class="line placeholder">// Лог событий появится здесь...</div>';
+    });
+
+    renderEventSubs();
+
+    /* ---------- Section 8: sorting game ---------- */
+    var sortData = [
+        { text: 'del = Method1; del += Method2;', zone: 'delegate' },
+        { text: 'event Action OnClick;', zone: 'event' },
+        { text: 'del?.Invoke() — можно вызвать извне', zone: 'delegate' },
+        { text: 'btn.OnClick += handler; — только подписка', zone: 'event' },
+        { text: 'del = null — можно перезаписать', zone: 'delegate' },
+        { text: 'Нельзя вызвать событие из другого класса', zone: 'event' },
+        { text: 'Func&lt;int, int&gt; f = x => x * 2;', zone: 'delegate' },
+        { text: 'public event Action OnComplete;', zone: 'event' }
+    ];
+
+    var selectedSortChip = null;
+    var sortedCount = 0;
+    var chipsWrap = document.getElementById('sort-chips');
+    var sortStatus = document.getElementById('sort-status');
+
+    function shuffleArr(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+        }
+        return a;
+    }
+
+    shuffleArr(sortData).forEach(function(item, idx) {
+        var chip = document.createElement('div');
+        chip.className = 'sort-chip';
+        chip.textContent = item.text;
+        chip.dataset.zone = item.zone;
+        chip.dataset.idx = idx;
+        chip.addEventListener('click', function() {
+            if (chip.classList.contains('placed')) return;
+            document.querySelectorAll('.sort-chip.selected').forEach(function(c) { c.classList.remove('selected'); });
+            chip.classList.add('selected');
+            selectedSortChip = chip;
+            sortStatus.textContent = 'Выберите категорию — делегат или событие.';
+        });
+        chipsWrap.appendChild(chip);
+    });
+
+    document.querySelectorAll('.sort-zone').forEach(function(zone) {
+        zone.addEventListener('click', function(e) {
+            if (e.target.closest('.placed-item')) return;
+            if (!selectedSortChip) {
+                sortStatus.textContent = 'Сначала выберите утверждение выше.';
+                return;
+            }
+            var zoneName = zone.dataset.zone;
+            var itemsWrap = zone.querySelector('.zone-items');
+            if (selectedSortChip.dataset.zone === zoneName) {
+                var placed = document.createElement('div');
+                placed.className = 'placed-item';
+                placed.textContent = selectedSortChip.textContent;
+                itemsWrap.appendChild(placed);
+                selectedSortChip.classList.add('placed');
+                selectedSortChip.classList.remove('selected');
+                sortedCount++;
+                sortStatus.textContent = 'Верно! (' + sortedCount + '/' + sortData.length + ')';
+                selectedSortChip = null;
+                if (sortedCount === sortData.length) {
+                    sortStatus.textContent = 'Отлично, всё распределено правильно!';
+                }
+            } else {
+                sortStatus.textContent = 'Не сюда. Подумайте ещё раз.';
+            }
+        });
+    });
+
+    /* ---------- Section 10: quiz ---------- */
+    var quizData = [
+        {
+            q: 'Что такое делегат?',
+            options: [
+                'Тип данных, который хранит ссылку на метод',
+                'Ключевое слово для создания события',
+                'Метод без тела',
+                'Тип коллекции'
+            ],
+            correct: 0,
+            explain: 'Делегат — это тип данных, переменная которого может хранить ссылку на метод с подходящей сигнатурой.'
+        },
+        {
+            q: 'Чем Func<T, TResult> отличается от Action<T>?',
+            options: [
+                'Ничем, это одно и то же',
+                'Func возвращает значение, Action — void',
+                'Action возвращает значение, Func — void',
+                'Func работает только с int'
+            ],
+            correct: 1,
+            explain: 'Action — void (ничего не возвращает), Func — возвращает значение (последний параметр типа — возвращаемый тип).'
+        },
+        {
+            q: 'Что делает лямбда x => x * x?',
+            options: [
+                'Умножает x на x и возвращает результат',
+                'Создаёт делегат типа Action',
+                'Удаляет переменную x',
+                'Проверяет, чётное ли x'
+            ],
+            correct: 0,
+            explain: 'Лямбда x => x * x — это анонимная функция, которая принимает x и возвращает x². Тип определяется контекстом.'
+        },
+        {
+            q: 'Зачем использовать event вместо обычного делегата?',
+            options: [
+                'event работает быстрее',
+                'event запрещает внешний вызов и перезапись цепочки',
+                'event экономит память',
+                'event нельзя подписывать'
+            ],
+            correct: 1,
+            explain: 'event инкапсулирует делегат: извне можно только += и -=, а вызов и перезапись — только внутри класса.'
+        },
+        {
+            q: 'Как безопасно вызвать делегат, который может быть null?',
+            options: [
+                'del.Invoke()',
+                'del()',
+                'del?.Invoke()',
+                'if (del != null) del(); — единственный способ'
+            ],
+            correct: 2,
+            explain: 'Оператор ?. проверяет на null и вызывает Invoke только если делегат не пуст. Это безопаснее и короче ручной проверки.'
+        }
+    ];
+
+    var quizContainer = document.getElementById('quiz-container');
+    var scoreBox = document.getElementById('quiz-score-box');
+    var answeredCount = 0;
+    var correctCount = 0;
+
+    function buildQuiz() {
+        quizContainer.innerHTML = '';
+        answeredCount = 0;
+        correctCount = 0;
+        scoreBox.classList.remove('show');
+
+        quizData.forEach(function(item, qIndex) {
+            var qDiv = document.createElement('div');
+            qDiv.className = 'quiz-question';
+
+            var qTitle = document.createElement('h4');
+            qTitle.textContent = (qIndex + 1) + '. ' + item.q;
+            qDiv.appendChild(qTitle);
+
+            var optWrap = document.createElement('div');
+            optWrap.className = 'quiz-options';
+            var feedback = document.createElement('div');
+            feedback.className = 'quiz-feedback';
+
+            item.options.forEach(function(optText, optIndex) {
+                var optBtn = document.createElement('button');
+                optBtn.className = 'quiz-option';
+                optBtn.textContent = optText;
+                optBtn.addEventListener('click', function() {
+                    var buttons = optWrap.querySelectorAll('.quiz-option');
+                    buttons.forEach(function(b) { b.disabled = true; });
+
+                    if (optIndex === item.correct) {
+                        optBtn.classList.add('correct');
+                        feedback.textContent = 'Верно! ' + item.explain;
+                        feedback.className = 'quiz-feedback good';
+                        correctCount++;
+                    } else {
+                        optBtn.classList.add('incorrect');
+                        buttons[item.correct].classList.add('correct');
+                        feedback.textContent = 'Неверно. ' + item.explain;
+                        feedback.className = 'quiz-feedback bad';
+                    }
+                    answeredCount++;
+                    if (answeredCount === quizData.length) showScore();
+                });
+                optWrap.appendChild(optBtn);
+            });
+
+            qDiv.appendChild(optWrap);
+            qDiv.appendChild(feedback);
+            quizContainer.appendChild(qDiv);
+        });
+    }
+
+    function showScore() {
+        scoreBox.innerHTML = '<h3>Результат: ' + correctCount + ' из ' + quizData.length + '</h3>';
+        if (correctCount === quizData.length) {
+            scoreBox.innerHTML += '<p style="color:var(--good);">Отлично! Вы идеально знаете материал!</p>';
+        } else if (correctCount >= quizData.length * 0.6) {
+            scoreBox.innerHTML += '<p style="color:var(--warn);">Хороший результат! Есть что повторить.</p>';
+        } else {
+            scoreBox.innerHTML += '<p style="color:var(--bad);">Стоит повторить материал урока.</p>';
+        }
+        scoreBox.classList.add('show');
+    }
+
+    document.getElementById('quiz-reset').addEventListener('click', buildQuiz);
+    buildQuiz();
+</script>
+</body>
+</html>

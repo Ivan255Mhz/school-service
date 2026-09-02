@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C#: Повторение, ООП и LINQ — расширенный урок</title>
+<style>
+    :root {
+        --bg-color: #1e1e1e;
+        --text-color: #d4d4d4;
+        --accent-color: #569cd6;
+        --accent-hover: #4ea8f4;
+        --card-bg: #252526;
+        --card-bg-2: #2b2b2c;
+        --code-bg: #0b0b0b;
+        --keyword: #c586c0;
+        --string: #ce9178;
+        --comment: #6a9955;
+        --number: #b5cea8;
+        --type: #4ec9b0;
+        --func: #dcdcaa;
+        --border: #3a3a3a;
+        --good: #4caf50;
+        --bad: #e06c75;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Progress bar */
+    #progress-bar {
+        position: fixed;
+        top: 0; left: 0;
+        height: 4px;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent-color), #c586c0);
+        z-index: 1000;
+        transition: width 0.1s ease-out;
+    }
+
+    /* Sticky nav */
+    nav#toc {
+        position: sticky;
+        top: 4px;
+        background-color: rgba(37,37,38,0.97);
+        backdrop-filter: blur(4px);
+        border-bottom: 1px solid var(--border);
+        z-index: 900;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 10px 16px;
+        justify-content: center;
+    }
+
+    nav#toc a {
+        color: #9da5b4;
+        text-decoration: none;
+        font-size: 0.85em;
+        padding: 6px 12px;
+        border-radius: 4px;
+        border: 1px solid transparent;
+        white-space: nowrap;
+        transition: color 0.2s, border-color 0.2s;
+    }
+
+    nav#toc a:hover { color: var(--accent-hover); }
+    nav#toc a.active {
+        color: var(--accent-color);
+        border-color: var(--accent-color);
+        background: rgba(86,156,214,0.08);
+    }
+
+    header {
+        background-color: var(--card-bg);
+        padding: 50px 20px 40px;
+        text-align: center;
+        border-bottom: 2px solid var(--accent-color);
+    }
+
+    header h1 {
+        margin: 0;
+        font-size: 2.4em;
+        color: var(--accent-color);
+    }
+
+    header p.subtitle {
+        font-size: 1.15em;
+        color: #888;
+        margin-top: 8px;
+    }
+
+    #overall-progress-wrap {
+        max-width: 400px;
+        margin: 20px auto 0;
+    }
+
+    #overall-progress-track {
+        background: #111;
+        border-radius: 20px;
+        height: 10px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+
+    #overall-progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent-color), #c586c0);
+        transition: width 0.25s ease-out;
+    }
+
+    #overall-progress-label {
+        font-size: 0.8em;
+        color: #777;
+        margin-top: 6px;
+    }
+
+    .container {
+        max-width: 920px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    section {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        scroll-margin-top: 70px;
+    }
+
+    section > .badge {
+        display: inline-block;
+        font-size: 0.72em;
+        letter-spacing: 0.03em;
+        color: #8f9aa8;
+        background: #1c1c1d;
+        border: 1px solid var(--border);
+        padding: 3px 10px;
+        border-radius: 20px;
+        margin-bottom: 12px;
+    }
+
+    h2 {
+        color: var(--accent-color);
+        border-bottom: 1px solid #444;
+        padding-bottom: 10px;
+        margin-top: 0;
+    }
+
+    h3 { color: #ddd; }
+    h4 { color: #bbb; margin-bottom: 6px; }
+
+    code { font-family: 'Consolas', 'Courier New', monospace; }
+
+    pre {
+        background-color: var(--code-bg);
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        border: 1px solid #333;
+        font-size: 0.92em;
+    }
+
+    .kw { color: var(--keyword); }
+    .str { color: var(--string); }
+    .com { color: var(--comment); }
+    .num { color: var(--number); }
+    .typ { color: var(--type); }
+    .func { color: var(--func); }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    th, td {
+        border: 1px solid #444;
+        padding: 10px;
+        text-align: left;
+    }
+
+    th { background-color: #333; color: var(--accent-color); }
+
+    .btn {
+        background-color: var(--accent-color);
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 0.95em;
+        font-weight: bold;
+        transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:hover { background-color: var(--accent-hover); }
+    .btn:active { transform: scale(0.97); }
+    .btn.secondary {
+        background: transparent;
+        color: var(--accent-color);
+        border: 1px solid var(--accent-color);
+    }
+    .btn.secondary:hover { background: rgba(86,156,214,0.1); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+
+    .solution {
+        display: none;
+        margin-top: 15px;
+        animation: fadeIn 0.4s;
+        border-left: 3px solid var(--type);
+        padding-left: 14px;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .linq-highlight {
+        border-left: 4px solid #c586c0;
+        padding-left: 15px;
+        margin-top: 20px;
+    }
+
+    .task {
+        background: var(--card-bg-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .task h3 { margin-top: 0; }
+
+    /* Playground */
+    .playground {
+        background: var(--card-bg-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .playground-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .playground-controls label {
+        font-size: 0.85em;
+        color: #aaa;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .playground-controls input[type="range"] { width: 160px; accent-color: var(--accent-color); }
+    .playground-controls select {
+        background: #1c1c1d;
+        color: var(--text-color);
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+        border-radius: 4px;
+    }
+
+    #linq-generated-code {
+        background: var(--code-bg);
+        border: 1px solid #333;
+        border-radius: 5px;
+        padding: 14px;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.9em;
+        margin-bottom: 16px;
+        white-space: pre-wrap;
+    }
+
+    #linq-result-table th, #linq-result-table td { padding: 8px 10px; }
+    #linq-result-table tr.filtered-out { opacity: 0.25; text-decoration: line-through; }
+    #linq-empty-msg { color: #888; font-style: italic; padding: 10px 0; }
+
+    /* Quiz */
+    .quiz-question {
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+    .quiz-question:last-child { border-bottom: none; }
+
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+    .quiz-option {
+        background: var(--card-bg-2);
+        border: 1px solid var(--border);
+        color: var(--text-color);
+        text-align: left;
+        padding: 10px 14px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.95em;
+        transition: border-color 0.15s, background 0.15s;
+    }
+    .quiz-option:hover:not(:disabled) { border-color: var(--accent-color); }
+    .quiz-option.correct { border-color: var(--good); background: rgba(76,175,80,0.15); }
+    .quiz-option.incorrect { border-color: var(--bad); background: rgba(224,108,117,0.15); }
+    .quiz-option:disabled { cursor: default; }
+
+    .quiz-feedback { margin-top: 8px; font-size: 0.88em; min-height: 1.2em; }
+    .quiz-feedback.good { color: var(--good); }
+    .quiz-feedback.bad { color: var(--bad); }
+
+    #quiz-score-box {
+        text-align: center;
+        padding: 16px;
+        border: 1px dashed var(--border);
+        border-radius: 6px;
+        margin-top: 10px;
+        display: none;
+    }
+
+    #quiz-score-box.show { display: block; }
+
+    /* Type matcher game */
+    .match-game { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+    .match-chip {
+        background: var(--card-bg-2);
+        border: 1px solid var(--border);
+        padding: 8px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.85em;
+        transition: all 0.15s;
+    }
+    .match-chip.selected { border-color: var(--accent-color); background: rgba(86,156,214,0.15); }
+    .match-chip.correct { border-color: var(--good); background: rgba(76,175,80,0.15); pointer-events: none; }
+    .match-dropzones { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+    .dropzone {
+        flex: 1; min-width: 140px;
+        border: 2px dashed var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        text-align: center;
+        color: #999;
+        min-height: 60px;
+    }
+    .dropzone strong { display: block; color: var(--type); margin-bottom: 6px; }
+    .dropzone.filled-good { border-color: var(--good); }
+
+    footer {
+        text-align: center;
+        color: #666;
+        font-size: 0.85em;
+        padding: 30px 20px 50px;
+    }
+
+    @media (max-width: 600px) {
+        header h1 { font-size: 1.7em; }
+        nav#toc { gap: 2px; padding: 8px; }
+        nav#toc a { font-size: 0.75em; padding: 5px 9px; }
+    }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<header>
+    <h1>Основы C#: Перезагрузка</h1>
+    <p class="subtitle">Вспоминаем синтаксис, ООП и знакомимся с магией LINQ</p>
+    <div id="overall-progress-wrap">
+        <div id="overall-progress-track"><div id="overall-progress-fill"></div></div>
+        <div id="overall-progress-label">Прогресс чтения: 0%</div>
+    </div>
+</header>
+
+<nav id="toc">
+    <a href="#s1" data-target="s1">1. Типы данных</a>
+    <a href="#s2" data-target="s2">2. Условия и циклы</a>
+    <a href="#s3" data-target="s3">3. Классы и ООП</a>
+    <a href="#s4" data-target="s4">4. Методы и параметры</a>
+    <a href="#s5" data-target="s5">5. Практика</a>
+    <a href="#s6" data-target="s6">6. Игра: типы</a>
+    <a href="#s7" data-target="s7">7. LINQ</a>
+    <a href="#s8" data-target="s8">8. LINQ-песочница</a>
+    <a href="#s9" data-target="s9">9. Итоговый тест</a>
+</nav>
+
+<div class="container">
+
+    <section id="s1">
+        <span class="badge">БАЗА</span>
+        <h2>1. Типы данных и переменные</h2>
+        <p>C# — строго типизированный язык. Это значит, что при объявлении переменной мы обязаны указать тип данных, который она будет хранить, и компилятор проверит, что мы не пытаемся положить туда что-то другое.</p>
+
+        <table>
+            <tr><th>Тип</th><th>Описание</th><th>Диапазон / особенность</th><th>Пример</th></tr>
+            <tr>
+                <td><span class="kw">int</span></td>
+                <td>Целые числа</td>
+                <td>от −2 147 483 648 до 2 147 483 647</td>
+                <td><code><span class="kw">int</span> score = <span class="num">100</span>;</code></td>
+            </tr>
+            <tr>
+                <td><span class="kw">long</span></td>
+                <td>«Большие» целые числа</td>
+                <td>используется, когда <span class="kw">int</span> переполняется</td>
+                <td><code><span class="kw">long</span> population = <span class="num">8000000000L</span>;</code></td>
+            </tr>
+            <tr>
+                <td><span class="kw">double</span> / <span class="kw">float</span></td>
+                <td>Числа с плавающей точкой</td>
+                <td><span class="kw">double</span> точнее, используется по умолчанию</td>
+                <td><code><span class="kw">double</span> speed = <span class="num">12.5</span>;</code></td>
+            </tr>
+            <tr>
+                <td><span class="kw">decimal</span></td>
+                <td>Точные дробные числа</td>
+                <td>для денег и финансовых расчётов</td>
+                <td><code><span class="kw">decimal</span> price = <span class="num">19.99m</span>;</code></td>
+            </tr>
+            <tr>
+                <td><span class="kw">string</span></td>
+                <td>Текст (строки)</td>
+                <td>неизменяемый (immutable) тип</td>
+                <td><code><span class="kw">string</span> name = <span class="str">"Player"</span>;</code></td>
+            </tr>
+            <tr>
+                <td><span class="kw">bool</span></td>
+                <td>Логический (истина/ложь)</td>
+                <td>только <span class="kw">true</span> или <span class="kw">false</span></td>
+                <td><code><span class="kw">bool</span> isAlive = <span class="kw">true</span>;</code></td>
+            </tr>
+            <tr>
+                <td><span class="kw">char</span></td>
+                <td>Один символ</td>
+                <td>всегда в одинарных кавычках</td>
+                <td><code><span class="kw">char</span> grade = <span class="str">'A'</span>;</code></td>
+            </tr>
+        </table>
+
+        <h3>var — вывод типа</h3>
+        <p>Ключевое слово <code>var</code> не делает переменную «динамической» — тип по-прежнему фиксируется, просто компилятор выводит его сам из правой части выражения.</p>
+<pre><code><span class="kw">var</span> count = <span class="num">10</span>;      <span class="com">// компилятор понимает: это int</span>
+<span class="kw">var</span> title = <span class="str">"Урок"</span>;  <span class="com">// компилятор понимает: это string</span>
+<span class="com">// count = "текст"; — так сделать нельзя, count навсегда int</span></code></pre>
+
+        <h3>const и readonly</h3>
+        <p>Если значение не должно меняться после присвоения, используйте <code>const</code> (значение известно на этапе компиляции) или <code>readonly</code> (можно присвоить один раз, например в конструкторе).</p>
+<pre><code><span class="kw">const</span> <span class="kw">double</span> Pi = <span class="num">3.14159</span>;
+<span class="kw">public</span> <span class="kw">readonly</span> <span class="kw">string</span> Id;</code></pre>
+
+        <h3>Приведение типов (casting)</h3>
+        <p>Неявное преобразование происходит автоматически, если данные не теряются (например, <code>int</code> → <code>double</code>). Явное преобразование требует указать тип в скобках и может привести к потере точности.</p>
+<pre><code><span class="kw">int</span> a = <span class="num">10</span>;
+<span class="kw">double</span> b = a;             <span class="com">// неявно: int -> double, безопасно</span>
+
+<span class="kw">double</span> c = <span class="num">9.7</span>;
+<span class="kw">int</span> d = (<span class="kw">int</span>)c;         <span class="com">// явно: 9.7 -> 9, дробная часть отбрасывается</span></code></pre>
+    </section>
+
+    <section id="s2">
+        <span class="badge">БАЗА</span>
+        <h2>2. Условия и циклы</h2>
+        <p>Конструкции для управления потоком выполнения программы.</p>
+
+        <h3>Условный оператор if-else</h3>
+<pre><code><span class="kw">if</span> (health <= <span class="num">0</span>) {
+    Console.<span class="func">WriteLine</span>(<span class="str">"Game Over"</span>);
+} <span class="kw">else if</span> (health < <span class="num">20</span>) {
+    Console.<span class="func">WriteLine</span>(<span class="str">"Критично мало здоровья!"</span>);
+} <span class="kw">else</span> {
+    Console.<span class="func">WriteLine</span>(<span class="str">"Keep playing!"</span>);
+}</code></pre>
+
+        <h3>switch — когда вариантов много</h3>
+<pre><code><span class="kw">switch</span> (level) {
+    <span class="kw">case</span> <span class="num">1</span>:
+        Console.<span class="func">WriteLine</span>(<span class="str">"Новичок"</span>);
+        <span class="kw">break</span>;
+    <span class="kw">case</span> <span class="num">2</span>:
+        Console.<span class="func">WriteLine</span>(<span class="str">"Опытный"</span>);
+        <span class="kw">break</span>;
+    <span class="kw">default</span>:
+        Console.<span class="func">WriteLine</span>(<span class="str">"Неизвестный уровень"</span>);
+        <span class="kw">break</span>;
+}</code></pre>
+
+        <h3>Цикл for (когда известно количество шагов)</h3>
+<pre><code><span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i < <span class="num">5</span>; i++) {
+    Console.<span class="func">WriteLine</span>(<span class="str">$"Шаг {i}"</span>); <span class="com">// Выполнится 5 раз: 0,1,2,3,4</span>
+}</code></pre>
+
+        <h3>Цикл while и do-while</h3>
+        <p><code>while</code> проверяет условие <em>до</em> выполнения тела, а <code>do-while</code> — <em>после</em>, поэтому тело <code>do-while</code> выполнится хотя бы один раз.</p>
+<pre><code><span class="kw">int</span> ammo = <span class="num">3</span>;
+<span class="kw">while</span> (ammo > <span class="num">0</span>) {
+    Console.<span class="func">WriteLine</span>(<span class="str">"Выстрел!"</span>);
+    ammo--;
+}
+
+<span class="kw">int</span> attempts = <span class="num">0</span>;
+<span class="kw">do</span> {
+    attempts++;
+} <span class="kw">while</span> (attempts < <span class="num">1</span>); <span class="com">// выполнится минимум 1 раз</span></code></pre>
+
+        <h3>Цикл foreach (для перебора коллекций)</h3>
+<pre><code><span class="kw">string</span>[] weapons = { <span class="str">"Sword"</span>, <span class="str">"Bow"</span>, <span class="str">"Axe"</span> };
+<span class="kw">foreach</span> (<span class="kw">var</span> w <span class="kw">in</span> weapons) {
+    Console.<span class="func">WriteLine</span>(w);
+}</code></pre>
+    </section>
+
+    <section id="s3">
+        <span class="badge">ООП</span>
+        <h2>3. Классы и структуры (основы ООП)</h2>
+        <p>Классы (reference types) и структуры (value types) позволяют создавать собственные типы данных, объединяя состояние (поля/свойства) и поведение (методы).</p>
+
+<pre><code><span class="kw">public class</span> <span class="typ">Tank</span> {
+    <span class="com">// Поля — храним данные</span>
+    <span class="kw">private</span> <span class="kw">int</span> armor;
+
+    <span class="com">// Свойства — контролируемый доступ к полям</span>
+    <span class="kw">public string</span> Name { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public int</span> Armor {
+        <span class="kw">get</span> => armor;
+        <span class="kw">set</span> => armor = value < <span class="num">0</span> ? <span class="num">0</span> : value; <span class="com">// не даём уйти в минус</span>
+    }
+
+    <span class="com">// Конструктор — вызывается при создании объекта</span>
+    <span class="kw">public</span> <span class="func">Tank</span>(<span class="kw">string</span> name, <span class="kw">int</span> armor) {
+        Name = name;
+        Armor = armor;
+    }
+
+    <span class="com">// Метод — поведение объекта</span>
+    <span class="kw">public void</span> <span class="func">TakeDamage</span>(<span class="kw">int</span> damage) {
+        Armor -= damage;
+        Console.<span class="func">WriteLine</span>(<span class="str">$"Танк {Name} получил урон! Броня: {Armor}"</span>);
+    }
+}
+
+<span class="com">// Использование</span>
+<span class="typ">Tank</span> myTank = <span class="kw">new</span> <span class="typ">Tank</span>(<span class="str">"Т-34"</span>, <span class="num">100</span>);
+myTank.<span class="func">TakeDamage</span>(<span class="num">20</span>);</code></pre>
+
+        <h3>Поля vs свойства</h3>
+        <p>Поле (<code>field</code>) — просто переменная внутри класса. Свойство (<code>property</code>) выглядит как поле снаружи, но на самом деле это пара методов <code>get</code>/<code>set</code>, которая позволяет добавить логику проверки, как в примере выше с броней, которая не может стать отрицательной.</p>
+
+        <h3>static — принадлежит классу, а не объекту</h3>
+        <p>Обычные поля и методы принадлежат каждому конкретному объекту. Члены с модификатором <code>static</code> — общие для всего класса, их не нужно создавать через <code>new</code>.</p>
+<pre><code><span class="kw">public class</span> <span class="typ">GameStats</span> {
+    <span class="kw">public static int</span> TotalTanksCreated = <span class="num">0</span>;
+}
+
+<span class="com">// Обращение напрямую через имя класса, без new</span>
+<span class="typ">GameStats</span>.TotalTanksCreated++;</code></pre>
+    </section>
+
+    <section id="s4">
+        <span class="badge">БАЗА</span>
+        <h2>4. Методы и параметры</h2>
+        <p>Метод — это именованный блок кода, который можно вызывать многократно. У метода есть тип возвращаемого значения, имя и список параметров.</p>
+
+<pre><code><span class="kw">public int</span> <span class="func">GetMax</span>(<span class="kw">int</span> a, <span class="kw">int</span> b) {
+    <span class="kw">return</span> a > b ? a : b;
+}
+
+<span class="com">// void означает, что метод ничего не возвращает</span>
+<span class="kw">public void</span> <span class="func">PrintHello</span>(<span class="kw">string</span> name) {
+    Console.<span class="func">WriteLine</span>(<span class="str">$"Привет, {name}!"</span>);
+}</code></pre>
+
+        <h3>Параметры по умолчанию</h3>
+<pre><code><span class="kw">public void</span> <span class="func">Heal</span>(<span class="kw">int</span> amount = <span class="num">10</span>) {
+    Console.<span class="func">WriteLine</span>(<span class="str">$"Восстановлено {amount} HP"</span>);
+}
+
+<span class="func">Heal</span>();      <span class="com">// восстановит 10</span>
+<span class="func">Heal</span>(<span class="num">50</span>);    <span class="com">// восстановит 50</span></code></pre>
+
+        <h3>Перегрузка методов (overloading)</h3>
+        <p>Можно объявить несколько методов с одним именем, но разным набором параметров — компилятор сам выберет нужную версию по количеству и типам аргументов.</p>
+<pre><code><span class="kw">public int</span> <span class="func">Add</span>(<span class="kw">int</span> a, <span class="kw">int</span> b) => a + b;
+<span class="kw">public double</span> <span class="func">Add</span>(<span class="kw">double</span> a, <span class="kw">double</span> b) => a + b;
+<span class="kw">public int</span> <span class="func">Add</span>(<span class="kw">int</span> a, <span class="kw">int</span> b, <span class="kw">int</span> c) => a + b + c;</code></pre>
+    </section>
+
+    <section id="s5">
+        <span class="badge">ПРАКТИКА</span>
+        <h2>5. Разминка: практические задания</h2>
+
+        <div class="task">
+            <h3>Задание 1: Функция</h3>
+            <p>Напишите метод <code>GetMax</code>, который принимает два целых числа и возвращает наибольшее из них.</p>
+            <button class="btn" onclick="toggleSolution('sol1', this)">Показать решение</button>
+            <div id="sol1" class="solution">
+<pre><code><span class="kw">public int</span> <span class="func">GetMax</span>(<span class="kw">int</span> a, <span class="kw">int</span> b) {
+    <span class="kw">if</span> (a > b) <span class="kw">return</span> a;
+    <span class="kw">return</span> b;
+    <span class="com">// Или короче: return a > b ? a : b;</span>
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 2: Работа с массивом и циклом</h3>
+            <p>Дан массив чисел: <code>int[] nums = { 10, -5, 20, -3, 8 };</code>. С помощью цикла <code>foreach</code> найдите и выведите только положительные числа.</p>
+            <button class="btn" onclick="toggleSolution('sol2', this)">Показать решение</button>
+            <div id="sol2" class="solution">
+<pre><code><span class="kw">int</span>[] nums = { <span class="num">10</span>, -<span class="num">5</span>, <span class="num">20</span>, -<span class="num">3</span>, <span class="num">8</span> };
+<span class="kw">foreach</span> (<span class="kw">int</span> n <span class="kw">in</span> nums) {
+    <span class="kw">if</span> (n > <span class="num">0</span>) {
+        Console.<span class="func">WriteLine</span>(n);
+    }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 3: Класс со свойством</h3>
+            <p>Создайте класс <code>Player</code> со свойствами <code>Name</code> (string) и <code>Health</code> (int, от 0 до 100), а также методом <code>TakeDamage(int damage)</code>, который не даёт здоровью уйти ниже нуля.</p>
+            <button class="btn" onclick="toggleSolution('sol3', this)">Показать решение</button>
+            <div id="sol3" class="solution">
+<pre><code><span class="kw">public class</span> <span class="typ">Player</span> {
+    <span class="kw">private</span> <span class="kw">int</span> health;
+    <span class="kw">public string</span> Name { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public int</span> Health {
+        <span class="kw">get</span> => health;
+        <span class="kw">set</span> => health = Math.<span class="func">Clamp</span>(value, <span class="num">0</span>, <span class="num">100</span>);
+    }
+
+    <span class="kw">public void</span> <span class="func">TakeDamage</span>(<span class="kw">int</span> damage) {
+        Health -= damage;
+    }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 4: Метод с LINQ</h3>
+            <p>Дан список чисел. Напишите однострочное LINQ-выражение, которое находит сумму только чётных чисел.</p>
+            <button class="btn" onclick="toggleSolution('sol4', this)">Показать решение</button>
+            <div id="sol4" class="solution">
+<pre><code><span class="kw">int</span> sum = numbers.<span class="func">Where</span>(n => n % <span class="num">2</span> == <span class="num">0</span>).<span class="func">Sum</span>();</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section id="s6">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>6. Игра: сопоставь тип данных</h2>
+        <p>Нажмите на значение, а затем на карточку с типом, которому оно соответствует.</p>
+
+        <div class="match-game" id="match-chips"></div>
+        <div class="match-dropzones" id="match-zones"></div>
+        <p id="match-status" style="margin-top:12px; color:#888; font-size:0.9em;"></p>
+    </section>
+
+    <section id="s7">
+        <span class="badge">НОВАЯ ТЕМА · MIDDLE C#</span>
+        <h2>7. LINQ</h2>
+        <p><strong>LINQ (Language-Integrated Query)</strong> — это мощный инструмент в C#, который позволяет работать с коллекциями (массивами, списками) короче, читабельнее и без написания громоздких циклов.</p>
+
+        <p>Императивный подход (циклы) отвечает на вопрос <em>«КАК сделать?»</em>. LINQ — это декларативный подход, он отвечает на вопрос <em>«ЧТО мы хотим получить?»</em>.</p>
+
+        <div class="linq-highlight">
+            <h3>Сравнение: как мы делали раньше vs как делать с LINQ</h3>
+            <p>Задача: у нас есть список танков. Нужно получить список имён всех танков, у которых броня больше 50.</p>
+
+            <p><strong>Старый способ (циклы):</strong></p>
+<pre><code><span class="typ">List</span>&lt;<span class="kw">string</span>&gt; strongTanks = <span class="kw">new</span> <span class="typ">List</span>&lt;<span class="kw">string</span>&gt;();
+<span class="kw">foreach</span> (<span class="kw">var</span> t <span class="kw">in</span> tanks) {
+    <span class="kw">if</span> (t.Armor > <span class="num">50</span>) {
+        strongTanks.<span class="func">Add</span>(t.Name);
+    }
+}</code></pre>
+
+            <p><strong>Новый способ (LINQ):</strong></p>
+<pre><code><span class="com">// Не забудьте using System.Linq; в начале файла</span>
+<span class="kw">var</span> strongTanks = tanks
+    .<span class="func">Where</span>(t => t.Armor > <span class="num">50</span>)    <span class="com">// Фильтруем (оставляем тех, кто с бронёй > 50)</span>
+    .<span class="func">Select</span>(t => t.Name)       <span class="com">// Выбираем только их имена</span>
+    .<span class="func">ToList</span>();                 <span class="com">// Превращаем результат обратно в список</span></code></pre>
+        </div>
+
+        <h3>Базовые методы LINQ</h3>
+        <table>
+            <tr><th>Метод</th><th>Что делает</th><th>Аналог без LINQ</th></tr>
+            <tr><td><code>Where()</code></td><td>Фильтрация элементов по условию</td><td><code>if</code> внутри цикла</td></tr>
+            <tr><td><code>Select()</code></td><td>Трансформация — выбрать/преобразовать свойство</td><td>создание нового списка в цикле</td></tr>
+            <tr><td><code>OrderBy() / OrderByDescending()</code></td><td>Сортировка по возрастанию/убыванию</td><td>ручная сортировка</td></tr>
+            <tr><td><code>FirstOrDefault()</code></td><td>Первый элемент, подходящий под условие, либо null/default</td><td><code>foreach</code> + <code>break</code></td></tr>
+            <tr><td><code>Any()</code></td><td>Есть ли хотя бы один подходящий элемент (bool)</td><td>флаг + цикл</td></tr>
+            <tr><td><code>Count()</code></td><td>Количество элементов (по условию или без)</td><td>счётчик в цикле</td></tr>
+            <tr><td><code>Sum() / Average() / Max() / Min()</code></td><td>Агрегатные вычисления</td><td>накопление в переменной</td></tr>
+        </table>
+
+        <h3>Метод-цепочки и ленивые вычисления</h3>
+        <p>LINQ-запросы можно соединять в цепочку — каждый метод возвращает новую последовательность, к которой можно применить следующий метод. Важно помнить, что многие LINQ-операции выполняются <em>лениво</em>: реальное вычисление происходит только тогда, когда вы перебираете результат (например, вызовом <code>ToList()</code> или в <code>foreach</code>).</p>
+<pre><code><span class="kw">var</span> result = tanks
+    .<span class="func">Where</span>(t => t.Armor > <span class="num">30</span>)
+    .<span class="func">OrderByDescending</span>(t => t.Armor)
+    .<span class="func">Select</span>(t => <span class="str">$"{t.Name} ({t.Armor})"</span>)
+    .<span class="func">ToList</span>();</code></pre>
+    </section>
+
+    <section id="s8">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>8. LINQ-песочница</h2>
+        <p>Настройте фильтр и посмотрите, как меняется LINQ-код и результат в реальном времени. Это тот же список танков, что и в примере выше.</p>
+
+        <div class="playground">
+            <div class="playground-controls">
+                <label>Минимальная броня: <span id="armor-value">50</span>
+                    <input type="range" id="armor-slider" min="0" max="100" step="5" value="50">
+                </label>
+                <label>Сортировка
+                    <select id="sort-select">
+                        <option value="none">Без сортировки</option>
+                        <option value="asc">По возрастанию брони</option>
+                        <option value="desc">По убыванию брони</option>
+                    </select>
+                </label>
+                <label>Что выбрать
+                    <select id="select-select">
+                        <option value="name">Только имена (Select)</option>
+                        <option value="full">Весь объект</option>
+                    </select>
+                </label>
+            </div>
+
+            <div id="linq-generated-code"></div>
+
+            <table id="linq-result-table">
+                <thead><tr><th>Название</th><th>Броня</th><th>Проходит фильтр?</th></tr></thead>
+                <tbody id="linq-result-body"></tbody>
+            </table>
+            <p id="linq-empty-msg" style="display:none;">Ни один танк не проходит фильтр Where(). Попробуйте уменьшить минимальную броню.</p>
+        </div>
+    </section>
+
+    <section id="s9">
+        <span class="badge">ИТОГОВЫЙ ТЕСТ</span>
+        <h2>9. Проверь себя</h2>
+        <p>Пройдите короткий тест по материалу урока. Правильный ответ подсвечивается зелёным, неправильный — красным.</p>
+
+        <div id="quiz-container"></div>
+
+        <button class="btn secondary" id="quiz-reset" style="margin-top:10px;">Пройти заново</button>
+        <div id="quiz-score-box"></div>
+    </section>
+
+</div>
+
+<footer>Урок сгенерирован для повторения основ C# и знакомства с LINQ.</footer>
+
+<script>
+    /* ---------- Toggle solutions ---------- */
+    function toggleSolution(id, btn) {
+        var el = document.getElementById(id);
+        var isOpen = el.style.display === "block";
+        el.style.display = isOpen ? "none" : "block";
+        if (btn) btn.textContent = isOpen ? "Показать решение" : "Скрыть решение";
+    }
+
+    /* ---------- Progress bar + reading progress ---------- */
+    var topProgressBar = document.getElementById('progress-bar');
+    var overallFill = document.getElementById('overall-progress-fill');
+    var overallLabel = document.getElementById('overall-progress-label');
+
+    function updateProgress() {
+        var scrollTop = window.scrollY;
+        var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        var pct = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
+        topProgressBar.style.width = pct + '%';
+        overallFill.style.width = pct + '%';
+        overallLabel.textContent = 'Прогресс чтения: ' + Math.round(pct) + '%';
+    }
+    window.addEventListener('scroll', updateProgress);
+    updateProgress();
+
+    /* ---------- Active nav link on scroll ---------- */
+    var navLinks = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+    var sectionEls = navLinks.map(function(a) { return document.getElementById(a.dataset.target); });
+
+    function updateActiveNav() {
+        var scrollPos = window.scrollY + 100;
+        var activeIndex = 0;
+        for (var i = 0; i < sectionEls.length; i++) {
+            if (sectionEls[i] && sectionEls[i].offsetTop <= scrollPos) activeIndex = i;
+        }
+        navLinks.forEach(function(a, i) {
+            a.classList.toggle('active', i === activeIndex);
+        });
+    }
+    window.addEventListener('scroll', updateActiveNav);
+    updateActiveNav();
+
+    /* ---------- Section 6: type matching game ---------- */
+    var matchData = [
+        { value: '"Привет"', type: 'string' },
+        { value: '42', type: 'int' },
+        { value: 'true', type: 'bool' },
+        { value: "'A'", type: 'char' },
+        { value: '3.14', type: 'double' },
+        { value: '19.99m', type: 'decimal' }
+    ];
+    var matchTypes = ['string', 'int', 'bool', 'char', 'double', 'decimal'];
+    var selectedChip = null;
+    var matchedCount = 0;
+
+    var chipsContainer = document.getElementById('match-chips');
+    var zonesContainer = document.getElementById('match-zones');
+    var matchStatus = document.getElementById('match-status');
+
+    function shuffle(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+        }
+        return a;
+    }
+
+    var shuffledChips = shuffle(matchData);
+    shuffledChips.forEach(function(item) {
+        var chip = document.createElement('div');
+        chip.className = 'match-chip';
+        chip.textContent = item.value;
+        chip.dataset.type = item.type;
+        chip.addEventListener('click', function() {
+            if (chip.classList.contains('correct')) return;
+            document.querySelectorAll('.match-chip.selected').forEach(function(c) { c.classList.remove('selected'); });
+            chip.classList.add('selected');
+            selectedChip = chip;
+            matchStatus.textContent = 'Выбрано: ' + item.value + ' — теперь нажмите на тип';
+        });
+        chipsContainer.appendChild(chip);
+    });
+
+    matchTypes.forEach(function(type) {
+        var zone = document.createElement('div');
+        zone.className = 'dropzone';
+        zone.innerHTML = '<strong>' + type + '</strong>';
+        zone.addEventListener('click', function() {
+            if (!selectedChip) {
+                matchStatus.textContent = 'Сначала выберите значение выше.';
+                return;
+            }
+            if (selectedChip.dataset.type === type) {
+                selectedChip.classList.remove('selected');
+                selectedChip.classList.add('correct');
+                zone.classList.add('filled-good');
+                zone.innerHTML = '<strong>' + type + '</strong>' + selectedChip.textContent;
+                matchedCount++;
+                matchStatus.textContent = 'Верно! (' + matchedCount + '/' + matchData.length + ')';
+                selectedChip = null;
+                if (matchedCount === matchData.length) {
+                    matchStatus.textContent = 'Все типы сопоставлены правильно! 🎉';
+                }
+            } else {
+                matchStatus.textContent = 'Не то. Попробуйте другой тип для ' + selectedChip.textContent + '.';
+            }
+        });
+        zonesContainer.appendChild(zone);
+    });
+
+    /* ---------- Section 8: LINQ playground ---------- */
+    var tanksData = [
+        { name: 'Т-34', armor: 75 },
+        { name: 'Tiger', armor: 90 },
+        { name: 'Sherman', armor: 55 },
+        { name: 'Stuart', armor: 25 },
+        { name: 'Panther', armor: 65 },
+        { name: 'Churchill', armor: 88 },
+        { name: 'BT-7', armor: 15 }
+    ];
+
+    var armorSlider = document.getElementById('armor-slider');
+    var armorValueLabel = document.getElementById('armor-value');
+    var sortSelect = document.getElementById('sort-select');
+    var selectSelect = document.getElementById('select-select');
+    var codeBox = document.getElementById('linq-generated-code');
+    var resultBody = document.getElementById('linq-result-body');
+    var emptyMsg = document.getElementById('linq-empty-msg');
+    var resultTable = document.getElementById('linq-result-table');
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function renderPlayground() {
+        var threshold = parseInt(armorSlider.value, 10);
+        armorValueLabel.textContent = threshold;
+        var sortMode = sortSelect.value;
+        var selectMode = selectSelect.value;
+
+        var codeLines = [];
+        codeLines.push('<span class="kw">var</span> result = tanks');
+        codeLines.push('    .<span class="func">Where</span>(t => t.Armor > <span class="num">' + threshold + '</span>)');
+        if (sortMode === 'asc') codeLines.push('    .<span class="func">OrderBy</span>(t => t.Armor)');
+        if (sortMode === 'desc') codeLines.push('    .<span class="func">OrderByDescending</span>(t => t.Armor)');
+        if (selectMode === 'name') codeLines.push('    .<span class="func">Select</span>(t => t.Name)');
+        codeLines.push('    .<span class="func">ToList</span>();');
+        codeBox.innerHTML = codeLines.join('\n');
+
+        var passing = tanksData.filter(function(t) { return t.armor > threshold; });
+        var failing = tanksData.filter(function(t) { return t.armor <= threshold; });
+
+        if (sortMode === 'asc') passing.sort(function(a, b) { return a.armor - b.armor; });
+        if (sortMode === 'desc') passing.sort(function(a, b) { return b.armor - a.armor; });
+
+        resultBody.innerHTML = '';
+
+        if (passing.length === 0) {
+            resultTable.style.display = 'none';
+            emptyMsg.style.display = 'block';
+        } else {
+            resultTable.style.display = '';
+            emptyMsg.style.display = 'none';
+            passing.forEach(function(t) {
+                var row = document.createElement('tr');
+                var nameCell = selectMode === 'name'
+                    ? '<em>' + escapeHtml(t.name) + '</em>'
+                    : escapeHtml(t.name);
+                row.innerHTML = '<td>' + nameCell + '</td><td>' + t.armor + '</td><td style="color:#4caf50;">✓ да</td>';
+                resultBody.appendChild(row);
+            });
+            failing.forEach(function(t) {
+                var row = document.createElement('tr');
+                row.className = 'filtered-out';
+                row.innerHTML = '<td>' + escapeHtml(t.name) + '</td><td>' + t.armor + '</td><td style="color:#e06c75;">✗ нет</td>';
+                resultBody.appendChild(row);
+            });
+        }
+    }
+
+    armorSlider.addEventListener('input', renderPlayground);
+    sortSelect.addEventListener('change', renderPlayground);
+    selectSelect.addEventListener('change', renderPlayground);
+    renderPlayground();
+
+    /* ---------- Section 9: quiz ---------- */
+    var quizData = [
+        {
+            q: 'Какой тип данных стоит использовать для хранения цены товара, чтобы избежать ошибок округления?',
+            options: ['double', 'decimal', 'float', 'int'],
+            correct: 1,
+            explain: 'decimal предназначен именно для точных финансовых расчётов, в отличие от double и float.'
+        },
+        {
+            q: 'Чем отличается while от do-while?',
+            options: [
+                'Ничем, это одно и то же',
+                'do-while выполняет тело хотя бы один раз, while может не выполнить тело ни разу',
+                'while работает только с массивами',
+                'do-while нельзя использовать с условиями'
+            ],
+            correct: 1,
+            explain: 'do-while проверяет условие после выполнения тела цикла, поэтому тело гарантированно выполнится минимум один раз.'
+        },
+        {
+            q: 'Что делает модификатор static у поля класса?',
+            options: [
+                'Делает поле доступным только внутри метода',
+                'Поле становится общим для всех объектов класса, а не для каждого отдельно',
+                'Поле нельзя изменить после создания',
+                'Поле автоматически становится приватным'
+            ],
+            correct: 1,
+            explain: 'static-поле принадлежит самому классу, а не конкретному экземпляру — оно одно на все объекты.'
+        },
+        {
+            q: 'Какой метод LINQ используют для фильтрации коллекции по условию?',
+            options: ['Select()', 'OrderBy()', 'Where()', 'Sum()'],
+            correct: 2,
+            explain: 'Where() — это аналог if внутри цикла: он оставляет только те элементы, которые удовлетворяют условию.'
+        },
+        {
+            q: 'Что вернёт tanks.Select(t => t.Name)?',
+            options: [
+                'Список танков с бронёй больше 0',
+                'Список только имён танков',
+                'Количество танков',
+                'Отсортированный список танков'
+            ],
+            correct: 1,
+            explain: 'Select() трансформирует каждый элемент коллекции — в данном случае берёт только свойство Name.'
+        }
+    ];
+
+    var quizContainer = document.getElementById('quiz-container');
+    var scoreBox = document.getElementById('quiz-score-box');
+    var answeredCount = 0;
+    var correctCount = 0;
+
+    function buildQuiz() {
+        quizContainer.innerHTML = '';
+        answeredCount = 0;
+        correctCount = 0;
+        scoreBox.classList.remove('show');
+
+        quizData.forEach(function(item, qIndex) {
+            var qDiv = document.createElement('div');
+            qDiv.className = 'quiz-question';
+
+            var qTitle = document.createElement('h4');
+            qTitle.textContent = (qIndex + 1) + '. ' + item.q;
+            qDiv.appendChild(qTitle);
+
+            var optWrap = document.createElement('div');
+            optWrap.className = 'quiz-options';
+
+            var feedback = document.createElement('div');
+            feedback.className = 'quiz-feedback';
+
+            item.options.forEach(function(optText, optIndex) {
+                var optBtn = document.createElement('button');
+                optBtn.className = 'quiz-option';
+                optBtn.textContent = optText;
+                optBtn.addEventListener('click', function() {
+                    var buttons = optWrap.querySelectorAll('.quiz-option');
+                    buttons.forEach(function(b) { b.disabled = true; });
+
+                    if (optIndex === item.correct) {
+                        optBtn.classList.add('correct');
+                        feedback.textContent = 'Верно! ' + item.explain;
+                        feedback.className = 'quiz-feedback good';
+                        correctCount++;
+                    } else {
+                        optBtn.classList.add('incorrect');
+                        buttons[item.correct].classList.add('correct');
+                        feedback.textContent = 'Неверно. ' + item.explain;
+                        feedback.className = 'quiz-feedback bad';
+                    }
+                    answeredCount++;
+                    if (answeredCount === quizData.length) showScore();
+                });
+                optWrap.appendChild(optBtn);
+            });
+
+            qDiv.appendChild(optWrap);
+            qDiv.appendChild(feedback);
+            quizContainer.appendChild(qDiv);
+        });
+    }
+
+    function showScore() {
+        scoreBox.classList.add('show');
+        var pct = Math.round((correctCount / quizData.length) * 100);
+        var msg = pct === 100 ? 'Отлично! Материал усвоен на отлично.' :
+                   pct >= 60 ? 'Хороший результат, но стоит повторить пару тем.' :
+                   'Рекомендуем перечитать урок ещё раз.';
+        scoreBox.innerHTML = '<strong>Результат: ' + correctCount + ' из ' + quizData.length + ' (' + pct + '%)</strong><br><span style="color:#888;">' + msg + '</span>';
+    }
+
+    document.getElementById('quiz-reset').addEventListener('click', buildQuiz);
+    buildQuiz();
+</script>
+
+</body>
+</html>

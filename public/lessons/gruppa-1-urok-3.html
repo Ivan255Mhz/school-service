@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C#: Коллекции и дженерики</title>
+<style>
+    :root {
+        --bg-color: #1e1e1e;
+        --text-color: #d4d4d4;
+        --accent-color: #569cd6;
+        --accent-hover: #4ea8f4;
+        --card-bg: #252526;
+        --card-bg-2: #2b2b2c;
+        --code-bg: #0b0b0b;
+        --keyword: #c586c0;
+        --string: #ce9178;
+        --comment: #6a9955;
+        --number: #b5cea8;
+        --type: #4ec9b0;
+        --func: #dcdcaa;
+        --border: #3a3a3a;
+        --good: #4caf50;
+        --bad: #e06c75;
+        --warn: #d7ba7d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+
+    #progress-bar {
+        position: fixed; top: 0; left: 0; height: 4px; width: 0%;
+        background: linear-gradient(90deg, var(--accent-color), #c586c0);
+        z-index: 1000; transition: width 0.1s ease-out;
+    }
+
+    nav#toc {
+        position: sticky; top: 4px;
+        background-color: rgba(37,37,38,0.97);
+        backdrop-filter: blur(4px);
+        border-bottom: 1px solid var(--border);
+        z-index: 900;
+        display: flex; flex-wrap: wrap; gap: 4px;
+        padding: 10px 16px; justify-content: center;
+    }
+    nav#toc a {
+        color: #9da5b4; text-decoration: none; font-size: 0.85em;
+        padding: 6px 12px; border-radius: 4px; border: 1px solid transparent;
+        white-space: nowrap; transition: color 0.2s, border-color 0.2s;
+    }
+    nav#toc a:hover { color: var(--accent-hover); }
+    nav#toc a.active {
+        color: var(--accent-color); border-color: var(--accent-color);
+        background: rgba(86,156,214,0.08);
+    }
+
+    header {
+        background-color: var(--card-bg); padding: 50px 20px 40px;
+        text-align: center; border-bottom: 2px solid var(--accent-color);
+    }
+    header h1 { margin: 0; font-size: 2.4em; color: var(--accent-color); }
+    header p.subtitle { font-size: 1.15em; color: #888; margin-top: 8px; }
+
+    #overall-progress-wrap { max-width: 400px; margin: 20px auto 0; }
+    #overall-progress-track { background: #111; border-radius: 20px; height: 10px; overflow: hidden; border: 1px solid var(--border); }
+    #overall-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-color), #c586c0); transition: width 0.25s ease-out; }
+    #overall-progress-label { font-size: 0.8em; color: #777; margin-top: 6px; }
+
+    .container { max-width: 920px; margin: 40px auto; padding: 0 20px; }
+
+    section {
+        background-color: var(--card-bg); border-radius: 8px; padding: 30px;
+        margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        scroll-margin-top: 70px;
+    }
+    section > .badge {
+        display: inline-block; font-size: 0.72em; letter-spacing: 0.03em;
+        color: #8f9aa8; background: #1c1c1d; border: 1px solid var(--border);
+        padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+    }
+
+    h2 { color: var(--accent-color); border-bottom: 1px solid #444; padding-bottom: 10px; margin-top: 0; }
+    h3 { color: #ddd; }
+    h4 { color: #bbb; margin-bottom: 6px; }
+    code { font-family: 'Consolas', 'Courier New', monospace; }
+
+    pre {
+        background-color: var(--code-bg); padding: 15px; border-radius: 5px;
+        overflow-x: auto; border: 1px solid #333; font-size: 0.92em;
+    }
+
+    .kw { color: var(--keyword); }
+    .str { color: var(--string); }
+    .com { color: var(--comment); }
+    .num { color: var(--number); }
+    .typ { color: var(--type); }
+    .func { color: var(--func); }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #444; padding: 10px; text-align: left; vertical-align: top; }
+    th { background-color: #333; color: var(--accent-color); }
+
+    .btn {
+        background-color: var(--accent-color); color: #fff; border: none;
+        padding: 10px 20px; cursor: pointer; border-radius: 4px;
+        font-size: 0.95em; font-weight: bold; transition: background 0.2s, transform 0.1s;
+    }
+    .btn:hover { background-color: var(--accent-hover); }
+    .btn:active { transform: scale(0.97); }
+    .btn.secondary { background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); }
+    .btn.secondary:hover { background: rgba(86,156,214,0.1); }
+    .btn.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
+    .btn.danger:hover { background: rgba(224,108,117,0.1); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    .btn-sm { padding: 4px 10px; font-size: 0.78em; border-radius: 4px; }
+
+    .solution { display: none; margin-top: 15px; animation: fadeIn 0.4s; border-left: 3px solid var(--type); padding-left: 14px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .highlight { border-left: 4px solid #c586c0; padding-left: 15px; margin-top: 20px; }
+    .task { background: var(--card-bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+    .task h3 { margin-top: 0; }
+
+    .playground { background: var(--card-bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-top: 20px; }
+    .playground-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+    .playground-controls label { font-size: 0.85em; color: #aaa; display: flex; flex-direction: column; gap: 4px; }
+    .playground-controls input[type="text"], .playground-controls input[type="number"], .playground-controls select {
+        background: #1c1c1d; color: var(--text-color); border: 1px solid var(--border);
+        padding: 7px 10px; border-radius: 4px; min-width: 120px; font-family: inherit;
+    }
+
+    .code-box {
+        background: var(--code-bg); border: 1px solid #333; border-radius: 5px;
+        padding: 14px; font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.9em; margin-bottom: 16px; white-space: pre-wrap;
+    }
+
+    .console {
+        background: #050505; border: 1px solid #333; border-radius: 5px;
+        padding: 12px 14px; font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.88em; min-height: 60px; max-height: 220px; overflow-y: auto;
+    }
+    .console .line { padding: 3px 0; border-bottom: 1px dashed #1f1f1f; }
+    .console .line:last-child { border-bottom: none; }
+    .console .prefix { color: #6a9955; }
+    .console .placeholder { color: #555; font-style: italic; }
+
+    /* Visual list / dict boxes */
+    .visual-boxes { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; min-height: 46px; }
+    .visual-item {
+        background: #1c1c1d; border: 1px solid var(--type); border-radius: 6px;
+        padding: 8px 14px; font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.85em; display: flex; align-items: center; gap: 8px;
+        animation: fadeIn 0.3s;
+    }
+    .visual-item .idx { color: #666; font-size: 0.8em; }
+    .visual-item .remove-x { cursor: pointer; color: var(--bad); font-weight: bold; }
+    .visual-item .remove-x:hover { color: #ff8a94; }
+    .visual-empty { color: #666; font-style: italic; font-size: 0.9em; padding: 10px 0; }
+
+    .dict-pair { display: flex; align-items: center; gap: 6px; }
+    .dict-pair .key { color: var(--warn); }
+    .dict-pair .arrow { color: #666; }
+    .dict-pair .val { color: var(--string); }
+
+    /* Generic box visual */
+    .generic-box-visual {
+        border: 2px dashed var(--type);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        margin: 16px 0;
+        background: rgba(78,201,176,0.05);
+    }
+    .generic-box-visual .box-type { color: var(--type); font-size: 0.85em; margin-bottom: 8px; }
+    .generic-box-visual .box-value { font-size: 1.3em; font-family: 'Consolas', 'Courier New', monospace; color: #fff; }
+
+    /* Sorting game reused */
+    .sort-chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+    .sort-chip {
+        background: var(--card-bg-2); border: 1px solid var(--border);
+        padding: 8px 14px; border-radius: 20px; cursor: pointer;
+        font-size: 0.85em; transition: all 0.15s;
+    }
+    .sort-chip.selected { border-color: var(--accent-color); background: rgba(86,156,214,0.15); }
+    .sort-chip.placed { display: none; }
+    .sort-zones { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+    .sort-zone { flex: 1; min-width: 220px; border: 2px dashed var(--border); border-radius: 6px; padding: 12px; min-height: 120px; }
+    .sort-zone strong { display: block; color: var(--type); margin-bottom: 8px; }
+    .sort-zone .placed-item {
+        background: rgba(76,175,80,0.1); border: 1px solid var(--good); border-radius: 4px;
+        padding: 5px 8px; margin-bottom: 6px; font-size: 0.83em;
+    }
+    #sort-status { margin-top: 12px; color: #888; font-size: 0.9em; }
+
+    /* Quiz */
+    .quiz-question { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .quiz-question:last-child { border-bottom: none; }
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .quiz-option {
+        background: var(--card-bg-2); border: 1px solid var(--border); color: var(--text-color);
+        text-align: left; padding: 10px 14px; border-radius: 5px; cursor: pointer;
+        font-size: 0.95em; transition: border-color 0.15s, background 0.15s;
+    }
+    .quiz-option:hover:not(:disabled) { border-color: var(--accent-color); }
+    .quiz-option.correct { border-color: var(--good); background: rgba(76,175,80,0.15); }
+    .quiz-option.incorrect { border-color: var(--bad); background: rgba(224,108,117,0.15); }
+    .quiz-option:disabled { cursor: default; }
+    .quiz-feedback { margin-top: 8px; font-size: 0.88em; min-height: 1.2em; }
+    .quiz-feedback.good { color: var(--good); }
+    .quiz-feedback.bad { color: var(--bad); }
+    #quiz-score-box { text-align: center; padding: 16px; border: 1px dashed var(--border); border-radius: 6px; margin-top: 10px; display: none; }
+    #quiz-score-box.show { display: block; }
+
+    footer { text-align: center; color: #666; font-size: 0.85em; padding: 30px 20px 50px; }
+
+    @media (max-width: 600px) {
+        header h1 { font-size: 1.6em; }
+        nav#toc { gap: 2px; padding: 8px; }
+        nav#toc a { font-size: 0.72em; padding: 5px 8px; }
+    }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<header>
+    <h1>C#: Коллекции и дженерики</h1>
+    <p class="subtitle">List, Dictionary, HashSet и как писать код, который работает с любым типом</p>
+    <div id="overall-progress-wrap">
+        <div id="overall-progress-track"><div id="overall-progress-fill"></div></div>
+        <div id="overall-progress-label">Прогресс чтения: 0%</div>
+    </div>
+</header>
+
+<nav id="toc">
+    <a href="#s1" data-target="s1">1. Зачем коллекции</a>
+    <a href="#s2" data-target="s2">2. List&lt;T&gt;</a>
+    <a href="#s3" data-target="s3">3. List-песочница</a>
+    <a href="#s4" data-target="s4">4. Dictionary</a>
+    <a href="#s5" data-target="s5">5. Dictionary-песочница</a>
+    <a href="#s6" data-target="s6">6. HashSet&lt;T&gt;</a>
+    <a href="#s7" data-target="s7">7. Дженерики</a>
+    <a href="#s8" data-target="s8">8. Generic-конструктор</a>
+    <a href="#s9" data-target="s9">9. Игра-сортировка</a>
+    <a href="#s10" data-target="s10">10. Практика</a>
+    <a href="#s11" data-target="s11">11. Итоговый тест</a>
+</nav>
+
+<div class="container">
+
+    <section id="s1">
+        <span class="badge">ADVANCED · КОЛЛЕКЦИИ</span>
+        <h2>1. Зачем нужны коллекции</h2>
+        <p>Массив (<code>int[]</code>, <code>string[]</code>) — самая простая коллекция, но у него есть жёсткое ограничение: размер задаётся один раз и не меняется. Если элементов станет больше, массив придётся пересоздавать вручную.</p>
+
+<pre><code><span class="kw">int</span>[] scores = <span class="kw">new</span> <span class="kw">int</span>[<span class="num">3</span>];
+scores[<span class="num">0</span>] = <span class="num">10</span>;
+scores[<span class="num">1</span>] = <span class="num">20</span>;
+<span class="com">// scores[3] = 30; — ОШИБКА: IndexOutOfRangeException, места больше нет</span></code></pre>
+
+        <p>Пространство имён <code>System.Collections.Generic</code> предлагает готовые структуры данных, которые сами управляют размером и оптимизированы под конкретные задачи:</p>
+
+        <table>
+            <tr><th>Коллекция</th><th>Когда использовать</th></tr>
+            <tr><td><code>List&lt;T&gt;</code></td><td>Динамический список — когда нужен упорядоченный набор элементов, который может расти</td></tr>
+            <tr><td><code>Dictionary&lt;TKey, TValue&gt;</code></td><td>Пары «ключ → значение» — когда нужен быстрый поиск по ключу (например, по имени игрока)</td></tr>
+            <tr><td><code>HashSet&lt;T&gt;</code></td><td>Набор уникальных элементов — когда важно, чтобы не было дублей, а порядок не важен</td></tr>
+            <tr><td><code>Queue&lt;T&gt; / Stack&lt;T&gt;</code></td><td>Очередь (FIFO) и стек (LIFO) — для задач вроде истории действий или обработки заявок по очереди</td></tr>
+        </table>
+    </section>
+
+    <section id="s2">
+        <span class="badge">ADVANCED · КОЛЛЕКЦИИ</span>
+        <h2>2. List&lt;T&gt; — динамический список</h2>
+        <p><code>List&lt;T&gt;</code> ведёт себя как массив, но умеет расти и уменьшаться сам. Буква <code>T</code> в угловых скобках — это тип элементов, который вы указываете при объявлении: <code>List&lt;int&gt;</code>, <code>List&lt;string&gt;</code>, <code>List&lt;Tank&gt;</code> и так далее.</p>
+
+<pre><code><span class="kw">using</span> System.Collections.Generic;
+
+<span class="typ">List</span>&lt;<span class="kw">string</span>&gt; names = <span class="kw">new</span> <span class="typ">List</span>&lt;<span class="kw">string</span>&gt;();
+names.<span class="func">Add</span>(<span class="str">"Alex"</span>);
+names.<span class="func">Add</span>(<span class="str">"Maria"</span>);
+names.<span class="func">Remove</span>(<span class="str">"Alex"</span>);       <span class="com">// удаляет первое совпадение по значению</span>
+names.<span class="func">RemoveAt</span>(<span class="num">0</span>);          <span class="com">// удаляет по индексу</span>
+
+Console.<span class="func">WriteLine</span>(names.Count);   <span class="com">// количество элементов сейчас</span>
+Console.<span class="func">WriteLine</span>(names[<span class="num">0</span>]);   <span class="com">// доступ по индексу, как в массиве</span></code></pre>
+
+        <h3>Полезные методы List&lt;T&gt;</h3>
+        <table>
+            <tr><th>Метод</th><th>Что делает</th></tr>
+            <tr><td><code>Add(item)</code></td><td>Добавляет элемент в конец</td></tr>
+            <tr><td><code>Remove(item)</code></td><td>Удаляет первое совпадение по значению</td></tr>
+            <tr><td><code>RemoveAt(index)</code></td><td>Удаляет элемент по индексу</td></tr>
+            <tr><td><code>Contains(item)</code></td><td>Проверяет, есть ли элемент (bool)</td></tr>
+            <tr><td><code>Sort()</code></td><td>Сортирует список на месте</td></tr>
+            <tr><td><code>Count</code></td><td>Свойство — текущее количество элементов</td></tr>
+        </table>
+    </section>
+
+    <section id="s3">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>3. Песочница: List&lt;string&gt;</h2>
+        <p>Добавляйте и удаляйте элементы — код и визуализация списка обновляются в реальном времени.</p>
+
+        <div class="playground">
+            <div class="playground-controls">
+                <label>Новый элемент
+                    <input type="text" id="list-input" placeholder="например, Archer" maxlength="16">
+                </label>
+                <button class="btn" id="list-add-btn">Add()</button>
+                <button class="btn secondary" id="list-sort-btn">Sort()</button>
+                <button class="btn danger" id="list-clear-btn">Clear()</button>
+            </div>
+
+            <div class="code-box" id="list-code-box"></div>
+
+            <p style="font-size:0.85em; color:#999; margin-bottom:4px;">names.Count = <span id="list-count">0</span></p>
+            <div class="visual-boxes" id="list-visual"></div>
+        </div>
+    </section>
+
+    <section id="s4">
+        <span class="badge">ADVANCED · КОЛЛЕКЦИИ</span>
+        <h2>4. Dictionary&lt;TKey, TValue&gt;</h2>
+        <p><code>Dictionary</code> хранит пары «ключ → значение» и позволяет находить значение по ключу почти мгновенно, без перебора всей коллекции — в отличие от поиска в <code>List&lt;T&gt;</code>.</p>
+
+<pre><code><span class="typ">Dictionary</span>&lt;<span class="kw">string</span>, <span class="kw">int</span>&gt; hp = <span class="kw">new</span> <span class="typ">Dictionary</span>&lt;<span class="kw">string</span>, <span class="kw">int</span>&gt;();
+hp[<span class="str">"Warrior"</span>] = <span class="num">120</span>;
+hp[<span class="str">"Mage"</span>] = <span class="num">70</span>;
+
+<span class="com">// безопасный поиск, не выбросит исключение, если ключа нет</span>
+<span class="kw">if</span> (hp.<span class="func">TryGetValue</span>(<span class="str">"Mage"</span>, <span class="kw">out</span> <span class="kw">int</span> mageHp)) {
+    Console.<span class="func">WriteLine</span>(<span class="str">$"HP мага: {mageHp}"</span>);
+}
+
+<span class="kw">foreach</span> (<span class="kw">var</span> pair <span class="kw">in</span> hp) {
+    Console.<span class="func">WriteLine</span>(<span class="str">$"{pair.Key}: {pair.Value}"</span>);
+}</code></pre>
+
+        <p><strong>Важно:</strong> обращение <code>hp["Elf"]</code> к несуществующему ключу выбросит <code>KeyNotFoundException</code>, поэтому для безопасной проверки используют <code>TryGetValue</code> или <code>ContainsKey</code>.</p>
+    </section>
+
+    <section id="s5">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>5. Песочница: Dictionary&lt;string, int&gt;</h2>
+        <p>Добавляйте пары «имя → HP» и попробуйте найти значение по ключу.</p>
+
+        <div class="playground">
+            <div class="playground-controls">
+                <label>Ключ (имя)
+                    <input type="text" id="dict-key-input" placeholder="Warrior" maxlength="14">
+                </label>
+                <label>Значение (HP)
+                    <input type="number" id="dict-val-input" placeholder="100" min="0" max="999">
+                </label>
+                <button class="btn" id="dict-add-btn">hp[key] = value</button>
+                <button class="btn danger" id="dict-clear-btn">Clear()</button>
+            </div>
+
+            <div class="playground-controls">
+                <label>Найти по ключу
+                    <input type="text" id="dict-lookup-input" placeholder="Введите ключ...">
+                </label>
+                <button class="btn secondary" id="dict-lookup-btn">TryGetValue()</button>
+            </div>
+
+            <div class="console" id="dict-console"><div class="line placeholder">// Здесь появится результат поиска...</div></div>
+
+            <p style="font-size:0.85em; color:#999; margin: 14px 0 4px;">Содержимое словаря:</p>
+            <div class="visual-boxes" id="dict-visual"></div>
+        </div>
+    </section>
+
+    <section id="s6">
+        <span class="badge">ADVANCED · КОЛЛЕКЦИИ</span>
+        <h2>6. HashSet&lt;T&gt; — только уникальные значения</h2>
+        <p><code>HashSet&lt;T&gt;</code> похож на <code>List&lt;T&gt;</code>, но автоматически отбрасывает дубликаты и не гарантирует порядок элементов. Это идеальный выбор, когда важно только «есть элемент или нет», а не его позиция.</p>
+
+<pre><code><span class="typ">HashSet</span>&lt;<span class="kw">string</span>&gt; visitedRooms = <span class="kw">new</span> <span class="typ">HashSet</span>&lt;<span class="kw">string</span>&gt;();
+visitedRooms.<span class="func">Add</span>(<span class="str">"Зал"</span>);
+visitedRooms.<span class="func">Add</span>(<span class="str">"Кухня"</span>);
+<span class="kw">bool</span> added = visitedRooms.<span class="func">Add</span>(<span class="str">"Зал"</span>); <span class="com">// вернёт false — "Зал" уже есть, дубликат не добавится</span>
+
+Console.<span class="func">WriteLine</span>(visitedRooms.Count); <span class="com">// 2, а не 3</span></code></pre>
+
+        <p>Ещё одна сильная сторона <code>HashSet&lt;T&gt;</code> — быстрые операции над множествами: <code>UnionWith()</code> (объединение), <code>IntersectWith()</code> (пересечение), <code>ExceptWith()</code> (разность), как в математической теории множеств.</p>
+    </section>
+
+    <section id="s7">
+        <span class="badge">ADVANCED · GENERICS</span>
+        <h2>7. Дженерики: пишем код для любого типа</h2>
+        <p><code>List&lt;T&gt;</code> и <code>Dictionary&lt;TKey,TValue&gt;</code> — сами по себе примеры <strong>обобщённых (generic)</strong> типов. Но вы тоже можете писать свои обобщённые методы и классы — это позволяет один раз написать логику, которая будет работать с любым типом данных, сохраняя строгую типизацию.</p>
+
+        <h3>Обобщённый метод</h3>
+<pre><code><span class="com">// T - это "заглушка" для типа, компилятор подставит реальный тип при вызове</span>
+<span class="kw">public</span> T <span class="func">GetFirst</span>&lt;T&gt;(<span class="typ">List</span>&lt;T&gt; items) {
+    <span class="kw">return</span> items[<span class="num">0</span>];
+}
+
+<span class="kw">int</span> firstNumber = <span class="func">GetFirst</span>(<span class="kw">new</span> <span class="typ">List</span>&lt;<span class="kw">int</span>&gt; { <span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span> });      <span class="com">// T = int</span>
+<span class="kw">string</span> firstName = <span class="func">GetFirst</span>(<span class="kw">new</span> <span class="typ">List</span>&lt;<span class="kw">string</span>&gt; { <span class="str">"Alex"</span>, <span class="str">"Maria"</span> }); <span class="com">// T = string</span></code></pre>
+
+        <h3>Обобщённый класс</h3>
+        <p>Классический пример — «коробка», которая может хранить значение любого типа:</p>
+<pre><code><span class="kw">public class</span> <span class="typ">Box</span>&lt;T&gt; {
+    <span class="kw">public</span> T Value { <span class="kw">get</span>; <span class="kw">set</span>; }
+
+    <span class="kw">public</span> <span class="func">Box</span>(T value) {
+        Value = value;
+    }
+
+    <span class="kw">public void</span> <span class="func">Show</span>() {
+        Console.<span class="func">WriteLine</span>(<span class="str">$"В коробке лежит: {Value}"</span>);
+    }
+}
+
+<span class="typ">Box</span>&lt;<span class="kw">int</span>&gt; intBox = <span class="kw">new</span> <span class="typ">Box</span>&lt;<span class="kw">int</span>&gt;(<span class="num">42</span>);
+<span class="typ">Box</span>&lt;<span class="kw">string</span>&gt; strBox = <span class="kw">new</span> <span class="typ">Box</span>&lt;<span class="kw">string</span>&gt;(<span class="str">"Привет"</span>);</code></pre>
+
+        <h3>Ограничения типа (where)</h3>
+        <p>Иногда нужно ограничить, какие типы допустимы для <code>T</code> — например, потребовать, чтобы у типа был пустой конструктор, или чтобы он реализовывал определённый интерфейс. Для этого используется <code>where</code>.</p>
+<pre><code><span class="com">// T обязан реализовывать IDamageable (интерфейс из прошлого урока)</span>
+<span class="kw">public void</span> <span class="func">ApplyDamage</span>&lt;T&gt;(T target, <span class="kw">int</span> amount) <span class="kw">where</span> T : <span class="typ">IDamageable</span> {
+    target.<span class="func">TakeDamage</span>(amount);
+}</code></pre>
+    </section>
+
+    <section id="s8">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>8. Generic-конструктор: Box&lt;T&gt;</h2>
+        <p>Выберите тип <code>T</code> и введите значение — посмотрите, как один и тот же класс <code>Box&lt;T&gt;</code> работает с разными типами данных, сохраняя строгую типизацию.</p>
+
+        <div class="playground">
+            <div class="playground-controls">
+                <label>Тип T
+                    <select id="box-type-select">
+                        <option value="int">int</option>
+                        <option value="string">string</option>
+                        <option value="bool">bool</option>
+                        <option value="double">double</option>
+                    </select>
+                </label>
+                <label>Значение
+                    <input type="text" id="box-value-input" placeholder="Введите значение">
+                </label>
+                <button class="btn" id="box-create-btn">new Box&lt;T&gt;(value)</button>
+            </div>
+
+            <div class="code-box" id="box-code-box"></div>
+            <div class="generic-box-visual" id="box-visual">
+                <div class="box-type">Box&lt;?&gt; — создайте коробку выше</div>
+                <div class="box-value">пусто</div>
+            </div>
+            <p id="box-error" style="color:var(--bad); font-size:0.85em; display:none;"></p>
+        </div>
+    </section>
+
+    <section id="s9">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>9. Игра: какую коллекцию выбрать?</h2>
+        <p>Распределите ситуации по подходящей коллекции.</p>
+
+        <div class="sort-chips" id="sort-chips"></div>
+        <div class="sort-zones">
+            <div class="sort-zone" data-zone="list"><strong>List&lt;T&gt;</strong><div class="zone-items"></div></div>
+            <div class="sort-zone" data-zone="dict"><strong>Dictionary&lt;TKey,TValue&gt;</strong><div class="zone-items"></div></div>
+            <div class="sort-zone" data-zone="set"><strong>HashSet&lt;T&gt;</strong><div class="zone-items"></div></div>
+        </div>
+        <p id="sort-status"></p>
+    </section>
+
+    <section id="s10">
+        <span class="badge">ПРАКТИКА</span>
+        <h2>10. Практические задания</h2>
+
+        <div class="task">
+            <h3>Задание 1: List&lt;T&gt;</h3>
+            <p>Создайте <code>List&lt;int&gt;</code> с числами 5, 12, 8, 20, 3. Найдите и выведите наибольшее число без использования LINQ (циклом).</p>
+            <button class="btn" onclick="toggleSolution('sol1', this)">Показать решение</button>
+            <div id="sol1" class="solution">
+<pre><code><span class="typ">List</span>&lt;<span class="kw">int</span>&gt; numbers = <span class="kw">new</span> <span class="typ">List</span>&lt;<span class="kw">int</span>&gt; { <span class="num">5</span>, <span class="num">12</span>, <span class="num">8</span>, <span class="num">20</span>, <span class="num">3</span> };
+<span class="kw">int</span> max = numbers[<span class="num">0</span>];
+<span class="kw">foreach</span> (<span class="kw">int</span> n <span class="kw">in</span> numbers) {
+    <span class="kw">if</span> (n > max) max = n;
+}
+Console.<span class="func">WriteLine</span>(max); <span class="com">// 20</span></code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 2: Dictionary</h3>
+            <p>Создайте <code>Dictionary&lt;string, int&gt;</code> с ценами товаров. Безопасно проверьте, есть ли товар «Меч», и выведите его цену, если он есть.</p>
+            <button class="btn" onclick="toggleSolution('sol2', this)">Показать решение</button>
+            <div id="sol2" class="solution">
+<pre><code><span class="typ">Dictionary</span>&lt;<span class="kw">string</span>, <span class="kw">int</span>&gt; prices = <span class="kw">new</span> <span class="typ">Dictionary</span>&lt;<span class="kw">string</span>, <span class="kw">int</span>&gt; {
+    { <span class="str">"Меч"</span>, <span class="num">150</span> },
+    { <span class="str">"Щит"</span>, <span class="num">90</span> }
+};
+
+<span class="kw">if</span> (prices.<span class="func">TryGetValue</span>(<span class="str">"Меч"</span>, <span class="kw">out</span> <span class="kw">int</span> price)) {
+    Console.<span class="func">WriteLine</span>(<span class="str">$"Цена меча: {price}"</span>);
+} <span class="kw">else</span> {
+    Console.<span class="func">WriteLine</span>(<span class="str">"Товар не найден"</span>);
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 3: HashSet</h3>
+            <p>Дан массив <code>string[] tags = {"rpg","action","rpg","indie","action"}</code>. С помощью <code>HashSet&lt;string&gt;</code> получите список уникальных тегов.</p>
+            <button class="btn" onclick="toggleSolution('sol3', this)">Показать решение</button>
+            <div id="sol3" class="solution">
+<pre><code><span class="kw">string</span>[] tags = { <span class="str">"rpg"</span>, <span class="str">"action"</span>, <span class="str">"rpg"</span>, <span class="str">"indie"</span>, <span class="str">"action"</span> };
+<span class="typ">HashSet</span>&lt;<span class="kw">string</span>&gt; uniqueTags = <span class="kw">new</span> <span class="typ">HashSet</span>&lt;<span class="kw">string</span>&gt;(tags);
+<span class="com">// uniqueTags содержит: "rpg", "action", "indie" — по одному разу</span></code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 4: свой обобщённый класс</h3>
+            <p>Напишите обобщённый класс <code>Pair&lt;T1, T2&gt;</code>, который хранит два значения разных типов (свойства <code>First</code> и <code>Second</code>).</p>
+            <button class="btn" onclick="toggleSolution('sol4', this)">Показать решение</button>
+            <div id="sol4" class="solution">
+<pre><code><span class="kw">public class</span> <span class="typ">Pair</span>&lt;T1, T2&gt; {
+    <span class="kw">public</span> T1 First { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public</span> T2 Second { <span class="kw">get</span>; <span class="kw">set</span>; }
+
+    <span class="kw">public</span> <span class="func">Pair</span>(T1 first, T2 second) {
+        First = first;
+        Second = second;
+    }
+}
+
+<span class="kw">var</span> p = <span class="kw">new</span> <span class="typ">Pair</span>&lt;<span class="kw">string</span>, <span class="kw">int</span>&gt;(<span class="str">"Уровень"</span>, <span class="num">5</span>);</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section id="s11">
+        <span class="badge">ИТОГОВЫЙ ТЕСТ</span>
+        <h2>11. Проверь себя</h2>
+        <p>Пройдите тест по коллекциям и дженерикам.</p>
+
+        <div id="quiz-container"></div>
+
+        <button class="btn secondary" id="quiz-reset" style="margin-top:10px;">Пройти заново</button>
+        <div id="quiz-score-box"></div>
+    </section>
+
+</div>
+
+<footer>Урок про коллекции (List, Dictionary, HashSet) и обобщённое программирование (generics) в C#.</footer>
+
+<script>
+    /* ---------- Toggle solutions ---------- */
+    function toggleSolution(id, btn) {
+        var el = document.getElementById(id);
+        var isOpen = el.style.display === "block";
+        el.style.display = isOpen ? "none" : "block";
+        if (btn) btn.textContent = isOpen ? "Показать решение" : "Скрыть решение";
+    }
+
+    /* ---------- Progress bar ---------- */
+    var topProgressBar = document.getElementById('progress-bar');
+    var overallFill = document.getElementById('overall-progress-fill');
+    var overallLabel = document.getElementById('overall-progress-label');
+
+    function updateProgress() {
+        var scrollTop = window.scrollY;
+        var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        var pct = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
+        topProgressBar.style.width = pct + '%';
+        overallFill.style.width = pct + '%';
+        overallLabel.textContent = 'Прогресс чтения: ' + Math.round(pct) + '%';
+    }
+    window.addEventListener('scroll', updateProgress);
+    updateProgress();
+
+    /* ---------- Active nav ---------- */
+    var navLinks = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+    var sectionEls = navLinks.map(function(a) { return document.getElementById(a.dataset.target); });
+
+    function updateActiveNav() {
+        var scrollPos = window.scrollY + 100;
+        var activeIndex = 0;
+        for (var i = 0; i < sectionEls.length; i++) {
+            if (sectionEls[i] && sectionEls[i].offsetTop <= scrollPos) activeIndex = i;
+        }
+        navLinks.forEach(function(a, i) { a.classList.toggle('active', i === activeIndex); });
+    }
+    window.addEventListener('scroll', updateActiveNav);
+    updateActiveNav();
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    /* ---------- Section 3: List playground ---------- */
+    var listData = ['Warrior', 'Mage'];
+    var listInput = document.getElementById('list-input');
+    var listCodeBox = document.getElementById('list-code-box');
+    var listVisual = document.getElementById('list-visual');
+    var listCount = document.getElementById('list-count');
+
+    function renderList() {
+        listCount.textContent = listData.length;
+        listVisual.innerHTML = '';
+        if (listData.length === 0) {
+            listVisual.innerHTML = '<div class="visual-empty">Список пуст</div>';
+        } else {
+            listData.forEach(function(item, i) {
+                var el = document.createElement('div');
+                el.className = 'visual-item';
+                el.innerHTML = '<span class="idx">[' + i + ']</span> ' + escapeHtml(item) +
+                    ' <span class="remove-x" data-idx="' + i + '">×</span>';
+                listVisual.appendChild(el);
+            });
+        }
+        var arrLiteral = listData.length
+            ? listData.map(function(s) { return '<span class="str">"' + escapeHtml(s) + '"</span>'; }).join(', ')
+            : '';
+        listCodeBox.innerHTML =
+            '<span class="typ">List</span>&lt;<span class="kw">string</span>&gt; names = <span class="kw">new</span> <span class="typ">List</span>&lt;<span class="kw">string</span>&gt;() { ' + arrLiteral + ' };\n' +
+            '<span class="com">// names.Count == ' + listData.length + '</span>';
+
+        listVisual.querySelectorAll('.remove-x').forEach(function(x) {
+            x.addEventListener('click', function() {
+                listData.splice(parseInt(x.dataset.idx, 10), 1);
+                renderList();
+            });
+        });
+    }
+
+    document.getElementById('list-add-btn').addEventListener('click', function() {
+        var val = listInput.value.trim();
+        if (!val) return;
+        listData.push(val);
+        listInput.value = '';
+        renderList();
+    });
+    listInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') document.getElementById('list-add-btn').click();
+    });
+    document.getElementById('list-sort-btn').addEventListener('click', function() {
+        listData.sort();
+        renderList();
+    });
+    document.getElementById('list-clear-btn').addEventListener('click', function() {
+        listData = [];
+        renderList();
+    });
+    renderList();
+
+    /* ---------- Section 5: Dictionary playground ---------- */
+    var dictData = { 'Warrior': 120, 'Mage': 70 };
+    var dictKeyInput = document.getElementById('dict-key-input');
+    var dictValInput = document.getElementById('dict-val-input');
+    var dictVisual = document.getElementById('dict-visual');
+    var dictConsole = document.getElementById('dict-console');
+
+    function renderDict() {
+        var keys = Object.keys(dictData);
+        dictVisual.innerHTML = '';
+        if (keys.length === 0) {
+            dictVisual.innerHTML = '<div class="visual-empty">Словарь пуст</div>';
+        } else {
+            keys.forEach(function(k) {
+                var el = document.createElement('div');
+                el.className = 'visual-item';
+                el.innerHTML = '<span class="dict-pair"><span class="key">"' + escapeHtml(k) +
+                    '"</span><span class="arrow">&rarr;</span><span class="val">' + dictData[k] + '</span></span>' +
+                    ' <span class="remove-x" data-key="' + escapeHtml(k) + '">×</span>';
+                dictVisual.appendChild(el);
+            });
+        }
+        dictVisual.querySelectorAll('.remove-x').forEach(function(x) {
+            x.addEventListener('click', function() {
+                delete dictData[x.dataset.key];
+                renderDict();
+            });
+        });
+    }
+
+    document.getElementById('dict-add-btn').addEventListener('click', function() {
+        var key = dictKeyInput.value.trim();
+        var val = parseInt(dictValInput.value, 10);
+        if (!key || isNaN(val)) return;
+        dictData[key] = val;
+        dictKeyInput.value = '';
+        dictValInput.value = '';
+        renderDict();
+    });
+    document.getElementById('dict-clear-btn').addEventListener('click', function() {
+        dictData = {};
+        renderDict();
+    });
+    document.getElementById('dict-lookup-btn').addEventListener('click', function() {
+        var key = document.getElementById('dict-lookup-input').value.trim();
+        var line = document.createElement('div');
+        line.className = 'line';
+        if (Object.prototype.hasOwnProperty.call(dictData, key)) {
+            line.innerHTML = '<span class="prefix">&gt;</span> hp.TryGetValue("' + escapeHtml(key) + '", out int value) &rarr; <span style="color:#4caf50;">true</span>, value = ' + dictData[key];
+        } else {
+            line.innerHTML = '<span class="prefix">&gt;</span> hp.TryGetValue("' + escapeHtml(key) + '", out int value) &rarr; <span style="color:#e06c75;">false</span> (ключ не найден)';
+        }
+        dictConsole.innerHTML = '';
+        dictConsole.appendChild(line);
+    });
+    renderDict();
+
+    /* ---------- Section 8: Generic Box<T> ---------- */
+    var boxTypeSelect = document.getElementById('box-type-select');
+    var boxValueInput = document.getElementById('box-value-input');
+    var boxCodeBox = document.getElementById('box-code-box');
+    var boxVisual = document.getElementById('box-visual');
+    var boxError = document.getElementById('box-error');
+
+    function validateForType(type, raw) {
+        if (type === 'int') {
+            if (!/^-?\d+$/.test(raw)) return null;
+            return parseInt(raw, 10).toString();
+        }
+        if (type === 'double') {
+            if (!/^-?\d+(\.\d+)?$/.test(raw)) return null;
+            return raw;
+        }
+        if (type === 'bool') {
+            if (raw !== 'true' && raw !== 'false') return null;
+            return raw;
+        }
+        return raw; // string accepts anything
+    }
+
+    document.getElementById('box-create-btn').addEventListener('click', function() {
+        var type = boxTypeSelect.value;
+        var raw = boxValueInput.value.trim();
+        boxError.style.display = 'none';
+        if (!raw) { return; }
+        var validated = validateForType(type, raw);
+        if (validated === null) {
+            boxError.textContent = 'Ошибка компиляции: "' + raw + '" нельзя присвоить переменной типа ' + type + '.';
+            boxError.style.display = 'block';
+            boxVisual.querySelector('.box-type').textContent = 'Box<' + type + '> — ошибка типа!';
+            boxVisual.querySelector('.box-value').textContent = '⚠ несовместимый тип';
+            return;
+        }
+        var displayVal = type === 'string' ? '"' + validated + '"' : validated;
+        boxVisual.querySelector('.box-type').textContent = 'Box<' + type + '>';
+        boxVisual.querySelector('.box-value').textContent = displayVal;
+
+        boxCodeBox.innerHTML =
+            '<span class="typ">Box</span>&lt;<span class="kw">' + type + '</span>&gt; box = <span class="kw">new</span> <span class="typ">Box</span>&lt;<span class="kw">' + type + '</span>&gt;(' +
+            (type === 'string' ? '<span class="str">"' + escapeHtml(validated) + '"</span>' : '<span class="num">' + validated + '</span>') +
+            ');\n' +
+            'box.<span class="func">Show</span>(); <span class="com">// В коробке лежит: ' + validated + '</span>';
+    });
+
+    /* ---------- Section 9: sorting game ---------- */
+    var sortData = [
+        { text: 'Хранить очередь заданий в исходном порядке добавления, включая повторы', zone: 'list' },
+        { text: 'Быстро искать телефон человека по его имени', zone: 'dict' },
+        { text: 'Убедиться, что в списке посещённых комнат нет дублей', zone: 'set' },
+        { text: 'Хранить список игроков в порядке их регистрации', zone: 'list' },
+        { text: 'Сопоставить код товара с его ценой', zone: 'dict' },
+        { text: 'Собрать набор уникальных тегов из статьи, где порядок не важен', zone: 'set' }
+    ];
+
+    var selectedSortChip = null;
+    var sortedCount = 0;
+    var chipsWrap = document.getElementById('sort-chips');
+    var sortStatus = document.getElementById('sort-status');
+
+    function shuffleArr(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+        }
+        return a;
+    }
+
+    shuffleArr(sortData).forEach(function(item, idx) {
+        var chip = document.createElement('div');
+        chip.className = 'sort-chip';
+        chip.textContent = item.text;
+        chip.dataset.zone = item.zone;
+        chip.dataset.idx = idx;
+        chip.addEventListener('click', function() {
+            if (chip.classList.contains('placed')) return;
+            document.querySelectorAll('.sort-chip.selected').forEach(function(c) { c.classList.remove('selected'); });
+            chip.classList.add('selected');
+            selectedSortChip = chip;
+            sortStatus.textContent = 'Выбрано утверждение — теперь нажмите на корзину.';
+        });
+        chipsWrap.appendChild(chip);
+    });
+
+    document.querySelectorAll('.sort-zone').forEach(function(zone) {
+        zone.addEventListener('click', function(e) {
+            if (e.target.closest('.placed-item')) return;
+            if (!selectedSortChip) {
+                sortStatus.textContent = 'Сначала выберите утверждение выше.';
+                return;
+            }
+            var zoneName = zone.dataset.zone;
+            var itemsWrap = zone.querySelector('.zone-items');
+            if (selectedSortChip.dataset.zone === zoneName) {
+                var placed = document.createElement('div');
+                placed.className = 'placed-item';
+                placed.textContent = selectedSortChip.textContent;
+                itemsWrap.appendChild(placed);
+                selectedSortChip.classList.add('placed');
+                selectedSortChip.classList.remove('selected');
+                sortedCount++;
+                sortStatus.textContent = 'Верно! (' + sortedCount + '/' + sortData.length + ')';
+                selectedSortChip = null;
+                if (sortedCount === sortData.length) {
+                    sortStatus.textContent = 'Отлично, все ситуации распределены правильно! 🎉';
+                }
+            } else {
+                sortStatus.textContent = 'Не сюда. Подумайте ещё раз про эту ситуацию.';
+            }
+        });
+    });
+
+    /* ---------- Section 11: quiz ---------- */
+    var quizData = [
+        {
+            q: 'В чём главное преимущество List<T> перед обычным массивом?',
+            options: ['List<T> быстрее для любых операций', 'List<T> может динамически менять размер', 'List<T> не может хранить дубликаты', 'List<T> сортирует элементы автоматически'],
+            correct: 1,
+            explain: 'Массив имеет фиксированный размер, а List<T> сам управляет своей вместимостью и может расти.'
+        },
+        {
+            q: 'Какой метод Dictionary безопасно проверяет наличие ключа, не выбрасывая исключение?',
+            options: ['dict[key]', 'dict.GetValue(key)', 'dict.TryGetValue(key, out value)', 'dict.Find(key)'],
+            correct: 2,
+            explain: 'TryGetValue возвращает bool и через out-параметр отдаёт значение, если ключ найден, без риска исключения.'
+        },
+        {
+            q: 'Что произойдёт при добавлении в HashSet<string> значения, которое там уже есть?',
+            options: ['Программа упадёт с исключением', 'Элемент добавится второй раз', 'Add() вернёт false, и дубликат не добавится', 'HashSet автоматически превратится в List'],
+            correct: 2,
+            explain: 'HashSet<T> гарантирует уникальность элементов — Add() просто вернёт false для уже существующего значения.'
+        },
+        {
+            q: 'Что означает T в объявлении public class Box<T> { ... }?',
+            options: ['T — это обязательно тип "текст" (text)', 'T — это заглушка для любого типа, который укажут при использовании класса', 'T — это зарезервированное ключевое слово C#', 'T всегда означает int'],
+            correct: 1,
+            explain: 'T — условное имя параметра типа (можно назвать иначе), которое подставляется реальным типом при использовании: Box<int>, Box<string> и т.д.'
+        },
+        {
+            q: 'Зачем нужна конструкция where T : IDamageable в обобщённом методе?',
+            options: [
+                'Чтобы ускорить работу метода',
+                'Чтобы ограничить допустимые типы для T только теми, что реализуют IDamageable',
+                'Чтобы метод стал статическим',
+                'Это просто комментарий, ни на что не влияет'
+            ],
+            correct: 1,
+            explain: 'where — это ограничение типа: компилятор разрешит использовать метод только с типами, которые реализуют указанный интерфейс (или удовлетворяют другому условию).'
+        }
+    ];
+
+    var quizContainer = document.getElementById('quiz-container');
+    var scoreBox = document.getElementById('quiz-score-box');
+    var answeredCount = 0;
+    var correctCount = 0;
+
+    function buildQuiz() {
+        quizContainer.innerHTML = '';
+        answeredCount = 0;
+        correctCount = 0;
+        scoreBox.classList.remove('show');
+
+        quizData.forEach(function(item, qIndex) {
+            var qDiv = document.createElement('div');
+            qDiv.className = 'quiz-question';
+
+            var qTitle = document.createElement('h4');
+            qTitle.textContent = (qIndex + 1) + '. ' + item.q;
+            qDiv.appendChild(qTitle);
+
+            var optWrap = document.createElement('div');
+            optWrap.className = 'quiz-options';
+            var feedback = document.createElement('div');
+            feedback.className = 'quiz-feedback';
+
+            item.options.forEach(function(optText, optIndex) {
+                var optBtn = document.createElement('button');
+                optBtn.className = 'quiz-option';
+                optBtn.textContent = optText;
+                optBtn.addEventListener('click', function() {
+                    var buttons = optWrap.querySelectorAll('.quiz-option');
+                    buttons.forEach(function(b) { b.disabled = true; });
+
+                    if (optIndex === item.correct) {
+                        optBtn.classList.add('correct');
+                        feedback.textContent = 'Верно! ' + item.explain;
+                        feedback.className = 'quiz-feedback good';
+                        correctCount++;
+                    } else {
+                        optBtn.classList.add('incorrect');
+                        buttons[item.correct].classList.add('correct');
+                        feedback.textContent = 'Неверно. ' + item.explain;
+                        feedback.className = 'quiz-feedback bad';
+                    }
+                    answeredCount++;
+                    if (answeredCount === quizData.length) showScore();
+                });
+                optWrap.appendChild(optBtn);
+            });
+
+            qDiv.appendChild(optWrap);
+            qDiv.appendChild(feedback);
+            quizContainer.appendChild(qDiv);
+        });
+    }
+
+    function showScore() {
+        scoreBox.classList.add('show');
+        var pct = Math.round((correctCount / quizData.length) * 100);
+        var msg = pct === 100 ? 'Отлично! Тема усвоена на отлично.' :
+                   pct >= 60 ? 'Хороший результат, но стоит повторить пару моментов.' :
+                   'Рекомендуем перечитать урок ещё раз.';
+        scoreBox.innerHTML = '<strong>Результат: ' + correctCount + ' из ' + quizData.length + ' (' + pct + '%)</strong><br><span style="color:#888;">' + msg + '</span>';
+    }
+
+    document.getElementById('quiz-reset').addEventListener('click', buildQuiz);
+    buildQuiz();
+</script>
+
+</body>
+</html>

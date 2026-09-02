@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C#: Асинхронное программирование (async/await)</title>
+<style>
+    :root {
+        --bg-color: #1e1e1e;
+        --text-color: #d4d4d4;
+        --accent-color: #569cd6;
+        --accent-hover: #4ea8f4;
+        --card-bg: #252526;
+        --card-bg-2: #2b2b2c;
+        --code-bg: #0b0b0b;
+        --keyword: #c586c0;
+        --string: #ce9178;
+        --comment: #6a9955;
+        --number: #b5cea8;
+        --type: #4ec9b0;
+        --func: #dcdcaa;
+        --border: #3a3a3a;
+        --good: #4caf50;
+        --bad: #e06c75;
+        --warn: #d7ba7d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+
+    #progress-bar {
+        position: fixed; top: 0; left: 0; height: 4px; width: 0%;
+        background: linear-gradient(90deg, var(--accent-color), #c586c0);
+        z-index: 1000; transition: width 0.1s ease-out;
+    }
+
+    nav#toc {
+        position: sticky; top: 4px;
+        background-color: rgba(37,37,38,0.97);
+        backdrop-filter: blur(4px);
+        border-bottom: 1px solid var(--border);
+        z-index: 900;
+        display: flex; flex-wrap: wrap; gap: 4px;
+        padding: 10px 16px; justify-content: center;
+    }
+    nav#toc a {
+        color: #9da5b4; text-decoration: none; font-size: 0.85em;
+        padding: 6px 12px; border-radius: 4px; border: 1px solid transparent;
+        white-space: nowrap; transition: color 0.2s, border-color 0.2s;
+    }
+    nav#toc a:hover { color: var(--accent-hover); }
+    nav#toc a.active {
+        color: var(--accent-color); border-color: var(--accent-color);
+        background: rgba(86,156,214,0.08);
+    }
+
+    header {
+        background-color: var(--card-bg); padding: 50px 20px 40px;
+        text-align: center; border-bottom: 2px solid var(--accent-color);
+    }
+    header h1 { margin: 0; font-size: 2.4em; color: var(--accent-color); }
+    header p.subtitle { font-size: 1.15em; color: #888; margin-top: 8px; }
+
+    #overall-progress-wrap { max-width: 400px; margin: 20px auto 0; }
+    #overall-progress-track { background: #111; border-radius: 20px; height: 10px; overflow: hidden; border: 1px solid var(--border); }
+    #overall-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-color), #c586c0); transition: width 0.25s ease-out; }
+    #overall-progress-label { font-size: 0.8em; color: #777; margin-top: 6px; }
+
+    .container { max-width: 920px; margin: 40px auto; padding: 0 20px; }
+
+    section {
+        background-color: var(--card-bg); border-radius: 8px; padding: 30px;
+        margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        scroll-margin-top: 70px;
+    }
+    section > .badge {
+        display: inline-block; font-size: 0.72em; letter-spacing: 0.03em;
+        color: #8f9aa8; background: #1c1c1d; border: 1px solid var(--border);
+        padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+    }
+
+    h2 { color: var(--accent-color); border-bottom: 1px solid #444; padding-bottom: 10px; margin-top: 0; }
+    h3 { color: #ddd; }
+    h4 { color: #bbb; margin-bottom: 6px; }
+    code { font-family: 'Consolas', 'Courier New', monospace; }
+
+    pre {
+        background-color: var(--code-bg); padding: 15px; border-radius: 5px;
+        overflow-x: auto; border: 1px solid #333; font-size: 0.92em;
+    }
+
+    .kw { color: var(--keyword); }
+    .str { color: var(--string); }
+    .com { color: var(--comment); }
+    .num { color: var(--number); }
+    .typ { color: var(--type); }
+    .func { color: var(--func); }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { border: 1px solid #444; padding: 10px; text-align: left; vertical-align: top; }
+    th { background-color: #333; color: var(--accent-color); }
+
+    .btn {
+        background-color: var(--accent-color); color: #fff; border: none;
+        padding: 10px 20px; cursor: pointer; border-radius: 4px;
+        font-size: 0.95em; font-weight: bold; transition: background 0.2s, transform 0.1s;
+    }
+    .btn:hover { background-color: var(--accent-hover); }
+    .btn:active { transform: scale(0.97); }
+    .btn.secondary { background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); }
+    .btn.secondary:hover { background: rgba(86,156,214,0.1); }
+    .btn.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
+    .btn.danger:hover { background: rgba(224,108,117,0.1); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+
+    .solution { display: none; margin-top: 15px; animation: fadeIn 0.4s; border-left: 3px solid var(--type); padding-left: 14px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .highlight { border-left: 4px solid #c586c0; padding-left: 15px; margin-top: 20px; }
+    .task { background: var(--card-bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+    .task h3 { margin-top: 0; }
+
+    .playground { background: var(--card-bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-top: 20px; }
+    .playground-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+    .playground-controls label { font-size: 0.85em; color: #aaa; display: flex; flex-direction: column; gap: 4px; }
+    .playground-controls input[type="text"], .playground-controls input[type="number"], .playground-controls select {
+        background: #1c1c1d; color: var(--text-color); border: 1px solid var(--border);
+        padding: 7px 10px; border-radius: 4px; min-width: 120px; font-family: inherit;
+    }
+
+    .code-box {
+        background: var(--code-bg); border: 1px solid #333; border-radius: 5px;
+        padding: 14px; font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.9em; margin-bottom: 16px; white-space: pre-wrap;
+    }
+
+    .console {
+        background: #050505; border: 1px solid #333; border-radius: 5px;
+        padding: 12px 14px; font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.88em; min-height: 90px; max-height: 260px; overflow-y: auto;
+    }
+    .console .line { padding: 3px 0; border-bottom: 1px dashed #1f1f1f; }
+    .console .line:last-child { border-bottom: none; }
+    .console .prefix { color: #6a9955; }
+    .console .placeholder { color: #555; font-style: italic; }
+    .console .error-line { color: var(--bad); }
+    .console .success-line { color: var(--good); }
+    .console .async-line { color: var(--warn); }
+
+    /* Timeline visual */
+    .timeline { margin: 16px 0; }
+    .timeline-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; font-size: 0.85em; }
+    .timeline-label { width: 90px; color: #888; text-align: right; font-family: 'Consolas', monospace; }
+    .timeline-bar { height: 24px; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; font-size: 0.8em; color: #fff; white-space: nowrap; }
+    .timeline-bar.sync { background: var(--bad); }
+    .timeline-bar.async { background: var(--good); }
+    .timeline-bar.idle { background: #333; color: #888; }
+
+    /* Task visual */
+    .task-visual { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+    .task-card {
+        background: #1c1c1d; border: 2px solid var(--border); border-radius: 8px;
+        padding: 12px 16px; min-width: 140px; text-align: center; transition: all 0.3s;
+    }
+    .task-card.running { border-color: var(--accent-color); background: rgba(86,156,214,0.08); }
+    .task-card.done { border-color: var(--good); background: rgba(76,175,80,0.08); }
+    .task-card .task-name { font-weight: bold; color: var(--type); font-size: 0.9em; }
+    .task-card .task-status { font-size: 0.78em; color: #888; margin-top: 4px; }
+
+    /* Sort game */
+    .sort-chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+    .sort-chip {
+        background: var(--card-bg-2); border: 1px solid var(--border);
+        padding: 8px 14px; border-radius: 20px; cursor: pointer;
+        font-size: 0.85em; transition: all 0.15s;
+    }
+    .sort-chip.selected { border-color: var(--accent-color); background: rgba(86,156,214,0.15); }
+    .sort-chip.placed { display: none; }
+    .sort-zones { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+    .sort-zone { flex: 1; min-width: 220px; border: 2px dashed var(--border); border-radius: 6px; padding: 12px; min-height: 120px; }
+    .sort-zone strong { display: block; color: var(--type); margin-bottom: 8px; }
+    .sort-zone .placed-item {
+        background: rgba(76,175,80,0.1); border: 1px solid var(--good); border-radius: 4px;
+        padding: 5px 8px; margin-bottom: 6px; font-size: 0.83em;
+    }
+    #sort-status { margin-top: 12px; color: #888; font-size: 0.9em; }
+
+    /* Quiz */
+    .quiz-question { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .quiz-question:last-child { border-bottom: none; }
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .quiz-option {
+        background: var(--card-bg-2); border: 1px solid var(--border); color: var(--text-color);
+        text-align: left; padding: 10px 14px; border-radius: 5px; cursor: pointer;
+        font-size: 0.95em; transition: border-color 0.15s, background 0.15s;
+    }
+    .quiz-option:hover:not(:disabled) { border-color: var(--accent-color); }
+    .quiz-option.correct { border-color: var(--good); background: rgba(76,175,80,0.15); }
+    .quiz-option.incorrect { border-color: var(--bad); background: rgba(224,108,117,0.15); }
+    .quiz-option:disabled { cursor: default; }
+    .quiz-feedback { margin-top: 8px; font-size: 0.88em; min-height: 1.2em; }
+    .quiz-feedback.good { color: var(--good); }
+    .quiz-feedback.bad { color: var(--bad); }
+    #quiz-score-box { text-align: center; padding: 16px; border: 1px dashed var(--border); border-radius: 6px; margin-top: 10px; display: none; }
+    #quiz-score-box.show { display: block; }
+
+    footer { text-align: center; color: #666; font-size: 0.85em; padding: 30px 20px 50px; }
+
+    @media (max-width: 600px) {
+        header h1 { font-size: 1.6em; }
+        nav#toc { gap: 2px; padding: 8px; }
+        nav#toc a { font-size: 0.72em; padding: 5px 8px; }
+        .timeline-label { width: 60px; font-size: 0.75em; }
+    }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<header>
+    <h1>C#: Асинхронное программирование</h1>
+    <p class="subtitle">Task, async/await, параллельные вычисления и CancellationToken</p>
+    <div id="overall-progress-wrap">
+        <div id="overall-progress-track"><div id="overall-progress-fill"></div></div>
+        <div id="overall-progress-label">Прогресс чтения: 0%</div>
+    </div>
+</header>
+
+<nav id="toc">
+    <a href="#s1" data-target="s1">1. Зачем async</a>
+    <a href="#s2" data-target="s2">2. Task и Task&lt;T&gt;</a>
+    <a href="#s3" data-target="s3">3. async и await</a>
+    <a href="#s4" data-target="s4">4. Когда await не работает</a>
+    <a href="#s5" data-target="s5">5. Task.WhenAll / WhenAny</a>
+    <a href="#s6" data-target="s6">6. CancellationToken</a>
+    <a href="#s7" data-target="s7">7. Песочница: async</a>
+    <a href="#s8" data-target="s8">8. Игра: sync или async?</a>
+    <a href="#s9" data-target="s9">9. Практика</a>
+    <a href="#s10" data-target="s10">10. Итоговый тест</a>
+</nav>
+
+<div class="container">
+
+    <section id="s1">
+        <span class="badge">ADVANCED · ASYNC</span>
+        <h2>1. Зачем нужна асинхронность</h2>
+        <p>Синхронный код выполняется последовательно: каждая строка ждёт завершения предыдущей. Если одна операция долгая (запрос к серверу, чтение файла), вся программа «замирает».</p>
+
+        <div class="highlight">
+            <h3>Проблема: синхронное чтение</h3>
+            <div class="timeline" id="sync-timeline">
+                <div class="timeline-row">
+                    <div class="timeline-label">Поток UI</div>
+                    <div class="timeline-bar sync" style="width:100%;">Загрузка данных... (3 сек) — интерфейс замёрз</div>
+                </div>
+            </div>
+            <p>Пока загружаются данные, пользователь не может кликать кнопки, скроллить, вводить текст.</p>
+        </div>
+
+        <h3>Решение: асинхронные операции</h3>
+        <div class="timeline" id="async-timeline">
+            <div class="timeline-row">
+                <div class="timeline-label">Поток UI</div>
+                <div class="timeline-bar async" style="width:15%;">Запрос</div>
+                <div class="timeline-bar idle" style="width:55%;">Свободен — UI работает</div>
+                <div class="timeline-bar async" style="width:15%;">Обработка</div>
+            </div>
+            <div class="timeline-row">
+                <div class="timeline-label">Задача</div>
+                <div class="timeline-bar idle" style="width:15%;"></div>
+                <div class="timeline-bar async" style="width:55%;">Загрузка в фоне</div>
+                <div class="timeline-bar idle" style="width:15%;"></div>
+            </div>
+        </div>
+
+        <h3>Типичные асинхронные операции</h3>
+        <table>
+            <tr><th>Операция</th><th>Синхронно</th><th>Асинхронно</th></tr>
+            <tr><td>HTTP-запрос</td><td><code>HttpClient.Send()</code></td><td><code>await HttpClient.SendAsync()</code></td></tr>
+            <tr><td>Чтение файла</td><td><code>File.ReadAllText()</code></td><td><code>await File.ReadAllTextAsync()</code></td></tr>
+            <tr><td>Запрос к БД</td><td><code>ToList()</code></td><td><code>await ToListAsync()</code></td></tr>
+            <tr><td>Пауза</td><td><code>Thread.Sleep()</code></td><td><code>await Task.Delay()</code></td></tr>
+        </table>
+    </section>
+
+    <section id="s2">
+        <span class="badge">ADVANCED · ASYNC</span>
+        <h2>2. Task и Task&lt;T&gt;</h2>
+        <p><code>Task</code> — это обещание (promise)未来的 результата. Метод возвращает <code>Task</code>, когда работа ещё не завершена, но будет когда-нибудь.</p>
+
+        <h3>Task (без возврата)</h3>
+<pre><code><span class="com">// Task — для void-методов</span>
+<span class="kw">static</span> <span class="typ">Task</span> <span class="func">SaveDataAsync</span>() {
+    <span class="kw">return</span> Task.<span class="func">Delay</span>(<span class="num">2000</span>); <span class="com">// имитация 2 секунд работы</span>
+}
+
+<span class="com">// Использование</span>
+<span class="typ">Task</span> task = <span class="func">SaveDataAsync</span>();
+<span class="kw">await</span> task; <span class="com">// ждём завершения</span></code></pre>
+
+        <h3>Task&lt;T&gt; (с возвратом значения)</h3>
+<pre><code><span class="com">// Task&lt;T&gt; — возвращает значение типа T</span>
+<span class="kw">static</span> <span class="typ">Task</span>&lt;<span class="kw">int</span>&gt; <span class="func">GetCountAsync</span>() {
+    <span class="kw">return</span> Task.<span class="func">FromResult</span>(<span class="num">42</span>); <span class="com">// мгновенное завершение</span>
+}
+
+<span class="com">// Использование</span>
+<span class="kw">int</span> count = <span class="kw">await</span> <span class="func">GetCountAsync</span>(); <span class="com">// count = 42</span></code></pre>
+
+        <h3>Свойства Task</h3>
+        <table>
+            <tr><th>Свойство</th><th>Описание</th></tr>
+            <tr><td><code>IsCompleted</code></td><td>Задача завершилась? (bool)</td></tr>
+            <tr><td><code>IsFaulted</code></td><td>Завершилась с ошибкой? (bool)</td></tr>
+            <tr><td><code>IsCanceled</code></td><td>Была отменена? (bool)</td></tr>
+            <tr><td><code>Result</code></td><td>Результат (блокирует поток — не используйте без await!)</td></tr>
+            <tr><td><code>Exception</code></td><td>Информация об ошибке</td></tr>
+        </table>
+
+        <h3>Создание Task</h3>
+<pre><code><span class="com">// Завершённая задача</span>
+<span class="typ">Task</span>&lt;<span class="kw">int</span>&gt; finished = Task.<span class="func">FromResult</span>(<span class="num">10</span>);
+
+<span class="com">// Задача с ошибкой</span>
+<span class="typ">Task</span> failed = Task.<span class="func">FromException</span>(<span class="kw">new</span> <span class="typ">InvalidOperationException</span>(<span class="str">"Ошибка!"</span>));
+
+<span class="com">// Задача с задержкой</span>
+<span class="typ">Task</span> delayed = Task.<span class="func">Delay</span>(<span class="num">1000</span>);</code></pre>
+    </section>
+
+    <section id="s3">
+        <span class="badge">ADVANCED · ASYNC</span>
+        <h2>3. async и await</h2>
+        <p><code>async</code> и <code>await</code> — синтаксический сахар для работы с Task. Под капотом — state machine, который приостанавливает метод и возобновляет при завершении задачи.</p>
+
+        <h3>Правила</h3>
+        <table>
+            <tr><th>Правило</th><th>Пример</th></tr>
+            <tr><td><code>async</code> ставится перед методом</td><td><code>async Task&lt;int&gt; GetDataAsync()</code></td></tr>
+            <tr><td><code>await</code> ставится перед Task</td><td><code>int r = await GetDataAsync();</code></td></tr>
+            <tr><td><code>await</code> можно только в <code>async</code>-методе</td><td>Компилятор запретит await без async</td></tr>
+            <tr><td>Метод с async возвращает <code>Task</code> / <code>Task&lt;T&gt;</code></td><td>Или <code>void</code> (но void — плохо!)</td></tr>
+        </table>
+
+<pre><code><span class="kw">static async</span> <span class="typ">Task</span>&lt;<span class="kw">string</span>&gt; <span class="func">LoadDataAsync</span>() {
+    Console.<span class="func">WriteLine</span>(<span class="str">"Начинаю загрузку..."</span>);
+
+    <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">2000</span>); <span class="com">// приостанавливаем метод на 2 сек</span>
+
+    Console.<span class="func">WriteLine</span>(<span class="str">"Загрузка завершена!"</span>);
+    <span class="kw">return</span> <span class="str">"Данные из API"</span>;
+}
+
+<span class="com">// Вызов</span>
+<span class="kw">string</span> data = <span class="kw">await</span> <span class="func">LoadDataAsync</span>();
+Console.<span class="func">WriteLine</span>(data); <span class="com">// Данные из API</span></code></pre>
+
+        <h3>Что делает await</h3>
+        <div class="highlight">
+            <ol>
+                <li>Вызывает Task-метод</li>
+                <li><strong>Приостанавливает</strong> текущий метод (не блокирует поток!)</li>
+                <li>Поток возвращается в пул (свободен для других задач)</li>
+                <li>Когда Task завершается — метод <strong>возобновляется</strong></li>
+            </ol>
+        </div>
+
+        <h3>Паттерн: несколько await</h3>
+<pre><code><span class="kw">static async</span> <span class="typ">Task</span> <span class="func">ProcessOrderAsync</span>() {
+    Console.<span class="func">WriteLine</span>(<span class="str">"1. Принимаем заказ..."</span>);
+    <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">1000</span>);
+
+    Console.<span class="func">WriteLine</span>(<span class="str">"2. Оплата..."</span>);
+    <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">1500</span>);
+
+    Console.<span class="func">WriteLine</span>(<span class="str">"3. Отправка..."</span>);
+    <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">2000</span>);
+
+    Console.<span class="func">WriteLine</span>(<span class="str">"4. Готово!"</span>);
+}</code></pre>
+    </section>
+
+    <section id="s4">
+        <span class="badge">ADVANCED · ASYNC</span>
+        <h2>4. Когда await НЕ работает</h2>
+        <p>Есть ситуации, когда <code>await</code> ведёт себя неожиданно или его нельзя использовать.</p>
+
+        <h3>1. void-методы</h3>
+<pre><code><span class="com">// ПЛОХО: async void — нельзя await, сложно ловить ошибки</span>
+<span class="kw">static async void</span> <span class="func">BadMethod</span>() {
+    <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">1000</span>);
+}
+
+<span class="com">// ХОРОШО: async Task — можно await и ловить исключения</span>
+<span class="kw">static async</span> <span class="typ">Task</span> <span class="func">GoodMethod</span>() {
+    <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">1000</span>);
+}</code></pre>
+
+        <h3>2. Ловушки синхронного кода</h3>
+<pre><code><span class="com">// ПЛОХО: блокирующий вызов — может вызвать deadlock!</span>
+<span class="kw">string</span> result = <span class="func">LoadDataAsync</span>().Result;     <span class="com">// блокирует поток</span>
+<span class="func">LoadDataAsync</span>().<span class="func">Wait</span>();                     <span class="com">// тоже блокирует</span>
+
+<span class="com">// ХОРОШО: всегда используйте await</span>
+<span class="kw">string</span> result = <span class="kw">await</span> <span class="func">LoadDataAsync</span>();</code></pre>
+
+        <h3>3. Конструкторы и свойства</h3>
+<pre><code><span class="com">// Нельзя сделать конструктор async</span>
+<span class="kw">public</span> <span class="func">MyClass</span>() {
+    <span class="kw">await</span> ...; <span class="com">// ОШИБКА КОМПИЛЯЦИИ</span>
+}
+
+<span class="com">// Решение — статический фабричный метод</span>
+<span class="kw">public static async</span> <span class="typ">Task</span>&lt;<span class="typ">MyClass</span>&gt; <span class="func">CreateAsync</span>() {
+    <span class="kw">var</span> obj = <span class="kw">new</span> <span class="typ">MyClass</span>();
+    <span class="kw">await</span> obj.<span class="func">InitAsync</span>();
+    <span class="kw">return</span> obj;
+}</code></pre>
+
+        <h3>4. foreach и await</h3>
+<pre><code><span class="com">// Последовательно — каждый await ждёт предыдущего</span>
+<span class="kw">foreach</span> (<span class="kw">var</span> url <span class="kw">in</span> urls) {
+    <span class="kw">await</span> <span class="func">DownloadAsync</span>(url); <span class="com">// 1, потом 2, потом 3...</span>
+}
+
+<span class="com">// Параллельно — см. раздел 5 (Task.WhenAll)</span></code></pre>
+    </section>
+
+    <section id="s5">
+        <span class="badge">ADVANCED · ASYNC</span>
+        <h2>5. Task.WhenAll и Task.WhenAny</h2>
+        <p>Два ключевых метода для параллельной работы с несколькими задачами.</p>
+
+        <h3>Task.WhenAll — ждём все задачи</h3>
+<pre><code><span class="com">// Запускаем 3 загрузки параллельно</span>
+<span class="typ">Task</span>&lt;<span class="kw">string</span>&gt; task1 = <span class="func">DownloadAsync</span>(<span class="str">"api/users"</span>);
+<span class="typ">Task</span>&lt;<span class="kw">string</span>&gt; task2 = <span class="func">DownloadAsync</span>(<span class="str">"api/posts"</span>);
+<span class="typ">Task</span>&lt;<span class="kw">string</span>&gt; task3 = <span class="func">DownloadAsync</span>(<span class="str">"api/comments"</span>);
+
+<span class="com">// Ждём ВСЕ три одновременно</span>
+<span class="typ">string</span>[] results = <span class="kw">await</span> Task.<span class="func">WhenAll</span>(task1, task2, task3);
+
+<span class="com">// results[0], results[1], results[2] — результаты каждой задачи</span></code></pre>
+
+        <h3>Task.WhenAny — ждём первую задачу</h3>
+<pre><code><span class="com">// Какой сервер ответит быстрее?</span>
+<span class="typ">Task</span>&lt;<span class="kw">string</span>&gt; server1 = <span class="func">FetchFromAsync</span>(<span class="str">"server1"</span>);
+<span class="typ">Task</span>&lt;<span class="kw">string</span>&gt; server2 = <span class="func">FetchFromAsync</span>(<span class="str">"server2"</span>);
+
+<span class="typ">Task</span>&lt;<span class="kw">string</span>&gt; winner = <span class="kw">await</span> Task.<span class="func">WhenAny</span>(server1, server2);
+<span class="kw">string</span> fastResult = <span class="kw">await</span> winner; <span class="com">// результат от быстрого сервера</span></code></pre>
+
+        <h3>Сравнение</h3>
+        <table>
+            <tr><th>Метод</th><th>Ждёт</th><th>Когда использовать</th></tr>
+            <tr><td><code>await</code></td><td>Одну задачу</td><td>Когда важен результат конкретной задачи</td></tr>
+            <tr><td><code>Task.WhenAll()</code></td><td>Все задачи</td><td>Когда нужны все результаты</td></tr>
+            <tr><td><code>Task.WhenAny()</code></td><td>Первую задачу</td><td>Таймаут, гонка серверов, fallback</td></tr>
+        </table>
+    </section>
+
+    <section id="s6">
+        <span class="badge">ADVANCED · ASYNC</span>
+        <h2>6. CancellationToken</h2>
+        <p><code>CancellationToken</code> — механизм отмены长时间运行的 задач. Пользователь нажал «Отмена»? Закрытие приложения? Таймаут? — сигнал об отмене передаётся через токен.</p>
+
+<pre><code><span class="kw">static async</span> <span class="typ">Task</span> <span class="func">DownloadAsync</span>(<span class="typ">CancellationToken</span> ct) {
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i < <span class="num">100</span>; i++) {
+        ct.<span class="func">ThrowIfCancellationRequested</span>(); <span class="com">// бросит OperationCanceledException</span>
+
+        Console.<span class="func">WriteLine</span>(<span class="str">$"Загрузка... {i}%"</span>);
+        <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">100</span>, ct);
+    }
+}
+
+<span class="com">// Использование</span>
+<span class="kw">var</span> cts = <span class="kw">new</span> <span class="typ">CancellationTokenSource</span>();
+<span class="kw">var</span> token = cts.Token;
+
+<span class="com">// Запускаем задачу</span>
+<span class="typ">Task</span> task = <span class="func">DownloadAsync</span>(token);
+
+<span class="com">// Через 3 секунды отменяем</span>
+<span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">3000</span>);
+cts.<span class="func">Cancel</span>(); <span class="com">// сигнал отмены</span>
+
+<span class="kw">try</span> {
+    <span class="kw">await</span> task;
+}
+<span class="kw">catch</span> (<span class="typ">OperationCanceledException</span>) {
+    Console.<span class="func">WriteLine</span>(<span class="str">"Загрузка отменена!"</span>);
+}</code></pre>
+
+        <h3>Таймаут через CancellationToken</h3>
+<pre><code><span class="com">// Автоматическая отмена через 5 секунд</span>
+<span class="kw">var</span> cts = <span class="kw">new</span> <span class="typ">CancellationTokenSource</span>();
+cts.<span class="func">CancelAfter</span>(<span class="num">5000</span>);
+
+<span class="kw">await</span> <span class="func">LongRunningAsync</span>(cts.Token);</code></pre>
+    </section>
+
+    <section id="s7">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>7. Песочница: Async-задачи</h2>
+        <p>Запускайте задачи и наблюдайте за их выполнением в реальном времени.</p>
+
+        <div class="playground">
+            <div class="playground-controls">
+                <button class="btn" id="async-add-btn">+ Добавить задачу</button>
+                <button class="btn secondary" id="async-all-btn">WhenAll (все)</button>
+                <button class="btn secondary" id="async-first-btn">WhenAny (первая)</button>
+                <button class="btn danger" id="async-cancel-btn">Отмена</button>
+                <button class="btn secondary" id="async-reset-btn">Сброс</button>
+            </div>
+
+            <p style="font-size:0.85em; color:#999; margin-bottom:6px;">Активных задач: <span id="async-count">0</span></p>
+            <div class="task-visual" id="async-visual"></div>
+
+            <div class="console" id="async-console">
+                <div class="line placeholder">// Добавьте задачи и запустите...</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="s8">
+        <span class="badge">ИНТЕРАКТИВ</span>
+        <h2>8. Игра: sync или async?</h2>
+        <p>Распределите код по категориям: синхронный или асинхронный.</p>
+
+        <div class="sort-chips" id="sort-chips"></div>
+        <div class="sort-zones">
+            <div class="sort-zone" data-zone="sync"><strong>Синхронный</strong><div class="zone-items"></div></div>
+            <div class="sort-zone" data-zone="async"><strong>Асинхронный</strong><div class="zone-items"></div></div>
+        </div>
+        <p id="sort-status"></p>
+    </section>
+
+    <section id="s9">
+        <span class="badge">ПРАКТИКА</span>
+        <h2>9. Практические задания</h2>
+
+        <div class="task">
+            <h3>Задание 1: Асинхронная загрузка</h3>
+            <p>Напишите метод <code>LoadDataAsync()</code>, который «загружает» данные за 2 секунды и возвращает строку.</p>
+            <button class="btn" onclick="toggleSolution('sol1', this)">Показать решение</button>
+            <div id="sol1" class="solution">
+<pre><code><span class="kw">static async</span> <span class="typ">Task</span>&lt;<span class="kw">string</span>&gt; <span class="func">LoadDataAsync</span>() {
+    Console.<span class="func">WriteLine</span>(<span class="str">"Начинаю загрузку..."</span>);
+    <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">2000</span>);
+    <span class="kw">return</span> <span class="str">"Данные загружены!"</span>;
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 2: Параллельные запросы</h3>
+            <p>Запустите 3 задачи параллельно с помощью <code>Task.WhenAll</code> и выведите результаты.</p>
+            <button class="btn" onclick="toggleSolution('sol2', this)">Показать решение</button>
+            <div id="sol2" class="solution">
+<pre><code><span class="kw">static async</span> <span class="typ">Task</span>&lt;<span class="kw">string</span>&gt; <span class="func">FetchAsync</span>(<span class="kw">string</span> url) {
+    <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">1000</span>); <span class="com">// имитация запроса</span>
+    <span class="kw">return</span> <span class="str">$"Данные из {url}"</span>;
+}
+
+<span class="kw">var</span> t1 = <span class="func">FetchAsync</span>(<span class="str">"api/users"</span>);
+<span class="kw">var</span> t2 = <span class="func">FetchAsync</span>(<span class="str">"api/posts"</span>);
+<span class="kw">var</span> t3 = <span class="func">FetchAsync</span>(<span class="str">"api/comments"</span>);
+
+<span class="typ">string</span>[] results = <span class="kw">await</span> Task.<span class="func">WhenAll</span>(t1, t2, t3);
+<span class="kw">foreach</span> (<span class="kw">var</span> r <span class="kw">in</span> results)
+    Console.<span class="func">WriteLine</span>(r);</code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 3: Таймаут</h3>
+            <p>Напишите метод, который «загружает» данные, но отменяется через 3 секунды, если не завершился.</p>
+            <button class="btn" onclick="toggleSolution('sol3', this)">Показать решение</button>
+            <div id="sol3" class="solution">
+<pre><code><span class="kw">static async</span> <span class="typ">Task</span> <span class="func">FetchWithTimeoutAsync</span>() {
+    <span class="kw">var</span> cts = <span class="kw">new</span> <span class="typ">CancellationTokenSource</span>();
+    cts.<span class="func">CancelAfter</span>(<span class="num">3000</span>);
+
+    <span class="kw">try</span> {
+        <span class="kw">await</span> <span class="func">LongRunningAsync</span>(cts.Token);
+    }
+    <span class="kw">catch</span> (<span class="typ">OperationCanceledException</span>) {
+        Console.<span class="func">WriteLine</span>(<span class="str">"Таймаут: операция отменена"</span>);
+    }
+}
+
+<span class="kw">static async</span> <span class="typ">Task</span> <span class="func">LongRunningAsync</span>(<span class="typ">CancellationToken</span> ct) {
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i < <span class="num">10</span>; i++) {
+        ct.<span class="func">ThrowIfCancellationRequested</span>();
+        Console.<span class="func">WriteLine</span>(<span class="str">$"Работаю... {i}"</span>);
+        <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">1000</span>, ct);
+    }
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="task">
+            <h3>Задание 4: Фабричный метод</h3>
+            <p>Создайте класс <code>Database</code> с асинхронной инициализацией через статический метод <code>CreateAsync()</code>.</p>
+            <button class="btn" onclick="toggleSolution('sol4', this)">Показать решение</button>
+            <div id="sol4" class="solution">
+<pre><code><span class="kw">public class</span> <span class="typ">Database</span> {
+    <span class="kw">public string</span> ConnectionString { <span class="kw">get</span>; <span class="kw">private set</span>; }
+
+    <span class="kw">private</span> <span class="func">Database</span>() { }
+
+    <span class="kw">public static async</span> <span class="typ">Task</span>&lt;<span class="typ">Database</span>&gt; <span class="func">CreateAsync</span>(<span class="kw">string</span> connStr) {
+        <span class="kw">var</span> db = <span class="kw">new</span> <span class="typ">Database</span>();
+        <span class="kw">await</span> db.<span class="func">ConnectAsync</span>(connStr);
+        <span class="kw">return</span> db;
+    }
+
+    <span class="kw">private async</span> <span class="typ">Task</span> <span class="func">ConnectAsync</span>(<span class="kw">string</span> connStr) {
+        <span class="kw">await</span> Task.<span class="func">Delay</span>(<span class="num">1000</span>); <span class="com">// имитация подключения</span>
+        ConnectionString = connStr;
+    }
+}
+
+<span class="com">// Использование</span>
+<span class="kw">var</span> db = <span class="kw">await</span> <span class="typ">Database</span>.<span class="func">CreateAsync</span>(<span class="str">"Server=mydb"</span>);</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section id="s10">
+        <span class="badge">ИТОГОВЫЙ ТЕСТ</span>
+        <h2>10. Проверь себя</h2>
+        <p>Пройдите тест по асинхронному программированию.</p>
+
+        <div id="quiz-container"></div>
+
+        <button class="btn secondary" id="quiz-reset" style="margin-top:10px;">Пройти заново</button>
+        <div id="quiz-score-box"></div>
+    </section>
+
+</div>
+
+<footer>Урок про асинхронное программирование (Task, async/await, CancellationToken) в C#.</footer>
+
+<script>
+    /* ---------- Toggle solutions ---------- */
+    function toggleSolution(id, btn) {
+        var el = document.getElementById(id);
+        var isOpen = el.style.display === "block";
+        el.style.display = isOpen ? "none" : "block";
+        if (btn) btn.textContent = isOpen ? "Показать решение" : "Скрыть решение";
+    }
+
+    /* ---------- Progress bar ---------- */
+    var topProgressBar = document.getElementById('progress-bar');
+    var overallFill = document.getElementById('overall-progress-fill');
+    var overallLabel = document.getElementById('overall-progress-label');
+
+    function updateProgress() {
+        var scrollTop = window.scrollY;
+        var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        var pct = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
+        topProgressBar.style.width = pct + '%';
+        overallFill.style.width = pct + '%';
+        overallLabel.textContent = 'Прогресс чтения: ' + Math.round(pct) + '%';
+    }
+    window.addEventListener('scroll', updateProgress);
+    updateProgress();
+
+    /* ---------- Active nav ---------- */
+    var navLinks = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+    var sectionEls = navLinks.map(function(a) { return document.getElementById(a.dataset.target); });
+
+    function updateActiveNav() {
+        var scrollPos = window.scrollY + 100;
+        var activeIndex = 0;
+        for (var i = 0; i < sectionEls.length; i++) {
+            if (sectionEls[i] && sectionEls[i].offsetTop <= scrollPos) activeIndex = i;
+        }
+        navLinks.forEach(function(a, i) { a.classList.toggle('active', i === activeIndex); });
+    }
+    window.addEventListener('scroll', updateActiveNav);
+    updateActiveNav();
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    /* ---------- Section 7: async playground ---------- */
+    var asyncTasks = [];
+    var taskCounter = 0;
+    var asyncConsole = document.getElementById('async-console');
+    var asyncVisual = document.getElementById('async-visual');
+    var asyncCount = document.getElementById('async-count');
+    var cancelled = false;
+
+    function renderAsyncTasks() {
+        asyncCount.textContent = asyncTasks.filter(function(t) { return !t.done; }).length;
+        asyncVisual.innerHTML = '';
+        asyncTasks.forEach(function(t) {
+            var card = document.createElement('div');
+            card.className = 'task-card' + (t.running ? ' running' : '') + (t.done ? ' done' : '');
+            card.innerHTML = '<div class="task-name">' + escapeHtml(t.name) + '</div><div class="task-status">' + t.status + '</div>';
+            asyncVisual.appendChild(card);
+        });
+    }
+
+    function addLog(text, cls) {
+        var line = document.createElement('div');
+        line.className = 'line ' + (cls || '');
+        line.innerHTML = '<span class="prefix">&gt;</span> ' + text;
+        asyncConsole.appendChild(line);
+        asyncConsole.scrollTop = asyncConsole.scrollHeight;
+    }
+
+    document.getElementById('async-add-btn').addEventListener('click', function() {
+        taskCounter++;
+        var duration = 1500 + Math.floor(Math.random() * 2500);
+        var task = {
+            id: taskCounter,
+            name: 'Task#' + taskCounter,
+            duration: duration,
+            running: false,
+            done: false,
+            status: 'ожидает'
+        };
+        asyncTasks.push(task);
+        renderAsyncTasks();
+        addLog(task.name + ' создана (' + (duration / 1000).toFixed(1) + ' сек)', 'async-line');
+    });
+
+    document.getElementById('async-all-btn').addEventListener('click', function() {
+        cancelled = false;
+        var pending = asyncTasks.filter(function(t) { return !t.done && !t.running; });
+        if (pending.length === 0) {
+            addLog('Нет задач для запуска.', 'error-line');
+            return;
+        }
+        addLog('Task.WhenAll — запуск ' + pending.length + ' задач параллельно...', 'async-line');
+
+        pending.forEach(function(t) {
+            t.running = true;
+            t.status = 'выполняется...';
+            renderAsyncTasks();
+
+            var elapsed = 0;
+            var interval = setInterval(function() {
+                elapsed += 200;
+                if (cancelled) {
+                    t.running = false;
+                    t.done = true;
+                    t.status = 'отменена';
+                    renderAsyncTasks();
+                    clearInterval(interval);
+                    return;
+                }
+                if (elapsed >= t.duration) {
+                    t.running = false;
+                    t.done = true;
+                    t.status = 'завершена';
+                    renderAsyncTasks();
+                    addLog(t.name + ' завершена!', 'success-line');
+                    clearInterval(interval);
+                }
+            }, 200);
+        });
+    });
+
+    document.getElementById('async-first-btn').addEventListener('click', function() {
+        cancelled = false;
+        var pending = asyncTasks.filter(function(t) { return !t.done && !t.running; });
+        if (pending.length === 0) {
+            addLog('Нет задач для запуска.', 'error-line');
+            return;
+        }
+        addLog('Task.WhenAny — ждём первую из ' + pending.length + ' задач...', 'async-line');
+
+        pending.forEach(function(t) {
+            t.running = true;
+            t.status = 'выполняется...';
+            renderAsyncTasks();
+
+            var elapsed = 0;
+            var interval = setInterval(function() {
+                elapsed += 200;
+                if (cancelled) {
+                    t.running = false;
+                    t.done = true;
+                    t.status = 'отменена';
+                    renderAsyncTasks();
+                    clearInterval(interval);
+                    return;
+                }
+                if (elapsed >= t.duration) {
+                    t.running = false;
+                    t.done = true;
+                    t.status = 'завершена (победила!)';
+                    renderAsyncTasks();
+                    addLog(t.name + ' — первая завершена!', 'success-line');
+                    cancelled = true;
+                    asyncTasks.forEach(function(other) {
+                        if (other.running && other.id !== t.id) {
+                            other.running = false;
+                            other.done = true;
+                            other.status = 'отменена (WhenAny)';
+                        }
+                    });
+                    renderAsyncTasks();
+                    clearInterval(interval);
+                }
+            }, 200);
+        });
+    });
+
+    document.getElementById('async-cancel-btn').addEventListener('click', function() {
+        cancelled = true;
+        addLog('CancellationToken — отмена всех задач!', 'error-line');
+    });
+
+    document.getElementById('async-reset-btn').addEventListener('click', function() {
+        asyncTasks = [];
+        taskCounter = 0;
+        cancelled = false;
+        renderAsyncTasks();
+        asyncConsole.innerHTML = '<div class="line placeholder">// Добавьте задачи и запустите...</div>';
+    });
+
+    renderAsyncTasks();
+
+    /* ---------- Section 8: sorting game ---------- */
+    var sortData = [
+        { text: 'string result = File.ReadAllText("file.txt");', zone: 'sync' },
+        { text: 'string result = await File.ReadAllTextAsync("file.txt");', zone: 'async' },
+        { text: 'Thread.Sleep(1000);', zone: 'sync' },
+        { text: 'await Task.Delay(1000);', zone: 'async' },
+        { text: 'var data = list.Where(x => x > 5).ToList();', zone: 'sync' },
+        { text: 'await httpClient.GetAsync(url);', zone: 'async' },
+        { text: 'Console.WriteLine("Hello");', zone: 'sync' },
+        { text: 'static async Task<int> GetDataAsync() { ... }', zone: 'async' }
+    ];
+
+    var selectedSortChip = null;
+    var sortedCount = 0;
+    var chipsWrap = document.getElementById('sort-chips');
+    var sortStatus = document.getElementById('sort-status');
+
+    function shuffleArr(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+        }
+        return a;
+    }
+
+    shuffleArr(sortData).forEach(function(item, idx) {
+        var chip = document.createElement('div');
+        chip.className = 'sort-chip';
+        chip.textContent = item.text;
+        chip.dataset.zone = item.zone;
+        chip.dataset.idx = idx;
+        chip.addEventListener('click', function() {
+            if (chip.classList.contains('placed')) return;
+            document.querySelectorAll('.sort-chip.selected').forEach(function(c) { c.classList.remove('selected'); });
+            chip.classList.add('selected');
+            selectedSortChip = chip;
+            sortStatus.textContent = 'Выберите категорию — sync или async.';
+        });
+        chipsWrap.appendChild(chip);
+    });
+
+    document.querySelectorAll('.sort-zone').forEach(function(zone) {
+        zone.addEventListener('click', function(e) {
+            if (e.target.closest('.placed-item')) return;
+            if (!selectedSortChip) {
+                sortStatus.textContent = 'Сначала выберите утверждение выше.';
+                return;
+            }
+            var zoneName = zone.dataset.zone;
+            var itemsWrap = zone.querySelector('.zone-items');
+            if (selectedSortChip.dataset.zone === zoneName) {
+                var placed = document.createElement('div');
+                placed.className = 'placed-item';
+                placed.textContent = selectedSortChip.textContent;
+                itemsWrap.appendChild(placed);
+                selectedSortChip.classList.add('placed');
+                selectedSortChip.classList.remove('selected');
+                sortedCount++;
+                sortStatus.textContent = 'Верно! (' + sortedCount + '/' + sortData.length + ')';
+                selectedSortChip = null;
+                if (sortedCount === sortData.length) {
+                    sortStatus.textContent = 'Отлично, всё распределено правильно!';
+                }
+            } else {
+                sortStatus.textContent = 'Не сюда. Подумайте ещё раз.';
+            }
+        });
+    });
+
+    /* ---------- Section 10: quiz ---------- */
+    var quizData = [
+        {
+            q: 'Что возвращает async-метод с return void?',
+            options: [
+                'Task',
+                'void',
+                'Nothing',
+                'Exception'
+            ],
+            correct: 0,
+            explain: 'Метод с ключевым словом async и return void по сути возвращает Task. Если void — то Task<void> (обычно избегают async void).'
+        },
+        {
+            q: 'Что делает await?',
+            options: [
+                'Блокирует текущий поток до завершения задачи',
+                'Приостанавливает метод и освобождает поток',
+                'Удаляет задачу из очереди',
+                'Запускает задачу в новом потоке'
+            ],
+            correct: 1,
+            explain: 'await приостанавливает async-метод, освобождая поток обратно в пул. При завершении Task метод возобновляется.'
+        },
+        {
+            q: 'Зачем нужен Task.WhenAll?',
+            options: [
+                'Чтобы выполнить задачи последовательно',
+                'Чтобы дождаться завершения всех переданных задач',
+                'Чтобы отменить все задачи',
+                'Чтобы запустить задачу в фоне'
+            ],
+            correct: 1,
+            explain: 'WhenAll принимает несколько Task и возвращает Task, который завершается, когда все входящие задачи завершатся.'
+        },
+        {
+            q: 'Что такое CancellationToken?',
+            options: [
+                'Таймер для подсчёта времени',
+                'Механизм передачи сигнала об отмене задачи',
+                'Способ приостановить поток',
+                'Обработчик исключений'
+            ],
+            correct: 1,
+            explain: 'CancellationToken позволяет передать сигнал отмены долгой операции. Операция периодически проверяет токен и прекращает работу.'
+        },
+        {
+            q: 'Почему async void — плохая практика?',
+            options: [
+                'Он работает медленнее',
+                'Нельзя await и невозможно поймать исключение',
+                'Он использует больше памяти',
+                'Он блокирует UI'
+            ],
+            correct: 1,
+            explain: 'async void нельзя await — вызывающий код не знает, когда метод завершится. Исключения внутри async void могут привести к аварийному завершению приложения.'
+        }
+    ];
+
+    var quizContainer = document.getElementById('quiz-container');
+    var scoreBox = document.getElementById('quiz-score-box');
+    var answeredCount = 0;
+    var correctCount = 0;
+
+    function buildQuiz() {
+        quizContainer.innerHTML = '';
+        answeredCount = 0;
+        correctCount = 0;
+        scoreBox.classList.remove('show');
+
+        quizData.forEach(function(item, qIndex) {
+            var qDiv = document.createElement('div');
+            qDiv.className = 'quiz-question';
+
+            var qTitle = document.createElement('h4');
+            qTitle.textContent = (qIndex + 1) + '. ' + item.q;
+            qDiv.appendChild(qTitle);
+
+            var optWrap = document.createElement('div');
+            optWrap.className = 'quiz-options';
+            var feedback = document.createElement('div');
+            feedback.className = 'quiz-feedback';
+
+            item.options.forEach(function(optText, optIndex) {
+                var optBtn = document.createElement('button');
+                optBtn.className = 'quiz-option';
+                optBtn.textContent = optText;
+                optBtn.addEventListener('click', function() {
+                    var buttons = optWrap.querySelectorAll('.quiz-option');
+                    buttons.forEach(function(b) { b.disabled = true; });
+
+                    if (optIndex === item.correct) {
+                        optBtn.classList.add('correct');
+                        feedback.textContent = 'Верно! ' + item.explain;
+                        feedback.className = 'quiz-feedback good';
+                        correctCount++;
+                    } else {
+                        optBtn.classList.add('incorrect');
+                        buttons[item.correct].classList.add('correct');
+                        feedback.textContent = 'Неверно. ' + item.explain;
+                        feedback.className = 'quiz-feedback bad';
+                    }
+                    answeredCount++;
+                    if (answeredCount === quizData.length) showScore();
+                });
+                optWrap.appendChild(optBtn);
+            });
+
+            qDiv.appendChild(optWrap);
+            qDiv.appendChild(feedback);
+            quizContainer.appendChild(qDiv);
+        });
+    }
+
+    function showScore() {
+        scoreBox.innerHTML = '<h3>Результат: ' + correctCount + ' из ' + quizData.length + '</h3>';
+        if (correctCount === quizData.length) {
+            scoreBox.innerHTML += '<p style="color:var(--good);">Отлично! Вы идеально знаете материал!</p>';
+        } else if (correctCount >= quizData.length * 0.6) {
+            scoreBox.innerHTML += '<p style="color:var(--warn);">Хороший результат! Есть что повторить.</p>';
+        } else {
+            scoreBox.innerHTML += '<p style="color:var(--bad);">Стоит повторить материал урока.</p>';
+        }
+        scoreBox.classList.add('show');
+    }
+
+    document.getElementById('quiz-reset').addEventListener('click', buildQuiz);
+    buildQuiz();
+</script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Группа 1 — Курс C#</title>
+<style>
+    :root {
+        --bg-color: #1e1e1e;
+        --text-color: #d4d4d4;
+        --accent-color: #569cd6;
+        --accent-hover: #4ea8f4;
+        --card-bg: #252526;
+        --card-bg-2: #2b2b2c;
+        --border: #3a3a3a;
+        --good: #4caf50;
+        --keyword: #c586c0;
+        --type: #4ec9b0;
+        --string: #ce9178;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+
+    header {
+        background: linear-gradient(135deg, #252526 0%, #1a1a2e 100%);
+        padding: 60px 20px 50px;
+        text-align: center;
+        border-bottom: 2px solid var(--accent-color);
+        position: relative;
+        overflow: hidden;
+    }
+
+    header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(86,156,214,0.06) 0%, transparent 60%);
+        animation: pulse 8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    header h1 {
+        margin: 0;
+        font-size: 2.6em;
+        color: var(--accent-color);
+        position: relative;
+    }
+
+    header .subtitle {
+        font-size: 1.1em;
+        color: #888;
+        margin-top: 8px;
+        position: relative;
+    }
+
+    header .course-info {
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #666;
+        position: relative;
+    }
+
+    .container {
+        max-width: 960px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .stats-bar {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 36px;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-item .num {
+        font-size: 2em;
+        font-weight: bold;
+        color: var(--accent-color);
+    }
+
+    .stat-item .label {
+        font-size: 0.8em;
+        color: #888;
+    }
+
+    .lessons-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .lesson-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 28px 24px;
+        text-decoration: none;
+        color: var(--text-color);
+        transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .lesson-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-color);
+        box-shadow: 0 8px 24px rgba(86,156,214,0.15);
+    }
+
+    .lesson-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent-color), #c586c0);
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .lesson-card:hover::before {
+        opacity: 1;
+    }
+
+    .lesson-card .number {
+        font-size: 2.4em;
+        font-weight: bold;
+        color: var(--accent-color);
+        opacity: 0.3;
+        position: absolute;
+        top: 14px;
+        right: 18px;
+    }
+
+    .lesson-card .tag {
+        display: inline-block;
+        font-size: 0.68em;
+        letter-spacing: 0.04em;
+        color: #8f9aa8;
+        background: #1c1c1d;
+        border: 1px solid var(--border);
+        padding: 2px 10px;
+        border-radius: 20px;
+        margin-bottom: 12px;
+        width: fit-content;
+    }
+
+    .lesson-card h2 {
+        font-size: 1.2em;
+        color: #eee;
+        margin: 0 0 10px;
+        border: none;
+        padding: 0;
+    }
+
+    .lesson-card p {
+        font-size: 0.88em;
+        color: #999;
+        margin: 0 0 16px;
+        flex: 1;
+    }
+
+    .lesson-card .topics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 16px;
+    }
+
+    .lesson-card .topic-tag {
+        font-size: 0.72em;
+        background: rgba(86,156,214,0.1);
+        border: 1px solid rgba(86,156,214,0.2);
+        color: var(--accent-color);
+        padding: 3px 8px;
+        border-radius: 4px;
+    }
+
+    .lesson-card .arrow {
+        color: var(--accent-color);
+        font-size: 1.3em;
+        align-self: flex-end;
+        transition: transform 0.2s;
+    }
+
+    .lesson-card:hover .arrow {
+        transform: translateX(4px);
+    }
+
+    footer {
+        text-align: center;
+        color: #555;
+        font-size: 0.82em;
+        padding: 40px 20px 50px;
+    }
+
+    @media (max-width: 600px) {
+        header h1 { font-size: 1.8em; }
+        .lessons-grid { grid-template-columns: 1fr; }
+        .stats-bar { gap: 16px; }
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Курс C#</h1>
+    <p class="subtitle">Группа 1 — от основ до продвинутых тем</p>
+    <p class="course-info">Интерактивные уроки с практикой, песочницами и тестами</p>
+</header>
+
+<div class="container">
+
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="num">6</div>
+            <div class="label">уроков</div>
+        </div>
+        <div class="stat-item">
+            <div class="num">56</div>
+            <div class="label">разделов</div>
+        </div>
+        <div class="stat-item">
+            <div class="num">30</div>
+            <div class="label">тестовых вопросов</div>
+        </div>
+    </div>
+
+    <div class="lessons-grid">
+
+        <a href="Группа 1 Урок 1.html" class="lesson-card">
+            <span class="number">01</span>
+            <span class="tag">БАЗА · ООП · LINQ</span>
+            <h2>Основы C#: Перезагрузка</h2>
+            <p>Вспоминаем синтаксис, ООП и знакомимся с магией LINQ</p>
+            <div class="topics">
+                <span class="topic-tag">Типы данных</span>
+                <span class="topic-tag">Условия и циклы</span>
+                <span class="topic-tag">Классы</span>
+                <span class="topic-tag">LINQ</span>
+            </div>
+            <span class="arrow">→</span>
+        </a>
+
+        <a href="Группа 1 Урок 2.html" class="lesson-card">
+            <span class="number">02</span>
+            <span class="tag">ADVANCED · ООП</span>
+            <h2>Наследование, полиморфизм и интерфейсы</h2>
+            <p>Продвинутое ООП — от иерархий классов до контрактов поведения</p>
+            <div class="topics">
+                <span class="topic-tag">Наследование</span>
+                <span class="topic-tag">Полиморфизм</span>
+                <span class="topic-tag">Абстракции</span>
+                <span class="topic-tag">Интерфейсы</span>
+            </div>
+            <span class="arrow">→</span>
+        </a>
+
+        <a href="Группа 1 Урок 3.html" class="lesson-card">
+            <span class="number">03</span>
+            <span class="tag">ADVANCED · КОЛЛЕКЦИИ</span>
+            <h2>Коллекции и дженерики</h2>
+            <p>List, Dictionary, HashSet и как писать код, который работает с любым типом</p>
+            <div class="topics">
+                <span class="topic-tag">List&lt;T&gt;</span>
+                <span class="topic-tag">Dictionary</span>
+                <span class="topic-tag">HashSet</span>
+                <span class="topic-tag">Generics</span>
+            </div>
+            <span class="arrow">→</span>
+        </a>
+
+        <a href="Группа 1 Урок 4.html" class="lesson-card">
+            <span class="number">04</span>
+            <span class="tag">ADVANCED · ИСКЛЮЧЕНИЯ</span>
+            <h2>Обработка исключений и работа с файлами</h2>
+            <p>try-catch-finally, IDisposable, using, StreamReader/StreamWriter</p>
+            <div class="topics">
+                <span class="topic-tag">try-catch</span>
+                <span class="topic-tag">IDisposable</span>
+                <span class="topic-tag">using</span>
+                <span class="topic-tag">Файлы</span>
+            </div>
+            <span class="arrow">→</span>
+        </a>
+
+        <a href="Группа 1 Урок 5.html" class="lesson-card">
+            <span class="number">05</span>
+            <span class="tag">ADVANCED · ДЕЛЕГАТЫ</span>
+            <h2>Делегаты, события и лямбды</h2>
+            <p>Функции как переменные, событийная модель и короткий синтаксис</p>
+            <div class="topics">
+                <span class="topic-tag">Делегаты</span>
+                <span class="topic-tag">Action / Func</span>
+                <span class="topic-tag">Лямбды</span>
+                <span class="topic-tag">event</span>
+            </div>
+            <span class="arrow">→</span>
+        </a>
+
+        <a href="Группа 1 Урок 6.html" class="lesson-card">
+            <span class="number">06</span>
+            <span class="tag">ADVANCED · ASYNC</span>
+            <h2>Асинхронное программирование</h2>
+            <p>Task, async/await, параллельные вычисления и CancellationToken</p>
+            <div class="topics">
+                <span class="topic-tag">Task&lt;T&gt;</span>
+                <span class="topic-tag">async/await</span>
+                <span class="topic-tag">WhenAll/WhenAny</span>
+                <span class="topic-tag">CancellationToken</span>
+            </div>
+            <span class="arrow">→</span>
+        </a>
+
+    </div>
+
+</div>
+
+<footer>Курс C# для группы 1 — интерактивные уроки с практикой и тестами.</footer>
+
+</body>
+</html>
