@@ -250,15 +250,15 @@ export function TeacherDashboard() {
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
-    const { data: user } = await supabase.auth.getUser()
-    if (!user.user) return
+    const teacherId = localStorage.getItem('teacher_id')
+    if (!teacherId) return
 
     const inviteCode = `GRP${Date.now().toString(36).toUpperCase().slice(-6)}`
 
     const { error } = await supabase.from('groups').insert({
       name: newGroupName,
       invite_code: inviteCode,
-      teacher_id: user.user.id,
+      teacher_id: teacherId,
     })
 
     if (!error) {
