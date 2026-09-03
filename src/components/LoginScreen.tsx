@@ -7,7 +7,6 @@ const ADMIN_PASSWORD = 'admin'
 export function LoginScreen() {
   const [mode, setMode] = useState<'student' | 'teacher' | 'admin'>('student')
   const [code, setCode] = useState('')
-  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -36,7 +35,7 @@ export function LoginScreen() {
         localStorage.setItem('user_role', 'student')
         localStorage.setItem('group_id', studentProfile.group_id)
         localStorage.setItem('group_name', group?.name || '')
-        localStorage.setItem('student_name', name.trim() || studentProfile.name)
+        localStorage.setItem('student_name', studentProfile.name)
         localStorage.setItem('student_id', studentProfile.id)
         navigate('/student')
         return
@@ -58,14 +57,13 @@ export function LoginScreen() {
       await supabase.auth.signInAnonymously()
 
       const newId = crypto.randomUUID()
-      const studentName = name.trim() || 'Ученик'
 
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
           id: newId,
-          name: studentName,
-          full_name: studentName,
+          name: 'Ученик',
+          full_name: 'Ученик',
           role: 'student',
           group_id: group.id,
         })
@@ -79,7 +77,7 @@ export function LoginScreen() {
       localStorage.setItem('user_role', 'student')
       localStorage.setItem('group_id', group.id)
       localStorage.setItem('group_name', group.name)
-      localStorage.setItem('student_name', studentName)
+      localStorage.setItem('student_name', 'Ученик')
       localStorage.setItem('student_id', newId)
       navigate('/student')
     } catch {
@@ -196,18 +194,6 @@ export function LoginScreen() {
 
         {mode === 'student' && (
           <form onSubmit={handleStudentLogin} className="login-form">
-            <div className="form-group">
-              <label htmlFor="name">Ваше имя</label>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Введите имя"
-                className="input"
-              />
-            </div>
-
             <div className="form-group">
               <label htmlFor="code">Код группы</label>
               <input
