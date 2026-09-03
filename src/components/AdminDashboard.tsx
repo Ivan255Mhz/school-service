@@ -25,7 +25,6 @@ export function AdminDashboard() {
   const [newTeacherPrice, setNewTeacherPrice] = useState('')
   const [newTeacherBonus, setNewTeacherBonus] = useState('')
   const [selectedTeacher, setSelectedTeacher] = useState<TeacherWithStats | null>(null)
-  const [editingTeacher, setEditingTeacher] = useState<TeacherWithStats | null>(null)
   const [editPrice, setEditPrice] = useState('')
   const [editBonus, setEditBonus] = useState('')
   const [activeTab, setActiveTab] = useState<'teachers' | 'schedule'>('teachers')
@@ -239,7 +238,7 @@ export function AdminDashboard() {
   }
 
   const handleSaveTeacherPrices = async () => {
-    if (!editingTeacher) return
+    if (!selectedTeacher) return
 
     const { error } = await supabase
       .from('profiles')
@@ -247,18 +246,15 @@ export function AdminDashboard() {
         price_per_lesson: editPrice ? parseFloat(editPrice) : 0,
         bonus_per_student: editBonus ? parseFloat(editBonus) : 0,
       })
-      .eq('id', editingTeacher.id)
+      .eq('id', selectedTeacher.id)
 
     if (!error) {
-      setEditingTeacher(null)
       loadTeachers()
-      if (selectedTeacher?.id === editingTeacher.id) {
-        setSelectedTeacher(prev => prev ? {
-          ...prev,
-          price_per_lesson: editPrice ? parseFloat(editPrice) : 0,
-          bonus_per_student: editBonus ? parseFloat(editBonus) : 0,
-        } : null)
-      }
+      setSelectedTeacher(prev => prev ? {
+        ...prev,
+        price_per_lesson: editPrice ? parseFloat(editPrice) : 0,
+        bonus_per_student: editBonus ? parseFloat(editBonus) : 0,
+      } : null)
     }
   }
 
