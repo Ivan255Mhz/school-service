@@ -1,40 +1,34 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Lesson, Attendance, Homework, LessonMaterial, Module } from '../lib/supabase'
+import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
 export function StudentDashboard() {
   const [modules, setModules] = useState<Module[]>([])
   const [selectedModule, setSelectedModule] = useState<Module | null>(null)
-  const [lessons, setLessons] = useState<Lesson[]>([])
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [homework, setHomework] = useState<Homework[]>([])
   const [materialsMap, setMaterialsMap] = useState<Record<string, LessonMaterial[]>>({})
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
   const [uploading, setUploading] = useState(false)
   const [confirmingAttendance, setConfirmingAttendance] = useState<string | null>(null)
+  const [allLessons, setAllLessons] = useState<Lesson[]>([])
+  const [moduleLessonsMap, setModuleLessonsMap] = useState<Record<string, Lesson[]>>({})
+  const [notesMap, setNotesMap] = useState<Record<string, StudentNote>>({})
+  const [editingNote, setEditingNote] = useState<string | null>(null)
+  const [noteText, setNoteText] = useState('')
   const navigate = useNavigate()
 
   const groupId = localStorage.getItem('group_id')
   const groupName = localStorage.getItem('group_name')
   const studentName = localStorage.getItem('student_name')
+  const studentId = localStorage.getItem('student_id')
 
-  useEffect(() => {
-    const role = localStorage.getItem('user_role')
-    if (role !== 'student') {
-      navigate('/')
-      return
-    }
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!groupId) {
       navigate('/')
       return
     }
-
-    const studentId = localStorage.getItem('student_id')
 
     const { data: modulesData } = await supabase
       .from('modules')
@@ -42,7 +36,10 @@ export function StudentDashboard() {
       .eq('group_id', groupId)
       .order('sort_order')
 
-    if (modulesData) setModules(modulesData)
+    if (modulesData) {
+      setModules(modulesData)
+      await loadAllModuleLessons(modulesData)
+    }
 
     if (studentId) {
       const { data: attendanceData } = await supabase
@@ -58,21 +55,53 @@ export function StudentDashboard() {
         .eq('student_id', studentId)
 
       if (homeworkData) setHomework(homeworkData)
+
+      const { data: notesData } = await supabase
+        .from('student_notes')
+        .select('*')
+        .eq('student_id', studentId)
+
+      if (notesData) {
+        const nMap: Record<string, StudentNote> = {}
+        notesData.forEach((n: StudentNote) => { nMap[n.lesson_id] = n })
+        setNotesMap(nMap)
+      }
     }
-  }
+  }, [groupId, studentId, navigate])
 
-  const loadModuleLessons = async (moduleId: string) => {
-    const { data: lessonsData } = await supabase
-      .from('lessons')
-      .select('*')
-      .eq('module_id', moduleId)
-      .order('lesson_number')
+  useEffect(() => {
+    const role = localStorage.getItem('user_role')
+    if (role !== 'student') {
+      navigate('/')
+      return
+    }
+    loadData()
+  }, [loadData])
 
-    if (lessonsData) {
-      setLessons(lessonsData)
-      await loadMaterials(lessonsData.map(l => l.id))
-    } else {
-      setLessons([])
+  const loadAllModuleLessons = async (modulesData: Module[]) => {
+    if (modulesData.length === 0) return
+
+    const allLess: Lesson[] = []
+    const moduleMap: Record<string, Lesson[]> = {}
+
+    for (const mod of modulesData) {
+      const { data: lessonsData } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('module_id', mod.id)
+        .order('lesson_number')
+
+      if (lessonsData) {
+        moduleMap[mod.id] = lessonsData
+        allLess.push(...lessonsData)
+      }
+    }
+
+    setModuleLessonsMap(moduleMap)
+    setAllLessons(allLess)
+
+    if (allLess.length > 0) {
+      await loadMaterials(allLess.map(l => l.id))
     }
   }
 
@@ -91,7 +120,7 @@ export function StudentDashboard() {
         if (!matMap[m.lesson_id]) matMap[m.lesson_id] = []
         matMap[m.lesson_id].push(m)
       })
-      setMaterialsMap(matMap)
+      setMaterialsMap(prev => ({ ...prev, ...matMap }))
     }
   }
 
@@ -103,7 +132,6 @@ export function StudentDashboard() {
 
   const handleConfirmAttendance = async (lessonId: string) => {
     setConfirmingAttendance(lessonId)
-    const studentId = localStorage.getItem('student_id')
     if (!studentId) return
 
     const { error } = await supabase
@@ -122,7 +150,6 @@ export function StudentDashboard() {
 
   const handleFileUpload = async (lessonId: string, file: File) => {
     setUploading(true)
-    const studentId = localStorage.getItem('student_id')
     if (!studentId) return
 
     const fileExt = file.name.split('.').pop()
@@ -153,12 +180,73 @@ export function StudentDashboard() {
     loadData()
   }
 
+  const handleSaveNote = async (lessonId: string) => {
+    if (!studentId) return
+
+    const existing = notesMap[lessonId]
+    if (existing) {
+      const { error } = await supabase
+        .from('student_notes')
+        .update({ content: noteText, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
+
+      if (!error) {
+        setNotesMap(prev => ({
+          ...prev,
+          [lessonId]: { ...prev[lessonId], content: noteText }
+        }))
+        setEditingNote(null)
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('student_notes')
+        .insert({
+          student_id: studentId,
+          lesson_id: lessonId,
+          content: noteText,
+        })
+        .select()
+        .single()
+
+      if (!error && data) {
+        setNotesMap(prev => ({ ...prev, [lessonId]: data }))
+        setEditingNote(null)
+      }
+    }
+  }
+
+  const handleStartEditNote = (lessonId: string) => {
+    const existing = notesMap[lessonId]
+    setNoteText(existing?.content || '')
+    setEditingNote(lessonId)
+  }
+
   const getAttendanceStatus = (lessonId: string) => {
     return attendance.find(a => a.lesson_id === lessonId)
   }
 
   const getHomeworkStatus = (lessonId: string) => {
     return homework.find(h => h.lesson_id === lessonId)
+  }
+
+  const getModuleProgress = (moduleId: string) => {
+    const modLessons = moduleLessonsMap[moduleId] || []
+    if (modLessons.length === 0) return { total: 0, attended: 0, submitted: 0, percent: 0 }
+
+    const attended = modLessons.filter(l => getAttendanceStatus(l.id)).length
+    const submitted = modLessons.filter(l => getHomeworkStatus(l.id)).length
+    const percent = Math.round((attended / modLessons.length) * 100)
+
+    return { total: modLessons.length, attended, submitted, percent }
+  }
+
+  const getGlobalStats = () => {
+    const total = allLessons.length
+    const attended = allLessons.filter(l => getAttendanceStatus(l.id)).length
+    const submitted = allLessons.filter(l => getHomeworkStatus(l.id)).length
+    const attendancePercent = total > 0 ? Math.round((attended / total) * 100) : 0
+
+    return { total, attended, submitted, attendancePercent }
   }
 
   const getFileType = (url: string) => {
@@ -173,90 +261,177 @@ export function StudentDashboard() {
     return 'file'
   }
 
+  const getCurrentModuleLessons = () => {
+    if (!selectedModule) return []
+    return moduleLessonsMap[selectedModule.id] || []
+  }
+
+  const getAdjacentLessons = () => {
+    if (!selectedLesson) return { prev: null, next: null }
+    const currentModuleLessons = getCurrentModuleLessons()
+    const idx = currentModuleLessons.findIndex(l => l.id === selectedLesson.id)
+    return {
+      prev: idx > 0 ? currentModuleLessons[idx - 1] : null,
+      next: idx < currentModuleLessons.length - 1 ? currentModuleLessons[idx + 1] : null,
+    }
+  }
+
   // === VIEW: Selected Lesson ===
   if (selectedLesson) {
     const hasAttendance = getAttendanceStatus(selectedLesson.id)
     const hw = getHomeworkStatus(selectedLesson.id)
     const mats = materialsMap[selectedLesson.id] || []
+    const note = notesMap[selectedLesson.id]
+    const { prev, next } = getAdjacentLessons()
+    const isEditingNote = editingNote === selectedLesson.id
 
     return (
       <div className="lesson-view">
-        <div className="lesson-header">
+        <div className="lesson-view-top">
           <button onClick={() => setSelectedLesson(null)} className="btn btn-back">
             &larr; Назад к урокам
           </button>
-          <h2>Урок {selectedLesson.lesson_number}: {selectedLesson.topic}</h2>
         </div>
 
-        <div className="lesson-content-area">
-          <div className="lesson-materials-panel">
-            <h3>Файлы урока</h3>
-            {mats.length === 0 ? (
-              <p className="empty-text">Файлы не добавлены</p>
-            ) : (
-              <div className="materials-list">
-                {mats.map(m => (
-                  <a
-                    key={m.id}
-                    href={m.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="material-item"
-                  >
-                    <span className="material-icon">{getFileType(m.url)}</span>
-                    <span className="material-name">{m.title}</span>
-                  </a>
-                ))}
-              </div>
-            )}
+        <div className="lesson-title-section">
+          <span className="lesson-number-big">{selectedLesson.lesson_number}</span>
+          <div className="lesson-title-info">
+            <h1>{selectedLesson.topic}</h1>
+            <span className="lesson-date-full">{new Date(selectedLesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+        </div>
 
+        <div className="lesson-status-row">
+          <div className={`lesson-status-chip ${hasAttendance ? 'done' : 'pending'}`}>
+            <span className="status-icon">{hasAttendance ? '✓' : '○'}</span>
+            <span>Посещение</span>
+          </div>
+          <div className={`lesson-status-chip ${hw ? 'done' : 'pending'}`}>
+            <span className="status-icon">{hw ? '✓' : '○'}</span>
+            <span>Домашнее задание</span>
+          </div>
+          {mats.length > 0 && (
+            <div className="lesson-status-chip info">
+              <span className="status-icon">{mats.length}</span>
+              <span>файл(ов)</span>
+            </div>
+          )}
+        </div>
+
+        <div className="lesson-body">
+          <div className="lesson-main-col">
             {selectedLesson.homework_description && (
-              <div className="student-hw-desc">
-                <h3>Домашнее задание</h3>
-                <p>{selectedLesson.homework_description}</p>
+              <div className="lesson-section">
+                <h2 className="section-title">Домашнее задание</h2>
+                <div className="homework-card">
+                  <p>{selectedLesson.homework_description}</p>
+                </div>
               </div>
             )}
 
-            <div className="lesson-actions-panel">
-              <div className="panel-section">
-                <h3>Посещение</h3>
-                {hasAttendance ? (
-                  <div className="status-confirmed">Вы отметили посещение</div>
-                ) : (
+            <div className="lesson-section">
+              <h2 className="section-title">Материалы урока</h2>
+              {mats.length === 0 ? (
+                <div className="empty-state-inline">
+                  <p>Файлы пока не добавлены</p>
+                </div>
+              ) : (
+                <div className="materials-grid">
+                  {mats.map(m => (
+                    <a
+                      key={m.id}
+                      href={m.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="material-card"
+                    >
+                      <div className="material-card-icon">{getFileType(m.url)}</div>
+                      <div className="material-card-info">
+                        <span className="material-card-name">{m.title}</span>
+                      </div>
+                      <span className="material-card-arrow">&rarr;</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="lesson-section">
+              <div className="section-title-row">
+                <h2 className="section-title">Мои заметки</h2>
+                {!isEditingNote && (
+                  <button
+                    onClick={() => handleStartEditNote(selectedLesson.id)}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    {note ? 'Редактировать' : '+ Добавить'}
+                  </button>
+                )}
+              </div>
+              {isEditingNote ? (
+                <div className="note-editor">
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    placeholder="Запишите важное..."
+                    className="note-textarea"
+                    rows={4}
+                  />
+                  <div className="note-actions">
+                    <button onClick={() => handleSaveNote(selectedLesson.id)} className="btn btn-primary btn-sm">
+                      Сохранить
+                    </button>
+                    <button onClick={() => setEditingNote(null)} className="btn btn-ghost btn-sm">
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              ) : note ? (
+                <div className="note-display">
+                  <p>{note.content}</p>
+                </div>
+              ) : (
+                <div className="empty-state-inline">
+                  <p>Заметок пока нет</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="lesson-side-col">
+            <div className="lesson-action-card">
+              <h3>Посещение</h3>
+              {hasAttendance ? (
+                <div className="action-done">
+                  <span className="action-done-icon">✓</span>
+                  <span>Посещение подтверждено</span>
+                </div>
+              ) : (
+                <>
+                  <p className="action-hint">Подтвердите, что вы были на уроке</p>
                   <button
                     onClick={() => handleConfirmAttendance(selectedLesson.id)}
                     className="btn btn-primary btn-full"
                     disabled={confirmingAttendance === selectedLesson.id}
                   >
-                    {confirmingAttendance === selectedLesson.id ? 'Отмечаем...' : 'Я был на этом уроке'}
+                    {confirmingAttendance === selectedLesson.id ? 'Отмечаем...' : 'Я был на уроке'}
                   </button>
-                )}
-              </div>
+                </>
+              )}
+            </div>
 
-              <div className="panel-section">
-                <h3>Домашнее задание</h3>
-                {!hasAttendance ? (
-                  <div className="status-blocked">Сначала отметьте посещение</div>
-                ) : hw ? (
-                  <div className="status-uploaded">
-                    <span className="status-text">Файл: {hw.file_name}</span>
-                    <label className="btn btn-outline btn-sm btn-full">
-                      Заменить файл
-                      <input
-                        type="file"
-                        accept=".cs,.txt,.pdf,.zip"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) handleFileUpload(selectedLesson.id, file)
-                        }}
-                        disabled={uploading}
-                      />
-                    </label>
+            <div className="lesson-action-card">
+              <h3>Домашнее задание</h3>
+              {!hasAttendance ? (
+                <p className="action-hint">Сначала отметьте посещение</p>
+              ) : hw ? (
+                <>
+                  <div className="uploaded-file">
+                    <span className="uploaded-file-icon">✓</span>
+                    <span className="uploaded-file-name">{hw.file_name}</span>
                   </div>
-                ) : (
-                  <label className="btn btn-outline btn-full">
-                    {uploading ? 'Загрузка...' : 'Загрузить файл'}
+                  <label className="btn btn-outline btn-sm btn-full">
+                    Заменить файл
                     <input
                       type="file"
                       accept=".cs,.txt,.pdf,.zip"
@@ -268,10 +443,37 @@ export function StudentDashboard() {
                       disabled={uploading}
                     />
                   </label>
-                )}
-              </div>
+                </>
+              ) : (
+                <label className="btn btn-outline btn-full">
+                  {uploading ? 'Загрузка...' : 'Загрузить файл'}
+                  <input
+                    type="file"
+                    accept=".cs,.txt,.pdf,.zip"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleFileUpload(selectedLesson.id, file)
+                    }}
+                    disabled={uploading}
+                  />
+                </label>
+              )}
             </div>
           </div>
+        </div>
+
+        <div className="lesson-nav-bottom">
+          {prev ? (
+            <button onClick={() => setSelectedLesson(prev)} className="btn btn-outline">
+              &larr; Урок {prev.lesson_number}: {prev.topic}
+            </button>
+          ) : <div />}
+          {next ? (
+            <button onClick={() => setSelectedLesson(next)} className="btn btn-outline">
+              Урок {next.lesson_number}: {next.topic} &rarr;
+            </button>
+          ) : <div />}
         </div>
       </div>
     )
@@ -279,11 +481,14 @@ export function StudentDashboard() {
 
   // === VIEW: Selected Module ===
   if (selectedModule) {
+    const progress = getModuleProgress(selectedModule.id)
+    const currentModuleLessons = getCurrentModuleLessons()
+
     return (
       <div className="dashboard">
         <header className="dashboard-header">
           <div>
-            <button onClick={() => { setSelectedModule(null); setLessons([]); }} className="btn btn-back">
+            <button onClick={() => { setSelectedModule(null); }} className="btn btn-back">
               &larr; Назад к модулям
             </button>
             <h1>{selectedModule.name}</h1>
@@ -293,13 +498,23 @@ export function StudentDashboard() {
           </button>
         </header>
 
+        <div className="module-progress-bar">
+          <div className="progress-info">
+            <span>Прогресс модуля</span>
+            <span>{progress.attended}/{progress.total} уроков | {progress.submitted} ДЗ сдано</span>
+          </div>
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${progress.percent}%` }} />
+          </div>
+        </div>
+
         <div className="lessons-grid">
-          {lessons.length === 0 ? (
+          {currentModuleLessons.length === 0 ? (
             <div className="empty-state">
               <p>Уроков в модуле пока нет.</p>
             </div>
           ) : (
-            lessons.map((lesson) => {
+            currentModuleLessons.map((lesson) => {
               const att = getAttendanceStatus(lesson.id)
               const hw = getHomeworkStatus(lesson.id)
               const mats = materialsMap[lesson.id] || []
@@ -342,6 +557,8 @@ export function StudentDashboard() {
   }
 
   // === VIEW: Modules List ===
+  const stats = getGlobalStats()
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -354,28 +571,58 @@ export function StudentDashboard() {
         </button>
       </header>
 
+      <div className="student-stats">
+        <div className="stat-card">
+          <span className="stat-value">{stats.total}</span>
+          <span className="stat-label">Всего уроков</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-value">{stats.attended}</span>
+          <span className="stat-label">Посещено</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-value">{stats.submitted}</span>
+          <span className="stat-label">ДЗ сдано</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-value">{stats.attendancePercent}%</span>
+          <span className="stat-label">Посещаемость</span>
+        </div>
+      </div>
+
       <div className="modules-grid">
         {modules.length === 0 ? (
           <div className="empty-state">
             <p>Модули пока не добавлены.</p>
           </div>
         ) : (
-          modules.map((module) => (
-            <div key={module.id} className="module-card">
-              <div className="module-card-header">
-                <h3>{module.name}</h3>
+          modules.map((module) => {
+            const progress = getModuleProgress(module.id)
+            return (
+              <div key={module.id} className="module-card">
+                <div className="module-card-header">
+                  <h3>{module.name}</h3>
+                </div>
+                <div className="module-progress">
+                  <div className="module-progress-info">
+                    <span>{progress.attended}/{progress.total} уроков</span>
+                    <span>{progress.percent}%</span>
+                  </div>
+                  <div className="progress-track progress-track-sm">
+                    <div className="progress-fill" style={{ width: `${progress.percent}%` }} />
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedModule(module)
+                  }}
+                  className="btn btn-primary btn-sm"
+                >
+                  Открыть
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setSelectedModule(module)
-                  loadModuleLessons(module.id)
-                }}
-                className="btn btn-primary btn-sm"
-              >
-                Открыть
-              </button>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>

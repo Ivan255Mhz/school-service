@@ -63,3 +63,12 @@ export type LessonMaterial = {
   url: string
   sort_order: number
 }
+
+export type StudentNote = {
+  id: string
+  student_id: string
+  lesson_id: string
+  content: string
+  created_at: string
+  updated_at: string
+}

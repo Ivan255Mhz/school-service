@@ -1359,7 +1359,432 @@ body {
   font-size: 0.875em;
 }
 
-/* ===== Homework Description ===== */
+/* ===== Student Stats ===== */
+.student-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 1.75em;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 0.75em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Progress Bars ===== */
+.module-progress {
+  margin-bottom: 12px;
+}
+
+.module-progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.progress-track {
+  height: 6px;
+  background: var(--bg-input);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-track-sm {
+  height: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.module-progress-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 24px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125em;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.module-progress-bar .progress-track {
+  height: 8px;
+}
+
+/* ===== Lesson Navigation ===== */
+.lesson-nav-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* ===== Notes ===== */
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.note-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.875em;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.note-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.note-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.note-display {
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.note-display p {
+  margin: 0;
+  font-size: 0.875em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--text);
+}
+
+/* ===== Lesson View Redesign ===== */
+.lesson-view {
+  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.lesson-view-top {
+  margin-bottom: 20px;
+}
+
+.lesson-title-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.lesson-number-big {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+  font-size: 1.5em;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.lesson-title-info h1 {
+  margin: 0 0 4px 0;
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.lesson-date-full {
+  font-size: 0.875em;
+  color: var(--text-dim);
+}
+
+.lesson-status-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.lesson-status-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8125em;
+  font-weight: 500;
+}
+
+.lesson-status-chip.done {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.lesson-status-chip.pending {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+.lesson-status-chip.info {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-icon {
+  font-weight: 700;
+}
+
+.lesson-body {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  align-items: start;
+}
+
+.lesson-main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.lesson-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 24px;
+}
+
+.lesson-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-title {
+  font-size: 0.875em;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.empty-state-inline {
+  padding: 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.empty-state-inline p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.875em;
+}
+
+.homework-card {
+  padding: 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.homework-card p {
+  margin: 0;
+  font-size: 0.875em;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--text);
+}
+
+.materials-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.material-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+
+.material-card:hover {
+  border-color: var(--accent);
+}
+
+.material-card-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  font-size: 0.6875em;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.material-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.material-card-name {
+  font-size: 0.875em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.material-card-arrow {
+  color: var(--text-dim);
+  font-size: 1em;
+  flex-shrink: 0;
+}
+
+.lesson-action-card {
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lesson-action-card h3 {
+  margin: 0;
+  font-size: 0.875em;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: var(--radius);
+  color: #22c55e;
+  font-size: 0.8125em;
+  font-weight: 500;
+}
+
+.action-done-icon {
+  font-size: 1.1em;
+}
+
+.action-hint {
+  margin: 0;
+  font-size: 0.8125em;
+  color: var(--text-dim);
+}
+
+.uploaded-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: var(--radius);
+  font-size: 0.8125em;
+}
+
+.uploaded-file-icon {
+  color: #22c55e;
+}
+
+.uploaded-file-name {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lesson-nav-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.lesson-nav-bottom .btn {
+  max-width: 45%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Homework Description (teacher) ===== */
 .lesson-homework-desc {
   padding: 10px 0;
   border-top: 1px solid var(--border);
@@ -1381,30 +1806,6 @@ body {
   color: var(--text);
   line-height: 1.5;
   white-space: pre-wrap;
-}
-
-.student-hw-desc {
-  padding: 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.student-hw-desc h3 {
-  font-size: 0.8125em;
-  font-weight: 500;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-
-.student-hw-desc p {
-  font-size: 0.875em;
-  color: var(--text);
-  line-height: 1.5;
-  white-space: pre-wrap;
-  margin: 0;
 }
 
 /* ===== Responsive ===== */
@@ -1432,6 +1833,40 @@ body {
 
   .modules-grid {
     grid-template-columns: 1fr;
+  }
+
+  .student-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .lesson-view {
+    padding: 16px;
+  }
+
+  .lesson-body {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-side-col {
+    position: static;
+  }
+
+  .lesson-nav-bottom {
+    flex-direction: column;
+  }
+
+  .lesson-nav-bottom .btn {
+    max-width: 100%;
+  }
+
+  .lesson-number-big {
+    width: 44px;
+    height: 44px;
+    font-size: 1.125em;
+  }
+
+  .lesson-title-info h1 {
+    font-size: 1.25em;
   }
 
   .login-card {
@@ -1595,6 +2030,61 @@ body {
 
   .tabs {
     gap: 2px;
+  }
+
+  .student-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.25em;
+  }
+
+  .lesson-view {
+    padding: 12px;
+  }
+
+  .lesson-title-section {
+    gap: 12px;
+  }
+
+  .lesson-number-big {
+    width: 40px;
+    height: 40px;
+    font-size: 1em;
+    border-radius: 8px;
+  }
+
+  .lesson-title-info h1 {
+    font-size: 1.125em;
+  }
+
+  .lesson-status-row {
+    gap: 6px;
+  }
+
+  .lesson-status-chip {
+    padding: 4px 10px;
+    font-size: 0.75em;
+  }
+
+  .material-card {
+    padding: 8px 12px;
+  }
+
+  .material-card-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.625em;
+  }
+
+  .lesson-action-card {
+    padding: 12px;
   }
 
   .tab {
