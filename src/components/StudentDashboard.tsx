@@ -11,7 +11,6 @@ export function StudentDashboard() {
   const [homework, setHomework] = useState<Homework[]>([])
   const [materialsMap, setMaterialsMap] = useState<Record<string, LessonMaterial[]>>({})
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
-  const [selectedMaterial, setSelectedMaterial] = useState<LessonMaterial | null>(null)
   const [uploading, setUploading] = useState(false)
   const [confirmingAttendance, setConfirmingAttendance] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -174,99 +173,6 @@ export function StudentDashboard() {
     return 'file'
   }
 
-  // === VIEW: Selected Material ===
-  if (selectedMaterial) {
-    const fileType = getFileType(selectedMaterial.url)
-
-    if (fileType === 'html') {
-      return (
-        <div className="lesson-view">
-          <div className="lesson-header">
-            <button onClick={() => setSelectedMaterial(null)} className="btn btn-back">
-              &larr; Назад к уроку
-            </button>
-            <h2>{selectedMaterial.title}</h2>
-          </div>
-          <iframe
-            src={selectedMaterial.url}
-            className="lesson-iframe"
-            title={selectedMaterial.title}
-          />
-        </div>
-      )
-    }
-
-    if (fileType === 'image') {
-      return (
-        <div className="lesson-view">
-          <div className="lesson-header">
-            <button onClick={() => setSelectedMaterial(null)} className="btn btn-back">
-              &larr; Назад к уроку
-            </button>
-            <h2>{selectedMaterial.title}</h2>
-          </div>
-          <div className="material-preview">
-            <img src={selectedMaterial.url} alt={selectedMaterial.title} />
-          </div>
-        </div>
-      )
-    }
-
-    if (fileType === 'video') {
-      return (
-        <div className="lesson-view">
-          <div className="lesson-header">
-            <button onClick={() => setSelectedMaterial(null)} className="btn btn-back">
-              &larr; Назад к уроку
-            </button>
-            <h2>{selectedMaterial.title}</h2>
-          </div>
-          <div className="material-preview">
-            <video src={selectedMaterial.url} controls />
-          </div>
-        </div>
-      )
-    }
-
-    if (fileType === 'pdf') {
-      return (
-        <div className="lesson-view">
-          <div className="lesson-header">
-            <button onClick={() => setSelectedMaterial(null)} className="btn btn-back">
-              &larr; Назад к уроку
-            </button>
-            <h2>{selectedMaterial.title}</h2>
-          </div>
-          <iframe
-            src={selectedMaterial.url}
-            className="lesson-iframe"
-            title={selectedMaterial.title}
-          />
-        </div>
-      )
-    }
-
-    return (
-      <div className="lesson-view">
-        <div className="lesson-header">
-          <button onClick={() => setSelectedMaterial(null)} className="btn btn-back">
-            &larr; Назад к уроку
-          </button>
-          <h2>{selectedMaterial.title}</h2>
-        </div>
-        <div className="material-download-page">
-          <div className="download-card">
-            <div className="download-icon">{getFileType(selectedMaterial.url).toUpperCase()}</div>
-            <h3>{selectedMaterial.title}</h3>
-            <a href={selectedMaterial.url} download className="btn btn-primary">
-              Скачать файл
-            </a>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // === VIEW: Selected Lesson ===
   if (selectedLesson) {
     const hasAttendance = getAttendanceStatus(selectedLesson.id)
@@ -290,14 +196,16 @@ export function StudentDashboard() {
             ) : (
               <div className="materials-list">
                 {mats.map(m => (
-                  <button
+                  <a
                     key={m.id}
+                    href={m.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="material-item"
-                    onClick={() => setSelectedMaterial(m)}
                   >
                     <span className="material-icon">{getFileType(m.url)}</span>
                     <span className="material-name">{m.title}</span>
-                  </button>
+                  </a>
                 ))}
               </div>
             )}
