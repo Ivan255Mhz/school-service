@@ -23,6 +23,7 @@ export function TeacherDashboard() {
   const [newLessonTopic, setNewLessonTopic] = useState('')
   const [newLessonDate, setNewLessonDate] = useState(new Date().toISOString().split('T')[0])
   const [newLessonNumber, setNewLessonNumber] = useState(1)
+  const [newHomeworkDesc, setNewHomeworkDesc] = useState('')
   const [newStudentName, setNewStudentName] = useState('')
   const [newMaterials, setNewMaterials] = useState<{title: string; file: File | null; url: string}[]>([])
   const [activeTab, setActiveTab] = useState<'students' | 'journal' | 'homework'>('students')
@@ -314,6 +315,7 @@ export function TeacherDashboard() {
       date: newLessonDate,
       topic: newLessonTopic,
       lesson_number: newLessonNumber,
+      homework_description: newHomeworkDesc || null,
     }).select().single()
 
     if (!error && lesson) {
@@ -340,6 +342,7 @@ export function TeacherDashboard() {
         }
       }
       setNewLessonTopic('')
+      setNewHomeworkDesc('')
       setNewMaterials([])
       setShowCreateLesson(false)
       loadModuleLessons(selectedModule.id)
@@ -356,12 +359,14 @@ export function TeacherDashboard() {
         topic: newLessonTopic,
         date: newLessonDate,
         lesson_number: newLessonNumber,
+        homework_description: newHomeworkDesc || null,
       })
       .eq('id', editingLesson.id)
 
     if (!error) {
       setEditingLesson(null)
       setNewLessonTopic('')
+      setNewHomeworkDesc('')
       if (selectedModule) loadModuleLessons(selectedModule.id)
     }
   }
@@ -371,6 +376,7 @@ export function TeacherDashboard() {
     setNewLessonTopic(lesson.topic)
     setNewLessonDate(lesson.date)
     setNewLessonNumber(lesson.lesson_number)
+    setNewHomeworkDesc(lesson.homework_description || '')
     setShowCreateLesson(false)
   }
 
@@ -533,7 +539,7 @@ export function TeacherDashboard() {
 
         <div className="section-header">
           <h2>Уроки модуля</h2>
-          <button onClick={() => { setShowCreateLesson(true); setEditingLesson(null); setNewLessonTopic(''); }} className="btn btn-primary btn-sm">
+          <button onClick={() => { setShowCreateLesson(true); setEditingLesson(null); setNewLessonTopic(''); setNewHomeworkDesc(''); }} className="btn btn-primary btn-sm">
             + Добавить урок
           </button>
         </div>
@@ -566,6 +572,14 @@ export function TeacherDashboard() {
                 ))}
               </select>
             </div>
+
+            <textarea
+              value={newHomeworkDesc}
+              onChange={(e) => setNewHomeworkDesc(e.target.value)}
+              placeholder="Описание домашнего задания (необязательно)"
+              className="input"
+              rows={3}
+            />
 
             {!editingLesson && (
               <div className="materials-section">
@@ -614,7 +628,7 @@ export function TeacherDashboard() {
               <button type="submit" className="btn btn-primary btn-sm">
                 {editingLesson ? 'Сохранить' : 'Создать'}
               </button>
-              <button type="button" onClick={() => { setShowCreateLesson(false); setEditingLesson(null); setNewMaterials([]); setNewLessonTopic(''); }} className="btn btn-outline btn-sm">
+              <button type="button" onClick={() => { setShowCreateLesson(false); setEditingLesson(null); setNewMaterials([]); setNewLessonTopic(''); setNewHomeworkDesc(''); }} className="btn btn-outline btn-sm">
                 Отмена
               </button>
             </div>
@@ -676,6 +690,13 @@ export function TeacherDashboard() {
                           </button>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {lesson.homework_description && (
+                    <div className="lesson-homework-desc">
+                      <span className="hw-desc-label">Домашнее задание:</span>
+                      <span className="hw-desc-text">{lesson.homework_description}</span>
                     </div>
                   )}
 

@@ -1359,6 +1359,54 @@ body {
   font-size: 0.875em;
 }
 
+/* ===== Homework Description ===== */
+.lesson-homework-desc {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hw-desc-label {
+  font-size: 0.75em;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hw-desc-text {
+  font-size: 0.875em;
+  color: var(--text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.student-hw-desc {
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.student-hw-desc h3 {
+  font-size: 0.8125em;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.student-hw-desc p {
+  font-size: 0.875em;
+  color: var(--text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .dashboard {

@@ -210,6 +210,13 @@ export function StudentDashboard() {
               </div>
             )}
 
+            {selectedLesson.homework_description && (
+              <div className="student-hw-desc">
+                <h3>Домашнее задание</h3>
+                <p>{selectedLesson.homework_description}</p>
+              </div>
+            )}
+
             <div className="lesson-actions-panel">
               <div className="panel-section">
                 <h3>Посещение</h3>
