@@ -9,31 +9,26 @@ type TeacherWithStats = Profile & {
   totalLessons: number
 }
 
-type LessonWithStats = Lesson & {
+type LessonWithAttendance = Lesson & {
   groupName: string
   moduleName: string
   teacherName: string
-  presentCount: number
-  totalCount: number
-}
-
-type StudentWithStats = Profile & {
-  groupName: string
-  teacherName: string
-  totalLessons: number
-  attendedLessons: number
-  submittedHomework: number
-  totalHomework: number
+  presentStudents: string[]
+  absentStudents: string[]
 }
 
 export function AdminDashboard() {
   const [teachers, setTeachers] = useState<TeacherWithStats[]>([])
-  const [allLessons, setAllLessons] = useState<LessonWithStats[]>([])
-  const [allStudents, setAllStudents] = useState<StudentWithStats[]>([])
+  const [allLessons, setAllLessons] = useState<LessonWithAttendance[]>([])
   const [showCreateTeacher, setShowCreateTeacher] = useState(false)
   const [newTeacherName, setNewTeacherName] = useState('')
+  const [newTeacherPrice, setNewTeacherPrice] = useState('')
+  const [newTeacherBonus, setNewTeacherBonus] = useState('')
   const [selectedTeacher, setSelectedTeacher] = useState<TeacherWithStats | null>(null)
-  const [activeTab, setActiveTab] = useState<'teachers' | 'schedule' | 'students'>('teachers')
+  const [editingTeacher, setEditingTeacher] = useState<TeacherWithStats | null>(null)
+  const [editPrice, setEditPrice] = useState('')
+  const [editBonus, setEditBonus] = useState('')
+  const [activeTab, setActiveTab] = useState<'teachers' | 'schedule'>('teachers')
   const [filterTeacher, setFilterTeacher] = useState('')
   const [filterGroup, setFilterGroup] = useState('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
@@ -51,7 +46,7 @@ export function AdminDashboard() {
     (async () => {
       try {
         setLoading(true)
-        await Promise.all([loadTeachers(), loadAllLessons(), loadAllStudents()])
+        await Promise.all([loadTeachers(), loadAllLessons()])
       } catch (e) {
         console.error('Load error:', e)
         setError('Ошибка загрузки данных')
@@ -77,20 +72,16 @@ export function AdminDashboard() {
       .select('id, teacher_id, name, invite_code')
       .in('teacher_id', teacherIds)
 
-    const groupCounts: Record<string, number> = {}
     const groupIds: string[] = []
     if (groupsData) {
-      groupsData.forEach(g => {
-        groupCounts[g.teacher_id] = (groupCounts[g.teacher_id] || 0) + 1
-        groupIds.push(g.id)
-      })
+      groupsData.forEach(g => groupIds.push(g.id))
     }
 
     let studentCounts: Record<string, number> = {}
     if (groupIds.length > 0) {
       const { data: studentsData } = await supabase
         .from('profiles')
-        .select('id, group_id')
+        .select('group_id')
         .eq('role', 'student')
         .in('group_id', groupIds)
       if (studentsData) {
@@ -107,15 +98,24 @@ export function AdminDashboard() {
       })
     }
 
-    const { count: totalLessons } = await supabase
-      .from('lessons')
-      .select('*', { count: 'exact', head: true })
+    const lessonCountByTeacher: Record<string, number> = {}
+    if (groupsData) {
+      for (const g of groupsData) {
+        const { count } = await supabase
+          .from('lessons')
+          .select('*', { count: 'exact', head: true })
+          .eq('group_id', g.id)
+        if (count) {
+          lessonCountByTeacher[g.teacher_id] = (lessonCountByTeacher[g.teacher_id] || 0) + count
+        }
+      }
+    }
 
     const teachersWithStats: TeacherWithStats[] = teachersData.map(teacher => ({
       ...teacher,
       groups: groupsData?.filter(g => g.teacher_id === teacher.id) || [],
       totalStudents: totalStudentsPerTeacher[teacher.id] || 0,
-      totalLessons: totalLessons || 0,
+      totalLessons: lessonCountByTeacher[teacher.id] || 0,
     }))
 
     setTeachers(teachersWithStats)
@@ -138,10 +138,10 @@ export function AdminDashboard() {
         ? supabase.from('profiles').select('id, name').in('id', teacherIds)
         : { data: [] },
       groupIds.length > 0
-        ? supabase.from('profiles').select('group_id').eq('role', 'student').in('group_id', groupIds)
+        ? supabase.from('profiles').select('id, group_id, name').eq('role', 'student').in('group_id', groupIds)
         : { data: [] },
       lessonIds.length > 0
-        ? supabase.from('attendance').select('lesson_id').eq('present', true).in('lesson_id', lessonIds)
+        ? supabase.from('attendance').select('lesson_id, student_id, present').in('lesson_id', lessonIds)
         : { data: [] },
     ])
 
@@ -150,106 +150,42 @@ export function AdminDashboard() {
       teachersRes.data.forEach((t: any) => { teacherMap[t.id] = t.name })
     }
 
-    const studentCountByGroup: Record<string, number> = {}
+    const studentsByGroup: Record<string, { id: string; name: string }[]> = {}
     if (studentsRes.data) {
       studentsRes.data.forEach((s: any) => {
-        studentCountByGroup[s.group_id] = (studentCountByGroup[s.group_id] || 0) + 1
+        if (!studentsByGroup[s.group_id]) studentsByGroup[s.group_id] = []
+        studentsByGroup[s.group_id].push({ id: s.id, name: s.name })
       })
     }
 
-    const presentCountByLesson: Record<string, number> = {}
+    const attendanceByLesson: Record<string, Record<string, boolean>> = {}
     if (attendanceRes.data) {
       attendanceRes.data.forEach((a: any) => {
-        presentCountByLesson[a.lesson_id] = (presentCountByLesson[a.lesson_id] || 0) + 1
+        if (!attendanceByLesson[a.lesson_id]) attendanceByLesson[a.lesson_id] = {}
+        attendanceByLesson[a.lesson_id][a.student_id] = a.present
       })
     }
 
-    const lessonsWithStats: LessonWithStats[] = lessons.map(lesson => {
+    const lessonsWithAttendance: LessonWithAttendance[] = lessons.map(lesson => {
       const group = lesson.groups as any
       const module = lesson.modules as any
+      const students = studentsByGroup[lesson.group_id] || []
+      const att = attendanceByLesson[lesson.id] || {}
+
+      const presentStudents = students.filter(s => att[s.id] === true).map(s => s.name)
+      const absentStudents = students.filter(s => att[s.id] !== true).map(s => s.name)
+
       return {
         ...lesson,
         groupName: group?.name || '-',
         moduleName: module?.name || '-',
         teacherName: teacherMap[group?.teacher_id] || '-',
-        presentCount: presentCountByLesson[lesson.id] || 0,
-        totalCount: studentCountByGroup[lesson.group_id] || 0,
+        presentStudents,
+        absentStudents,
       }
     })
 
-    setAllLessons(lessonsWithStats)
-  }
-
-  const loadAllStudents = async () => {
-    const { data: students } = await supabase
-      .from('profiles')
-      .select('*, groups(name, teacher_id)')
-      .eq('role', 'student')
-
-    if (!students) {
-      setAllStudents([])
-      return
-    }
-
-    const groupIds = [...new Set(students.map(s => s.group_id).filter(Boolean))]
-    const teacherIds = [...new Set(students.map(s => (s.groups as any)?.teacher_id).filter(Boolean))]
-    const studentIds = students.map(s => s.id)
-
-    const [teachersRes, lessonsRes, attendanceRes, homeworkRes] = await Promise.all([
-      teacherIds.length > 0
-        ? supabase.from('profiles').select('id, name').in('id', teacherIds)
-        : { data: [] },
-      groupIds.length > 0
-        ? supabase.from('lessons').select('id, group_id').in('group_id', groupIds)
-        : { data: [] },
-      studentIds.length > 0
-        ? supabase.from('attendance').select('student_id').eq('present', true).in('student_id', studentIds)
-        : { data: [] },
-      studentIds.length > 0
-        ? supabase.from('homework').select('student_id').in('student_id', studentIds)
-        : { data: [] },
-    ])
-
-    const teacherMap: Record<string, string> = {}
-    if (teachersRes.data) {
-      teachersRes.data.forEach((t: any) => { teacherMap[t.id] = t.name })
-    }
-
-    const lessonCountByGroup: Record<string, number> = {}
-    if (lessonsRes.data) {
-      lessonsRes.data.forEach((l: any) => {
-        lessonCountByGroup[l.group_id] = (lessonCountByGroup[l.group_id] || 0) + 1
-      })
-    }
-
-    const attendanceCountByStudent: Record<string, number> = {}
-    if (attendanceRes.data) {
-      attendanceRes.data.forEach((a: any) => {
-        attendanceCountByStudent[a.student_id] = (attendanceCountByStudent[a.student_id] || 0) + 1
-      })
-    }
-
-    const homeworkCountByStudent: Record<string, number> = {}
-    if (homeworkRes.data) {
-      homeworkRes.data.forEach((h: any) => {
-        homeworkCountByStudent[h.student_id] = (homeworkCountByStudent[h.student_id] || 0) + 1
-      })
-    }
-
-    const studentsWithStats: StudentWithStats[] = students.map(student => {
-      const group = student.groups as any
-      return {
-        ...student,
-        groupName: group?.name || '-',
-        teacherName: teacherMap[group?.teacher_id] || '-',
-        totalLessons: lessonCountByGroup[student.group_id] || 0,
-        attendedLessons: attendanceCountByStudent[student.id] || 0,
-        submittedHomework: homeworkCountByStudent[student.id] || 0,
-        totalHomework: lessonCountByGroup[student.group_id] || 0,
-      }
-    })
-
-    setAllStudents(studentsWithStats)
+    setAllLessons(lessonsWithAttendance)
   }
 
   const generateLoginCode = () => {
@@ -265,7 +201,6 @@ export function AdminDashboard() {
     e.preventDefault()
 
     const loginCode = generateLoginCode()
-
     const { data: existing } = await supabase
       .from('profiles')
       .select('id')
@@ -278,7 +213,6 @@ export function AdminDashboard() {
     }
 
     const newId = crypto.randomUUID()
-
     const { error } = await supabase
       .from('profiles')
       .insert({
@@ -287,6 +221,8 @@ export function AdminDashboard() {
         full_name: newTeacherName,
         role: 'teacher',
         login_code: loginCode,
+        price_per_lesson: newTeacherPrice ? parseFloat(newTeacherPrice) : 0,
+        bonus_per_student: newTeacherBonus ? parseFloat(newTeacherBonus) : 0,
       })
 
     if (error) {
@@ -296,19 +232,34 @@ export function AdminDashboard() {
 
     alert(`Преподаватель создан!\n\nЛогин: ${loginCode}\n\nСохраните этот код!`)
     setNewTeacherName('')
+    setNewTeacherPrice('')
+    setNewTeacherBonus('')
     setShowCreateTeacher(false)
-    setTeachers(prev => [...prev, {
-      id: newId,
-      name: newTeacherName,
-      full_name: newTeacherName,
-      role: 'teacher' as const,
-      login_code: loginCode,
-      group_id: null,
-      invite_code: null,
-      groups: [],
-      totalStudents: 0,
-      totalLessons: 0,
-    }])
+    loadTeachers()
+  }
+
+  const handleSaveTeacherPrices = async () => {
+    if (!editingTeacher) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        price_per_lesson: editPrice ? parseFloat(editPrice) : 0,
+        bonus_per_student: editBonus ? parseFloat(editBonus) : 0,
+      })
+      .eq('id', editingTeacher.id)
+
+    if (!error) {
+      setEditingTeacher(null)
+      loadTeachers()
+      if (selectedTeacher?.id === editingTeacher.id) {
+        setSelectedTeacher(prev => prev ? {
+          ...prev,
+          price_per_lesson: editPrice ? parseFloat(editPrice) : 0,
+          bonus_per_student: editBonus ? parseFloat(editBonus) : 0,
+        } : null)
+      }
+    }
   }
 
   const handleDeleteTeacher = async (teacherId: string) => {
@@ -353,7 +304,6 @@ export function AdminDashboard() {
     await supabase.from('profiles').delete().eq('id', teacherId)
     setSelectedTeacher(null)
     loadTeachers()
-    loadAllStudents()
     loadAllLessons()
   }
 
@@ -373,6 +323,11 @@ export function AdminDashboard() {
 
   const uniqueTeacherNames = [...new Set(allLessons.map(l => l.teacherName))]
   const uniqueGroupNames = [...new Set(allLessons.map(l => l.groupName))]
+
+  const formatPrice = (val: number | null) => {
+    if (!val || val === 0) return '0 ₽'
+    return `${val.toLocaleString('ru-RU')} ₽`
+  }
 
   return (
     <div className="dashboard">
@@ -403,12 +358,6 @@ export function AdminDashboard() {
         >
           Расписание ({allLessons.length})
         </button>
-        <button
-          className={`tab ${activeTab === 'students' ? 'active' : ''}`}
-          onClick={() => setActiveTab('students')}
-        >
-          Все ученики ({allStudents.length})
-        </button>
       </div>
 
       {activeTab === 'teachers' && (
@@ -430,6 +379,32 @@ export function AdminDashboard() {
                 className="input"
                 required
               />
+              <div className="form-row-3">
+                <div className="form-field">
+                  <label className="form-label">Цена за урок (₽)</label>
+                  <input
+                    type="number"
+                    value={newTeacherPrice}
+                    onChange={(e) => setNewTeacherPrice(e.target.value)}
+                    placeholder="0"
+                    className="input"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div className="form-field">
+                  <label className="form-label">Бонус за ученика (₽)</label>
+                  <input
+                    type="number"
+                    value={newTeacherBonus}
+                    onChange={(e) => setNewTeacherBonus(e.target.value)}
+                    placeholder="0"
+                    className="input"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
               <div className="form-hint">Код для входа будет сгенерирован автоматически</div>
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary btn-sm">Создать</button>
@@ -455,6 +430,14 @@ export function AdminDashboard() {
                   <code className="info-value">{selectedTeacher.login_code || '-'}</code>
                 </div>
                 <div className="info-card">
+                  <span className="info-label">Цена за урок</span>
+                  <span className="info-value price">{formatPrice(selectedTeacher.price_per_lesson)}</span>
+                </div>
+                <div className="info-card">
+                  <span className="info-label">Бонус за ученика</span>
+                  <span className="info-value bonus">{formatPrice(selectedTeacher.bonus_per_student)}</span>
+                </div>
+                <div className="info-card">
                   <span className="info-label">Группы</span>
                   <span className="info-value">{selectedTeacher.groups.length}</span>
                 </div>
@@ -466,6 +449,37 @@ export function AdminDashboard() {
                   <span className="info-label">Уроки</span>
                   <span className="info-value">{selectedTeacher.totalLessons}</span>
                 </div>
+              </div>
+
+              <div className="teacher-prices-edit">
+                <h4>Настройки цен</h4>
+                <div className="form-row-3">
+                  <div className="form-field">
+                    <label className="form-label">Цена за урок (₽)</label>
+                    <input
+                      type="number"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      className="input"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Бонус за ученика (₽)</label>
+                    <input
+                      type="number"
+                      value={editBonus}
+                      onChange={(e) => setEditBonus(e.target.value)}
+                      className="input"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+                <button onClick={handleSaveTeacherPrices} className="btn btn-primary btn-sm">
+                  Сохранить цены
+                </button>
               </div>
 
               <h4>Группы преподавателя</h4>
@@ -481,6 +495,54 @@ export function AdminDashboard() {
                   ))}
                 </div>
               )}
+
+              <h4>Занятия и посещаемость</h4>
+              {(() => {
+                const teacherLessons = allLessons.filter(l =>
+                  selectedTeacher.groups.some(g => l.groupName === g.name)
+                )
+
+                if (teacherLessons.length === 0) {
+                  return <p className="empty-text">Занятий пока нет</p>
+                }
+
+                return (
+                  <div className="attendance-grid">
+                    <div className="attendance-grid-header">
+                      <span className="ag-col-date">Дата</span>
+                      <span className="ag-col-topic">Урок</span>
+                      <span className="ag-col-group">Группа</span>
+                      <span className="ag-col-students">Ученики</span>
+                    </div>
+                    {teacherLessons.map(lesson => (
+                      <div key={lesson.id} className="attendance-grid-row">
+                        <span className="ag-col-date">
+                          {new Date(lesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        </span>
+                        <span className="ag-col-topic">
+                          {lesson.lesson_number}. {lesson.topic}
+                        </span>
+                        <span className="ag-col-group">{lesson.groupName}</span>
+                        <span className="ag-col-students">
+                          {lesson.presentStudents.length > 0 ? (
+                            lesson.presentStudents.map((name, i) => (
+                              <span key={i} className="ag-student present">{name}</span>
+                            ))
+                          ) : (
+                            <span className="ag-no-students">—</span>
+                          )}
+                          {lesson.absentStudents.length > 0 && (
+                            <span className="ag-absent-sep">/ </span>
+                          )}
+                          {lesson.absentStudents.map((name, i) => (
+                            <span key={i} className="ag-student absent">{name}</span>
+                          ))}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
 
               <div className="teacher-detail-actions">
                 <button
@@ -504,13 +566,21 @@ export function AdminDashboard() {
                 </div>
               ) : (
                 teachers.map(teacher => (
-                  <div key={teacher.id} className="teacher-card" onClick={() => setSelectedTeacher(teacher)}>
+                  <div key={teacher.id} className="teacher-card" onClick={() => {
+                    setSelectedTeacher(teacher)
+                    setEditPrice(String(teacher.price_per_lesson || 0))
+                    setEditBonus(String(teacher.bonus_per_student || 0))
+                  }}>
                     <div className="teacher-card-info">
                       <span className="teacher-avatar">{(teacher.full_name || teacher.name).charAt(0)}</span>
                       <div>
                         <div className="teacher-card-name">{teacher.full_name || teacher.name}</div>
                         <div className="teacher-card-code">Код: {teacher.login_code || '-'}</div>
                       </div>
+                    </div>
+                    <div className="teacher-card-prices">
+                      <span className="teacher-price-item">{formatPrice(teacher.price_per_lesson)}/урок</span>
+                      <span className="teacher-price-item bonus">{formatPrice(teacher.bonus_per_student)}/уч.</span>
                     </div>
                     <div className="teacher-card-stats">
                       <span>{teacher.groups.length} групп</span>
@@ -582,62 +652,26 @@ export function AdminDashboard() {
                     <div className="schedule-meta">
                       {lesson.teacherName} / {lesson.groupName} / {lesson.moduleName}
                     </div>
+                    <div className="schedule-students-row">
+                      {lesson.presentStudents.map((name, i) => (
+                        <span key={i} className="ag-student present">{name}</span>
+                      ))}
+                      {lesson.absentStudents.length > 0 && (
+                        <span className="ag-absent-sep">/ </span>
+                      )}
+                      {lesson.absentStudents.map((name, i) => (
+                        <span key={i} className="ag-student absent">{name}</span>
+                      ))}
+                    </div>
                   </div>
                   <div className="schedule-attendance">
-                    <span className={lesson.presentCount === lesson.totalCount && lesson.totalCount > 0 ? 'all-present' : ''}>
-                      {lesson.presentCount}/{lesson.totalCount}
+                    <span className={lesson.presentStudents.length > 0 && lesson.absentStudents.length === 0 ? 'all-present' : ''}>
+                      {lesson.presentStudents.length}/{lesson.presentStudents.length + lesson.absentStudents.length}
                     </span>
                     <span className="attendance-label">посещ.</span>
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'students' && (
-        <div className="teacher-section">
-          <h2>Все ученики</h2>
-          {allStudents.length === 0 ? (
-            <div className="empty-state">
-              <p>Учеников пока нет.</p>
-            </div>
-          ) : (
-            <div className="students-table-wrap">
-              <table className="students-table">
-                <thead>
-                  <tr>
-                    <th>Имя</th>
-                    <th>Группа</th>
-                    <th>Преподаватель</th>
-                    <th>Посещаемость</th>
-                    <th>ДЗ сдано</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allStudents.map(student => {
-                    const attPercent = student.totalLessons > 0
-                      ? Math.round((student.attendedLessons / student.totalLessons) * 100)
-                      : 0
-                    return (
-                      <tr key={student.id}>
-                        <td>{student.name}</td>
-                        <td>{student.groupName}</td>
-                        <td>{student.teacherName}</td>
-                        <td>
-                          <span className={`att-badge ${attPercent >= 75 ? 'green' : attPercent >= 50 ? 'yellow' : 'red'}`}>
-                            {student.attendedLessons}/{student.totalLessons} ({attPercent}%)
-                          </span>
-                        </td>
-                        <td>
-                          {student.submittedHomework}/{student.totalHomework}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
             </div>
           )}
         </div>

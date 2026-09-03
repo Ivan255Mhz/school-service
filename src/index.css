@@ -1505,6 +1505,174 @@ body {
   color: var(--text);
 }
 
+/* ===== Admin: Teacher Prices ===== */
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-label {
+  font-size: 0.75em;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.teacher-prices-edit {
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.teacher-prices-edit h4 {
+  margin: 0;
+  font-size: 0.875em;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value.price {
+  color: var(--accent);
+}
+
+.info-value.bonus {
+  color: #22c55e;
+}
+
+.teacher-card-prices {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.teacher-price-item {
+  font-size: 0.75em;
+  padding: 2px 8px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.teacher-price-item.bonus {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+/* ===== Admin: Attendance Grid ===== */
+.attendance-grid {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.attendance-grid-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 140px 1fr;
+  gap: 1px;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  font-size: 0.6875em;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.attendance-grid-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 140px 1fr;
+  gap: 1px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.attendance-grid-row:last-child {
+  border-bottom: none;
+}
+
+.attendance-grid-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ag-col-date {
+  font-size: 0.8125em;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.ag-col-topic {
+  font-size: 0.8125em;
+  color: var(--text);
+}
+
+.ag-col-group {
+  font-size: 0.75em;
+  color: var(--text-dim);
+}
+
+.ag-col-students {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.ag-student {
+  font-size: 0.6875em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.ag-student.present {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.ag-student.absent {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  text-decoration: line-through;
+}
+
+.ag-absent-sep {
+  font-size: 0.75em;
+  color: var(--text-dim);
+}
+
+.ag-no-students {
+  font-size: 0.75em;
+  color: var(--text-dim);
+}
+
+.schedule-students-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 /* ===== Lesson View Redesign ===== */
 .lesson-view {
   padding: 24px;
@@ -1872,6 +2040,24 @@ body {
 
   .lesson-title-info h1 {
     font-size: 1.25em;
+  }
+
+  .form-row-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-grid-header,
+  .attendance-grid-row {
+    grid-template-columns: 60px 1fr 100px;
+  }
+
+  .ag-col-students {
+    display: none;
+  }
+
+  .teacher-card-prices {
+    flex-direction: column;
+    gap: 4px;
   }
 
   .login-card {
