@@ -20,7 +20,6 @@ export function LoginScreen() {
     try {
       const trimmedCode = code.trim().toUpperCase()
 
-      // Try personal invite code first (STU-XXXXXX)
       const { data: studentProfile } = await supabase
         .from('profiles')
         .select('*, groups(*)')
@@ -41,7 +40,6 @@ export function LoginScreen() {
         return
       }
 
-      // Fallback: group invite code
       const { data: group } = await supabase
         .from('groups')
         .select('*')
@@ -166,9 +164,17 @@ export function LoginScreen() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-logo">
-          <div className="logo-mark">C#</div>
-          <h1>Курс C#</h1>
-          <p className="login-subtitle">Интерактивные уроки</p>
+          <div className="logo-icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <rect width="40" height="40" rx="12" fill="#3b82f6"/>
+              <path d="M12 20C12 15.58 15.58 12 20 12C24.42 12 28 15.58 28 20" stroke="#fff" strokeWidth="3" strokeLinecap="round"/>
+              <circle cx="20" cy="20" r="3" fill="#fff"/>
+              <path d="M14 26L12 28L14 30" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M26 26L28 28L26 30" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <h1>Speak</h1>
+          <p className="login-subtitle">м. Купчино</p>
         </div>
 
         <div className="login-tabs">
@@ -195,21 +201,22 @@ export function LoginScreen() {
         {mode === 'student' && (
           <form onSubmit={handleStudentLogin} className="login-form">
             <div className="form-group">
-              <label htmlFor="code">Код группы</label>
+              <label htmlFor="code">Код</label>
               <input
                 id="code"
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="GRP123456"
+                placeholder="STU-XXXXXX или GRPXXXXXX"
                 className="input"
                 required
               />
+              <span className="form-hint">Личный код ученика или код группы</span>
             </div>
 
             {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" className="btn btn-primary" disabled={loading || !code}>
+            <button type="submit" className="btn btn-primary btn-full" disabled={loading || !code}>
               {loading ? 'Вход...' : 'Войти'}
             </button>
           </form>
@@ -232,7 +239,7 @@ export function LoginScreen() {
 
             {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" className="btn btn-primary" disabled={loading || !code}>
+            <button type="submit" className="btn btn-primary btn-full" disabled={loading || !code}>
               {loading ? 'Вход...' : 'Войти'}
             </button>
           </form>
@@ -241,7 +248,7 @@ export function LoginScreen() {
         {mode === 'admin' && (
           <form onSubmit={handleAdminLogin} className="login-form">
             <div className="form-group">
-              <label htmlFor="admin-password">Пароль администратора</label>
+              <label htmlFor="admin-password">Пароль</label>
               <input
                 id="admin-password"
                 type="password"
@@ -255,7 +262,7 @@ export function LoginScreen() {
 
             {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" className="btn btn-primary" disabled={loading || !password}>
+            <button type="submit" className="btn btn-primary btn-full" disabled={loading || !password}>
               {loading ? 'Вход...' : 'Войти'}
             </button>
           </form>
