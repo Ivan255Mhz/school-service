@@ -892,6 +892,42 @@ body {
   margin-right: 12px;
 }
 
+/* ===== Lesson Completed Toggle ===== */
+.lesson-completed-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.lesson-completed-toggle input {
+  display: none;
+}
+
+.toggle-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  font-size: 0.75em;
+  font-weight: 700;
+  color: var(--text-dim);
+  transition: all 0.2s;
+}
+
+.toggle-mark.done {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.lesson-completed-toggle:hover .toggle-mark {
+  border-color: var(--accent);
+}
+
 .material-preview {
   display: flex;
   align-items: center;

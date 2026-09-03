@@ -470,6 +470,17 @@ export function TeacherDashboard() {
     }
   }
 
+  const handleToggleCompleted = async (lessonId: string, currentValue: boolean) => {
+    const { error } = await supabase
+      .from('lessons')
+      .update({ is_completed: !currentValue })
+      .eq('id', lessonId)
+
+    if (!error && selectedModule) {
+      loadModuleLessons(selectedModule.id)
+    }
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     localStorage.clear()
@@ -657,6 +668,16 @@ export function TeacherDashboard() {
                       {attCount}/{students.length} посещ.
                       {hwCount > 0 && ` | ${hwCount} ДЗ`}
                     </span>
+                    <label className="lesson-completed-toggle" title={lesson.is_completed ? 'Завершён' : 'В процессе'}>
+                      <input
+                        type="checkbox"
+                        checked={lesson.is_completed}
+                        onChange={() => handleToggleCompleted(lesson.id, lesson.is_completed)}
+                      />
+                      <span className={`toggle-mark ${lesson.is_completed ? 'done' : ''}`}>
+                        {lesson.is_completed ? '✓' : '○'}
+                      </span>
+                    </label>
                     <button
                       onClick={() => startEditLesson(lesson)}
                       className="btn btn-outline btn-xs"

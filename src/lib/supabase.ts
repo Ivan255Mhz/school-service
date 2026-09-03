@@ -33,6 +33,7 @@ export type Lesson = {
   lesson_number: number
   material_url: string | null
   homework_description: string | null
+  is_completed: boolean
 }
 
 export type Module = {

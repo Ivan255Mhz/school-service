@@ -89,6 +89,7 @@ export function StudentDashboard() {
         .from('lessons')
         .select('*')
         .eq('module_id', mod.id)
+        .eq('is_completed', true)
         .order('lesson_number')
 
       if (lessonsData) {

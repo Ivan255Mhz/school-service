@@ -15,6 +15,7 @@ type LessonWithAttendance = Lesson & {
   teacherName: string
   presentStudents: string[]
   absentStudents: string[]
+  is_completed: boolean
 }
 
 export function AdminDashboard() {
@@ -32,6 +33,7 @@ export function AdminDashboard() {
   const [filterGroup, setFilterGroup] = useState('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
+  const [filterCompleted, setFilterCompleted] = useState<'all' | 'completed' | 'pending'>('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -314,6 +316,8 @@ export function AdminDashboard() {
     if (filterGroup && l.groupName !== filterGroup) return false
     if (filterDateFrom && l.date < filterDateFrom) return false
     if (filterDateTo && l.date > filterDateTo) return false
+    if (filterCompleted === 'completed' && !l.is_completed) return false
+    if (filterCompleted === 'pending' && l.is_completed) return false
     return true
   })
 
@@ -623,9 +627,14 @@ export function AdminDashboard() {
               className="input filter-input"
               placeholder="До"
             />
-            {(filterTeacher || filterGroup || filterDateFrom || filterDateTo) && (
+            <select value={filterCompleted} onChange={e => setFilterCompleted(e.target.value as any)} className="input filter-input">
+              <option value="all">Все статусы</option>
+              <option value="completed">Завершённые</option>
+              <option value="pending">В процессе</option>
+            </select>
+            {(filterTeacher || filterGroup || filterDateFrom || filterDateTo || filterCompleted !== 'all') && (
               <button
-                onClick={() => { setFilterTeacher(''); setFilterGroup(''); setFilterDateFrom(''); setFilterDateTo(''); }}
+                onClick={() => { setFilterTeacher(''); setFilterGroup(''); setFilterDateFrom(''); setFilterDateTo(''); setFilterCompleted('all'); }}
                 className="btn btn-outline btn-sm"
               >
                 Сбросить
@@ -640,12 +649,15 @@ export function AdminDashboard() {
           ) : (
             <div className="schedule-list">
               {filteredLessons.map(lesson => (
-                <div key={lesson.id} className="schedule-item">
+                <div key={lesson.id} className={`schedule-item ${lesson.is_completed ? 'schedule-completed' : ''}`}>
                   <div className="schedule-date">
                     {new Date(lesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
                   </div>
                   <div className="schedule-info">
-                    <div className="schedule-topic">Урок {lesson.lesson_number}: {lesson.topic}</div>
+                    <div className="schedule-topic">
+                      Урок {lesson.lesson_number}: {lesson.topic}
+                      {lesson.is_completed && <span className="badge badge-green badge-sm">Завершён</span>}
+                    </div>
                     <div className="schedule-meta">
                       {lesson.teacherName} / {lesson.groupName} / {lesson.moduleName}
                     </div>
