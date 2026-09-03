@@ -417,22 +417,20 @@ export function AdminDashboard() {
                 <button onClick={() => setSelectedTeacher(null)} className="btn btn-back">
                   &larr; Назад к списку
                 </button>
-                <div className="teacher-detail-header-right">
-                  <h3>{selectedTeacher.full_name || selectedTeacher.name}</h3>
-                  <button
-                    onClick={() => {
-                      if (confirm('Удалить преподавателя и все его группы, модули, уроки?')) {
-                        handleDeleteTeacher(selectedTeacher.id)
-                      }
-                    }}
-                    className="btn-delete-teacher"
-                    title="Удалить преподавателя"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M4 4l8 8M12 4l-8 8"/>
-                    </svg>
-                  </button>
-                </div>
+                <h3 className="teacher-detail-name">{selectedTeacher.full_name || selectedTeacher.name}</h3>
+                <button
+                  onClick={() => {
+                    if (confirm('Удалить преподавателя и все его группы, модули, уроки?')) {
+                      handleDeleteTeacher(selectedTeacher.id)
+                    }
+                  }}
+                  className="btn-delete-teacher"
+                  title="Удалить преподавателя"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4l8 8M12 4l-8 8"/>
+                  </svg>
+                </button>
               </div>
 
               <div className="teacher-info-grid">

@@ -1546,17 +1546,20 @@ body {
 }
 
 .teacher-detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
   gap: 16px;
   margin-bottom: 20px;
 }
 
 .teacher-detail-header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: contents;
+}
+
+.teacher-detail-name {
+  margin: 0;
+  text-align: center;
 }
 
 .teacher-detail-header-right h3 {
