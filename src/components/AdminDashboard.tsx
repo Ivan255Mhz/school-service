@@ -512,7 +512,7 @@ export function AdminDashboard() {
               <h4>Занятия и посещаемость</h4>
               {(() => {
                 const teacherLessons = allLessons.filter(l =>
-                  selectedTeacher.groups.some(g => l.groupName === g.name)
+                  selectedTeacher.groups.some(g => l.groupName === g.name) && l.is_completed
                 )
 
                 if (teacherLessons.length === 0) {
