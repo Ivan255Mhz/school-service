@@ -1546,6 +1546,12 @@ body {
   letter-spacing: 0.5px;
 }
 
+.teacher-detail-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .info-value.price {
   color: var(--accent);
 }

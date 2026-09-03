@@ -415,9 +415,18 @@ export function AdminDashboard() {
             <div className="teacher-detail">
               <div className="teacher-detail-header">
                 <h3>{selectedTeacher.full_name || selectedTeacher.name}</h3>
-                <button onClick={() => setSelectedTeacher(null)} className="btn btn-back">
-                  &larr; Назад к списку
-                </button>
+                <div className="teacher-detail-header-actions">
+                  <button onClick={() => setSelectedTeacher(null)} className="btn btn-back">
+                    &larr; Назад к списку
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTeacher(selectedTeacher.id)}
+                    className="btn btn-danger btn-sm"
+                    title="Удалить преподавателя"
+                  >
+                    Удалить
+                  </button>
+                </div>
               </div>
 
               <div className="teacher-info-grid">
@@ -539,18 +548,6 @@ export function AdminDashboard() {
                   </div>
                 )
               })()}
-
-              <div className="teacher-detail-actions">
-                <button
-                  onClick={() => handleDeleteTeacher(selectedTeacher.id)}
-                  className="btn btn-danger btn-xs"
-                  title="Удалить преподавателя"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M2 2l8 8M10 2l-8 8"/>
-                  </svg>
-                </button>
-              </div>
             </div>
           )}
 
