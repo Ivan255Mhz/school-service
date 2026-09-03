@@ -67,3 +67,5 @@ jspm_packages/
 dist/
 dist-ssr/
 *.local
+
+.vercel

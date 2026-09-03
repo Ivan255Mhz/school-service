@@ -12,6 +12,7 @@ export type Profile = {
   role: 'student' | 'teacher' | 'admin'
   group_id: string | null
   login_code: string | null
+  invite_code: string | null
 }
 
 export type Group = {

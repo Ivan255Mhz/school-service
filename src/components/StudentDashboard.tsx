@@ -21,6 +21,11 @@ export function StudentDashboard() {
   const studentName = localStorage.getItem('student_name')
 
   useEffect(() => {
+    const role = localStorage.getItem('user_role')
+    if (role !== 'student') {
+      navigate('/')
+      return
+    }
     loadData()
   }, [])
 
@@ -30,6 +35,8 @@ export function StudentDashboard() {
       return
     }
 
+    const studentId = localStorage.getItem('student_id')
+
     const { data: modulesData } = await supabase
       .from('modules')
       .select('*')
@@ -38,19 +45,18 @@ export function StudentDashboard() {
 
     if (modulesData) setModules(modulesData)
 
-    const { data: user } = await supabase.auth.getUser()
-    if (user.user) {
+    if (studentId) {
       const { data: attendanceData } = await supabase
         .from('attendance')
         .select('*')
-        .eq('student_id', user.user.id)
+        .eq('student_id', studentId)
 
       if (attendanceData) setAttendance(attendanceData)
 
       const { data: homeworkData } = await supabase
         .from('homework')
         .select('*')
-        .eq('student_id', user.user.id)
+        .eq('student_id', studentId)
 
       if (homeworkData) setHomework(homeworkData)
     }
@@ -98,14 +104,14 @@ export function StudentDashboard() {
 
   const handleConfirmAttendance = async (lessonId: string) => {
     setConfirmingAttendance(lessonId)
-    const { data: user } = await supabase.auth.getUser()
-    if (!user.user) return
+    const studentId = localStorage.getItem('student_id')
+    if (!studentId) return
 
     const { error } = await supabase
       .from('attendance')
       .upsert({
         lesson_id: lessonId,
-        student_id: user.user.id,
+        student_id: studentId,
         present: true,
       }, { onConflict: 'lesson_id,student_id' })
 
@@ -117,11 +123,11 @@ export function StudentDashboard() {
 
   const handleFileUpload = async (lessonId: string, file: File) => {
     setUploading(true)
-    const { data: user } = await supabase.auth.getUser()
-    if (!user.user) return
+    const studentId = localStorage.getItem('student_id')
+    if (!studentId) return
 
     const fileExt = file.name.split('.').pop()
-    const fileName = `${user.user.id}/${lessonId}.${fileExt}`
+    const fileName = `${studentId}/${lessonId}.${fileExt}`
 
     const { error: uploadError } = await supabase.storage
       .from('homework')
@@ -138,7 +144,7 @@ export function StudentDashboard() {
       .getPublicUrl(fileName)
 
     await supabase.from('homework').upsert({
-      student_id: user.user.id,
+      student_id: studentId,
       lesson_id: lessonId,
       file_url: urlData.publicUrl,
       file_name: file.name,

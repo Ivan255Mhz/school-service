@@ -19,31 +19,53 @@ export function LoginScreen() {
     setLoading(true)
 
     try {
-      const { data: group, error: groupError } = await supabase
+      const trimmedCode = code.trim().toUpperCase()
+
+      // Try personal invite code first (STU-XXXXXX)
+      const { data: studentProfile } = await supabase
+        .from('profiles')
+        .select('*, groups(*)')
+        .eq('invite_code', trimmedCode)
+        .eq('role', 'student')
+        .maybeSingle()
+
+      if (studentProfile) {
+        await supabase.auth.signInAnonymously()
+
+        const group = studentProfile.groups as any
+        localStorage.setItem('user_role', 'student')
+        localStorage.setItem('group_id', studentProfile.group_id)
+        localStorage.setItem('group_name', group?.name || '')
+        localStorage.setItem('student_name', name.trim() || studentProfile.name)
+        localStorage.setItem('student_id', studentProfile.id)
+        navigate('/student')
+        return
+      }
+
+      // Fallback: group invite code
+      const { data: group } = await supabase
         .from('groups')
         .select('*')
-        .eq('invite_code', code.trim().toUpperCase())
-        .single()
+        .eq('invite_code', trimmedCode)
+        .maybeSingle()
 
-      if (groupError || !group) {
-        setError('Группа не найдена. Проверьте код.')
+      if (!group) {
+        setError('Код не найден. Проверьте код.')
         setLoading(false)
         return
       }
 
-      const { data: authData, error: authError } = await supabase.auth.signInAnonymously()
+      await supabase.auth.signInAnonymously()
 
-      if (authError || !authData.user) {
-        setError('Ошибка авторизации')
-        setLoading(false)
-        return
-      }
+      const newId = crypto.randomUUID()
+      const studentName = name.trim() || 'Ученик'
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          id: authData.user.id,
-          name: name.trim() || 'Ученик',
+        .insert({
+          id: newId,
+          name: studentName,
+          full_name: studentName,
           role: 'student',
           group_id: group.id,
         })
@@ -57,7 +79,8 @@ export function LoginScreen() {
       localStorage.setItem('user_role', 'student')
       localStorage.setItem('group_id', group.id)
       localStorage.setItem('group_name', group.name)
-      localStorage.setItem('student_name', name.trim() || 'Ученик')
+      localStorage.setItem('student_name', studentName)
+      localStorage.setItem('student_id', newId)
       navigate('/student')
     } catch {
       setError('Произошла ошибка')
@@ -72,33 +95,24 @@ export function LoginScreen() {
     setLoading(true)
 
     try {
-      const { data: teacher, error: teacherError } = await supabase
+      const { data: teacher } = await supabase
         .from('profiles')
         .select('*')
         .eq('login_code', code.trim().toUpperCase())
         .eq('role', 'teacher')
-        .single()
+        .maybeSingle()
 
-      if (teacherError || !teacher) {
+      if (!teacher) {
         setError('Преподаватель не найден. Проверьте код.')
         setLoading(false)
         return
       }
 
-      const { data: authData, error: authError } = await supabase.auth.signInAnonymously()
-
-      if (authError || !authData.user) {
-        setError('Ошибка авторизации')
-        setLoading(false)
-        return
-      }
-
-      await supabase
-        .from('profiles')
-        .update({ id: authData.user.id })
-        .eq('login_code', code.trim().toUpperCase())
+      await supabase.auth.signInAnonymously()
 
       localStorage.setItem('user_role', 'teacher')
+      localStorage.setItem('teacher_id', teacher.id)
+      localStorage.setItem('login_code', code.trim().toUpperCase())
       navigate('/teacher')
     } catch {
       setError('Произошла ошибка')
