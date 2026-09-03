@@ -74,7 +74,7 @@ export function AdminDashboard() {
 
     const { data: groupsData } = await supabase
       .from('groups')
-      .select('id, teacher_id')
+      .select('id, teacher_id, name, invite_code')
       .in('teacher_id', teacherIds)
 
     const groupCounts: Record<string, number> = {}
