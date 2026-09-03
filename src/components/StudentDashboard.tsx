@@ -531,9 +531,9 @@ export function StudentDashboard() {
                     <span className={`badge ${att ? 'badge-green' : 'badge-gray'}`}>
                       {att ? 'Посещено' : 'Не посещено'}
                     </span>
-                    {att && (
-                      <span className={`badge ${hw ? 'badge-blue' : 'badge-gray'}`}>
-                        {hw ? 'ДЗ сдано' : 'Без ДЗ'}
+                    {lesson.homework_description && (
+                      <span className={`badge ${hw ? 'badge-blue' : 'badge-yellow'}`}>
+                        {hw ? 'ДЗ сдано' : 'ДЗ задано'}
                       </span>
                     )}
                     {mats.length > 0 && (

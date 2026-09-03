@@ -391,6 +391,11 @@ body {
   color: var(--accent);
 }
 
+.badge-yellow {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
 .badge-gray {
   background: rgba(115, 115, 115, 0.12);
   color: var(--text-dim);
