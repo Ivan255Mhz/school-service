@@ -231,6 +231,118 @@ export function TeacherDashboard() {
     }
   }
 
+  const generateLessonSummary = async (lesson: Lesson) => {
+    const groupName = selectedGroup?.name || 'Группа'
+
+    const { data: studentsData } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .eq('group_id', lesson.group_id)
+      .eq('role', 'student')
+
+    const { data: attendanceData } = await supabase
+      .from('attendance')
+      .select('student_id, present')
+      .eq('lesson_id', lesson.id)
+
+    const students = studentsData || []
+    const attendance = attendanceData || []
+
+    const presentNames: string[] = []
+    const absentNames: string[] = []
+
+    students.forEach(s => {
+      const att = attendance.find(a => a.student_id === s.id)
+      if (att?.present) {
+        presentNames.push(s.name)
+      } else {
+        absentNames.push(s.name)
+      }
+    })
+
+    const dateObj = new Date(lesson.date + 'T00:00:00')
+    const dateStr = dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+
+    let text = `${groupName} — Урок ${lesson.lesson_number}: ${lesson.topic}\n`
+    text += `Дата: ${dateStr}\n\n`
+
+    text += `Присутствовали (${presentNames.length}):\n`
+    text += presentNames.length > 0 ? presentNames.join(', ') : '—'
+    text += '\n\n'
+
+    text += `Отсутствовали (${absentNames.length}):\n`
+    text += absentNames.length > 0 ? absentNames.join(', ') : '—'
+
+    if (lesson.homework_description) {
+      text += `\n\nДомашнее задание:\n${lesson.homework_description}`
+    }
+
+    try {
+      await navigator.clipboard.writeText(text)
+      showToast('success', 'Сводка скопирована в буфер обмена')
+    } catch {
+      showToast('error', 'Не удалось скопировать. Выделите и скопируйте вручную.')
+    }
+
+    return text
+  }
+
+  const generateDaySummary = async (dateStr: string) => {
+    const dayLessons = allGroupLessons.filter(l => l.date === dateStr)
+    if (dayLessons.length === 0) {
+      showToast('info', 'Нет уроков на эту дату')
+      return
+    }
+
+    const dateObj = new Date(dateStr + 'T00:00:00')
+    const dateFormatted = dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+
+    let text = `Сводка за ${dateFormatted}\n\n`
+
+    for (const lesson of dayLessons) {
+      const { data: studentsData } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .eq('group_id', lesson.group_id)
+        .eq('role', 'student')
+
+      const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('student_id, present')
+        .eq('lesson_id', lesson.id)
+
+      const students = studentsData || []
+      const attendance = attendanceData || []
+
+      const presentNames: string[] = []
+      const absentNames: string[] = []
+
+      students.forEach(s => {
+        const att = attendance.find(a => a.student_id === s.id)
+        if (att?.present) {
+          presentNames.push(s.name)
+        } else {
+          absentNames.push(s.name)
+        }
+      })
+
+      text += `${lesson.group_name} — Урок ${lesson.lesson_number}: ${lesson.topic}\n`
+      text += `Присутствовали (${presentNames.length}): ${presentNames.length > 0 ? presentNames.join(', ') : '—'}\n`
+      text += `Отсутствовали (${absentNames.length}): ${absentNames.length > 0 ? absentNames.join(', ') : '—'}\n`
+      if (lesson.homework_description) {
+        text += `ДЗ: ${lesson.homework_description}\n`
+      }
+      text += '\n'
+    }
+
+    try {
+      await navigator.clipboard.writeText(text.trim())
+      showToast('success', 'Сводка за день скопирована')
+    } catch {
+      showToast('error', 'Не удалось скопировать')
+    }
+  }
+
   const loadAllGroupLessons = async () => {
     const teacherId = localStorage.getItem('teacher_id')
     if (!teacherId) return
@@ -918,6 +1030,18 @@ export function TeacherDashboard() {
                         <path d="M2 2l8 8M10 2l-8 8"/>
                       </svg>
                     </button>
+                    {lesson.is_completed && (
+                      <button
+                        onClick={() => generateLessonSummary(lesson)}
+                        className="btn btn-outline btn-xs"
+                        title="Сводка для родителей"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                        </svg>
+                      </button>
+                    )}
                   </div>
 
                   {mats.length > 0 && (
@@ -1453,6 +1577,11 @@ export function TeacherDashboard() {
             d.setHours(0, 0, 0, 0)
             setCalendarWeekStart(d)
           }} className="btn btn-primary btn-sm">Сегодня</button>
+          <button onClick={() => {
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            generateDaySummary(todayStr)
+          }} className="btn btn-outline btn-sm">Сводка за день</button>
         </div>
         <div className="calendar-grid">
           {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((dayName, i) => {
