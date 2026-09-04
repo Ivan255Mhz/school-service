@@ -22,7 +22,8 @@ export function TeacherDashboard() {
   const [newGroupName, setNewGroupName] = useState('')
   const [newModuleName, setNewModuleName] = useState('')
   const [newLessonTopic, setNewLessonTopic] = useState('')
-  const [newLessonDate, setNewLessonDate] = useState(new Date().toISOString().split('T')[0])
+  const now = new Date()
+  const [newLessonDate, setNewLessonDate] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`)
   const [newLessonNumber, setNewLessonNumber] = useState(1)
   const [newHomeworkDesc, setNewHomeworkDesc] = useState('')
   const [newStudentName, setNewStudentName] = useState('')
@@ -1266,9 +1267,11 @@ export function TeacherDashboard() {
           {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((dayName, i) => {
             const dayDate = new Date(calendarWeekStart)
             dayDate.setDate(dayDate.getDate() + i)
-            const dateStr = dayDate.toISOString().split('T')[0]
+            const dateStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`
             const dayLessons = allGroupLessons.filter(l => l.date === dateStr)
-            const isToday = new Date().toISOString().split('T')[0] === dateStr
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            const isToday = todayStr === dateStr
 
             return (
               <div key={i} className={`calendar-day ${isToday ? 'today' : ''} ${dayLessons.length > 0 ? 'has-events' : ''}`}>
