@@ -3223,3 +3223,37 @@ body {
     margin-left: auto;
   }
 }
+
+/* ===== GROUP PRICES ===== */
+.group-item-price {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.group-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.group-item-prices {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8125em;
+  color: var(--text-dim);
+}
+
+.group-item-prices span {
+  white-space: nowrap;
+}
+
+.group-item-prices .btn {
+  margin-left: auto;
+}
+
+.group-price-form {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}

@@ -24,11 +24,10 @@ export function AdminDashboard() {
   const [allLessons, setAllLessons] = useState<LessonWithAttendance[]>([])
   const [showCreateTeacher, setShowCreateTeacher] = useState(false)
   const [newTeacherName, setNewTeacherName] = useState('')
-  const [newTeacherPrice, setNewTeacherPrice] = useState('')
-  const [newTeacherBonus, setNewTeacherBonus] = useState('')
   const [selectedTeacher, setSelectedTeacher] = useState<TeacherWithStats | null>(null)
-  const [editPrice, setEditPrice] = useState('')
-  const [editBonus, setEditBonus] = useState('')
+  const [editingGroupPrices, setEditingGroupPrices] = useState<string | null>(null)
+  const [groupPrice, setGroupPrice] = useState('')
+  const [groupBonus, setGroupBonus] = useState('')
   const [activeTab, setActiveTab] = useState<'teachers' | 'schedule' | 'payments' | 'library'>('teachers')
   const [filterTeacher, setFilterTeacher] = useState('')
   const [filterGroup, setFilterGroup] = useState('')
@@ -211,7 +210,7 @@ export function AdminDashboard() {
 
     const { data: groupsData } = await supabase
       .from('groups')
-      .select('id, name, invite_code, teacher_id')
+      .select('id, name, invite_code, teacher_id, price_per_lesson, bonus_per_student')
 
     if (groupsData) setLibraryGroups(groupsData)
   }
@@ -314,8 +313,6 @@ export function AdminDashboard() {
         full_name: newTeacherName,
         role: 'teacher',
         login_code: loginCode,
-        price_per_lesson: newTeacherPrice ? parseFloat(newTeacherPrice) : 0,
-        bonus_per_student: newTeacherBonus ? parseFloat(newTeacherBonus) : 0,
       })
 
     if (error) {
@@ -326,34 +323,26 @@ export function AdminDashboard() {
 
     showToast('success', `Преподаватель создан! Логин: ${loginCode}`)
     setNewTeacherName('')
-    setNewTeacherPrice('')
-    setNewTeacherBonus('')
     setShowCreateTeacher(false)
     loadTeachers()
     setCreating(false)
   }
 
-  const handleSaveTeacherPrices = async () => {
-    if (!selectedTeacher) return
-
+  const handleSaveGroupPrices = async (groupId: string) => {
     const { error } = await supabase
-      .from('profiles')
+      .from('groups')
       .update({
-        price_per_lesson: editPrice ? parseFloat(editPrice) : 0,
-        bonus_per_student: editBonus ? parseFloat(editBonus) : 0,
+        price_per_lesson: groupPrice ? parseFloat(groupPrice) : 0,
+        bonus_per_student: groupBonus ? parseFloat(groupBonus) : 0,
       })
-      .eq('id', selectedTeacher.id)
+      .eq('id', groupId)
 
     if (error) {
       showToast('error', 'Не удалось сохранить цены')
     } else {
-      showToast('success', 'Цены сохранены')
+      showToast('success', 'Цены группы сохранены')
+      setEditingGroupPrices(null)
       loadTeachers()
-      setSelectedTeacher(prev => prev ? {
-        ...prev,
-        price_per_lesson: editPrice ? parseFloat(editPrice) : 0,
-        bonus_per_student: editBonus ? parseFloat(editBonus) : 0,
-      } : null)
     }
   }
 
@@ -515,33 +504,7 @@ export function AdminDashboard() {
                 className="input"
                 required
               />
-              <div className="form-row-3">
-                <div className="form-field">
-                  <label className="form-label">Цена за урок (₽)</label>
-                  <input
-                    type="number"
-                    value={newTeacherPrice}
-                    onChange={(e) => setNewTeacherPrice(e.target.value)}
-                    placeholder="0"
-                    className="input"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div className="form-field">
-                  <label className="form-label">Бонус за ученика (₽)</label>
-                  <input
-                    type="number"
-                    value={newTeacherBonus}
-                    onChange={(e) => setNewTeacherBonus(e.target.value)}
-                    placeholder="0"
-                    className="input"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-              </div>
-              <div className="form-hint">Код для входа будет сгенерирован автоматически</div>
+              <div className="form-hint">Код для входа будет сгенерирован автоматически. Цены настраиваются в каждой группе отдельно.</div>
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary btn-sm" disabled={creating}>{creating ? '...' : 'Создать'}</button>
                 <button type="button" onClick={() => setShowCreateTeacher(false)} className="btn btn-outline btn-sm">
@@ -579,14 +542,6 @@ export function AdminDashboard() {
                   <code className="info-value">{selectedTeacher.login_code || '-'}</code>
                 </div>
                 <div className="info-card">
-                  <span className="info-label">Цена за урок</span>
-                  <span className="info-value price">{formatPrice(selectedTeacher.price_per_lesson)}</span>
-                </div>
-                <div className="info-card">
-                  <span className="info-label">Бонус за ученика</span>
-                  <span className="info-value bonus">{formatPrice(selectedTeacher.bonus_per_student)}</span>
-                </div>
-                <div className="info-card">
                   <span className="info-label">Группы</span>
                   <span className="info-value">{selectedTeacher.groups.length}</span>
                 </div>
@@ -600,48 +555,69 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="teacher-prices-edit">
-                <h4>Настройки цен</h4>
-                <div className="form-row-3">
-                  <div className="form-field">
-                    <label className="form-label">Цена за урок (₽)</label>
-                    <input
-                      type="number"
-                      value={editPrice}
-                      onChange={(e) => setEditPrice(e.target.value)}
-                      className="input"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Бонус за ученика (₽)</label>
-                    <input
-                      type="number"
-                      value={editBonus}
-                      onChange={(e) => setEditBonus(e.target.value)}
-                      className="input"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-                <button onClick={handleSaveTeacherPrices} className="btn btn-primary btn-sm">
-                  Сохранить цены
-                </button>
-              </div>
-
-              <h4>Группы преподавателя</h4>
+              <h4>Цены по группам</h4>
               {selectedTeacher.groups.length === 0 ? (
                 <p className="empty-text">Групп нет</p>
               ) : (
                 <div className="groups-list">
-                  {selectedTeacher.groups.map(group => (
-                    <div key={group.id} className="group-item">
-                      <span className="group-name">{group.name}</span>
-                      <code className="group-code-small">{group.invite_code}</code>
-                    </div>
-                  ))}
+                  {selectedTeacher.groups.map(group => {
+                    const isEditing = editingGroupPrices === group.id
+                    return (
+                      <div key={group.id} className="group-item group-item-price">
+                        <div className="group-item-header">
+                          <span className="group-name">{group.name}</span>
+                          <code className="group-code-small">{group.invite_code}</code>
+                        </div>
+                        {isEditing ? (
+                          <div className="group-price-form">
+                            <div className="form-row-3">
+                              <div className="form-field">
+                                <label className="form-label">Цена/урок (₽)</label>
+                                <input
+                                  type="number"
+                                  value={groupPrice}
+                                  onChange={e => setGroupPrice(e.target.value)}
+                                  className="input"
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </div>
+                              <div className="form-field">
+                                <label className="form-label">Бонус/ученик (₽)</label>
+                                <input
+                                  type="number"
+                                  value={groupBonus}
+                                  onChange={e => setGroupBonus(e.target.value)}
+                                  className="input"
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </div>
+                            </div>
+                            <div className="form-actions">
+                              <button onClick={() => handleSaveGroupPrices(group.id)} className="btn btn-primary btn-sm">Сохранить</button>
+                              <button onClick={() => setEditingGroupPrices(null)} className="btn btn-outline btn-sm">Отмена</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="group-item-prices">
+                            <span>Урок: {formatPrice(group.price_per_lesson)}</span>
+                            <span>Ученик: {formatPrice(group.bonus_per_student)}</span>
+                            <button
+                              onClick={() => {
+                                setEditingGroupPrices(group.id)
+                                setGroupPrice(String(group.price_per_lesson || 0))
+                                setGroupBonus(String(group.bonus_per_student || 0))
+                              }}
+                              className="btn btn-outline btn-xs"
+                            >
+                              Изменить
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
 
@@ -705,8 +681,6 @@ export function AdminDashboard() {
                 teachers.map(teacher => (
                   <button key={teacher.id} className="teacher-card" onClick={() => {
                     setSelectedTeacher(teacher)
-                    setEditPrice(String(teacher.price_per_lesson || 0))
-                    setEditBonus(String(teacher.bonus_per_student || 0))
                   }}>
                     <div className="teacher-card-info">
                       <span className="teacher-avatar">{(teacher.full_name || teacher.name).charAt(0)}</span>
@@ -714,10 +688,6 @@ export function AdminDashboard() {
                         <div className="teacher-card-name">{teacher.full_name || teacher.name}</div>
                         <div className="teacher-card-code">Код: {teacher.login_code || '-'}</div>
                       </div>
-                    </div>
-                    <div className="teacher-card-prices">
-                      <span className="teacher-price-item">{formatPrice(teacher.price_per_lesson)}/урок</span>
-                      <span className="teacher-price-item bonus">{formatPrice(teacher.bonus_per_student)}/уч.</span>
                     </div>
                     <div className="teacher-card-stats">
                       <span>{teacher.groups.length} групп</span>
@@ -844,19 +814,23 @@ export function AdminDashboard() {
             teacher.groups.some(g => l.groupName === g.name)
           )
 
-          const byMonth: Record<string, { lessons: number; students: number }> = {}
+          const byMonth: Record<string, { lessons: number; students: number; earnings: number }> = {}
 
           teacherLessons.forEach(l => {
             const d = new Date(l.date)
             const key = `${d.getFullYear()}-${d.getMonth()}`
-            if (!byMonth[key]) byMonth[key] = { lessons: 0, students: 0 }
+            if (!byMonth[key]) byMonth[key] = { lessons: 0, students: 0, earnings: 0 }
             byMonth[key].lessons++
             byMonth[key].students += l.presentStudents.length
+
+            const group = teacher.groups.find(g => l.groupName === g.name)
+            const pricePerLesson = group?.price_per_lesson || 0
+            const bonusPerStudent = group?.bonus_per_student || 0
+            byMonth[key].earnings += pricePerLesson + bonusPerStudent * l.presentStudents.length
           })
 
           Object.entries(byMonth).forEach(([key, data]) => {
             const [year, monthIdx] = key.split('-').map(Number)
-            const earnings = (teacher.price_per_lesson || 0) * data.lessons + (teacher.bonus_per_student || 0) * data.students
             payments.push({
               teacherId: teacher.id,
               teacherName: teacher.full_name || teacher.name,
@@ -865,7 +839,7 @@ export function AdminDashboard() {
               year,
               lessonsCount: data.lessons,
               totalStudents: data.students,
-              totalEarnings: earnings,
+              totalEarnings: data.earnings,
             })
           })
         })
