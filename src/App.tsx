@@ -3,6 +3,7 @@ import { LoginScreen } from './components/LoginScreen'
 import { StudentDashboard } from './components/StudentDashboard'
 import { TeacherDashboard } from './components/TeacherDashboard'
 import { AdminDashboard } from './components/AdminDashboard'
+import { ToastContainer } from './components/Toast'
 
 function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: string }) {
   const userRole = localStorage.getItem('user_role')
@@ -23,6 +24,7 @@ function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: 
 export default function App() {
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         <Route path="/" element={<LoginScreen />} />
         <Route

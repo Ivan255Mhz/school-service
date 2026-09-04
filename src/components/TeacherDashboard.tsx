@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
+import { showToast } from './Toast'
 
 export function TeacherDashboard() {
   const [groups, setGroups] = useState<Group[]>([])
@@ -41,6 +42,7 @@ export function TeacherDashboard() {
     homework: Homework[]
     notes: Record<string, string>
   } | null>(null)
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -106,14 +108,21 @@ export function TeacherDashboard() {
       return
     }
 
-    const { data } = await supabase
-      .from('groups')
-      .select('*')
-      .eq('teacher_id', profileId)
+    try {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('*')
+        .eq('teacher_id', profileId)
 
-    if (data) {
-      setGroups(data)
-      loadAllGroupLessons()
+      if (error) throw error
+      if (data) {
+        setGroups(data)
+        loadAllGroupLessons()
+      }
+    } catch {
+      showToast('error', 'Не удалось загрузить группы')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -346,9 +355,12 @@ export function TeacherDashboard() {
       teacher_id: teacherId,
     })
 
-    if (!error) {
+    if (error) {
+      showToast('error', 'Не удалось создать группу')
+    } else {
       setNewGroupName('')
       setShowCreateGroup(false)
+      showToast('success', 'Группа создана')
       loadGroups()
     }
   }
@@ -363,9 +375,12 @@ export function TeacherDashboard() {
       sort_order: modules.length,
     })
 
-    if (!error) {
+    if (error) {
+      showToast('error', 'Не удалось создать модуль')
+    } else {
       setNewModuleName('')
       setShowCreateModule(false)
+      showToast('success', 'Модуль создан')
       loadGroupData(selectedGroup.id)
     }
   }
@@ -467,28 +482,47 @@ export function TeacherDashboard() {
 
   const handleDeleteGroup = async (groupId: string) => {
     if (!confirm('Удалить группу со всеми модулями и уроками?')) return
-    await supabase.from('groups').delete().eq('id', groupId)
-    setSelectedGroup(null)
-    setSelectedModule(null)
-    loadGroups()
+    const { error } = await supabase.from('groups').delete().eq('id', groupId)
+    if (error) {
+      showToast('error', 'Не удалось удалить группу')
+    } else {
+      showToast('success', 'Группа удалена')
+      setSelectedGroup(null)
+      setSelectedModule(null)
+      loadGroups()
+    }
   }
 
   const handleDeleteModule = async (moduleId: string) => {
     if (!confirm('Удалить модуль со всеми уроками?')) return
-    await supabase.from('modules').delete().eq('id', moduleId)
-    setSelectedModule(null)
-    if (selectedGroup) loadGroupData(selectedGroup.id)
+    const { error } = await supabase.from('modules').delete().eq('id', moduleId)
+    if (error) {
+      showToast('error', 'Не удалось удалить модуль')
+    } else {
+      showToast('success', 'Модуль удалён')
+      setSelectedModule(null)
+      if (selectedGroup) loadGroupData(selectedGroup.id)
+    }
   }
 
   const handleDeleteLesson = async (lessonId: string) => {
     if (!confirm('Удалить занятие?')) return
-    await supabase.from('lessons').delete().eq('id', lessonId)
-    if (selectedModule) loadModuleLessons(selectedModule.id)
+    const { error } = await supabase.from('lessons').delete().eq('id', lessonId)
+    if (error) {
+      showToast('error', 'Не удалось удалить урок')
+    } else {
+      showToast('success', 'Урок удалён')
+      if (selectedModule) loadModuleLessons(selectedModule.id)
+    }
   }
 
   const handleDeleteMaterial = async (materialId: string) => {
-    await supabase.from('lesson_materials').delete().eq('id', materialId)
-    if (selectedModule) loadModuleLessons(selectedModule.id)
+    const { error } = await supabase.from('lesson_materials').delete().eq('id', materialId)
+    if (error) {
+      showToast('error', 'Не удалось удалить материал')
+    } else {
+      if (selectedModule) loadModuleLessons(selectedModule.id)
+    }
   }
 
   const generateInviteCode = () => {
@@ -518,11 +552,11 @@ export function TeacherDashboard() {
       })
 
     if (error) {
-      alert('Ошибка: ' + error.message)
+      showToast('error', 'Не удалось добавить ученика')
       return
     }
 
-    alert(`Ученик добавлен!\n\nИмя: ${newStudentName}\nКод входа: ${inviteCode}\n\nПередайте код ученику.`)
+    showToast('success', `Ученик добавлен! Код: ${inviteCode}`)
     setNewStudentName('')
     setShowAddStudent(false)
     loadGroupData(selectedGroup.id)
@@ -530,8 +564,13 @@ export function TeacherDashboard() {
 
   const handleDeleteStudent = async (studentId: string) => {
     if (!confirm('Удалить ученика?')) return
-    await supabase.from('profiles').delete().eq('id', studentId)
-    if (selectedGroup) loadGroupData(selectedGroup.id)
+    const { error } = await supabase.from('profiles').delete().eq('id', studentId)
+    if (error) {
+      showToast('error', 'Не удалось удалить ученика')
+    } else {
+      showToast('success', 'Ученик удалён')
+      if (selectedGroup) loadGroupData(selectedGroup.id)
+    }
   }
 
   const handleToggleAttendance = async (lessonId: string, studentId: string, currentPresent: boolean) => {
@@ -1153,6 +1192,24 @@ export function TeacherDashboard() {
   }
 
   // === VIEW: Groups List ===
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <header className="dashboard-header">
+          <div>
+            <h1>Панель преподавателя</h1>
+            <p>Управление группами и курсами</p>
+          </div>
+        </header>
+        <div className="groups-grid">
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">

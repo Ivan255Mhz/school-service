@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Profile, Group, Lesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
+import { showToast } from './Toast'
 
 type TeacherWithStats = Profile & {
   groups: Group[]
@@ -209,7 +210,7 @@ export function AdminDashboard() {
       .maybeSingle()
 
     if (existing) {
-      alert('Код уже существует, попробуйте снова')
+      showToast('error', 'Код уже существует, попробуйте снова')
       return
     }
 
@@ -227,11 +228,11 @@ export function AdminDashboard() {
       })
 
     if (error) {
-      alert('Ошибка: ' + error.message)
+      showToast('error', 'Не удалось создать преподавателя')
       return
     }
 
-    alert(`Преподаватель создан!\n\nЛогин: ${loginCode}\n\nСохраните этот код!`)
+    showToast('success', `Преподаватель создан! Логин: ${loginCode}`)
     setNewTeacherName('')
     setNewTeacherPrice('')
     setNewTeacherBonus('')
@@ -250,7 +251,10 @@ export function AdminDashboard() {
       })
       .eq('id', selectedTeacher.id)
 
-    if (!error) {
+    if (error) {
+      showToast('error', 'Не удалось сохранить цены')
+    } else {
+      showToast('success', 'Цены сохранены')
       loadTeachers()
       setSelectedTeacher(prev => prev ? {
         ...prev,
@@ -263,46 +267,51 @@ export function AdminDashboard() {
   const handleDeleteTeacher = async (teacherId: string) => {
     if (!confirm('Удалить преподавателя и все его группы, модули, уроки?')) return
 
-    const { data: groups } = await supabase
-      .from('groups')
-      .select('id')
-      .eq('teacher_id', teacherId)
-
-    if (groups && groups.length > 0) {
-      const groupIds = groups.map(g => g.id)
-
-      const { data: modules } = await supabase
-        .from('modules')
+    try {
+      const { data: groups } = await supabase
+        .from('groups')
         .select('id')
-        .in('group_id', groupIds)
+        .eq('teacher_id', teacherId)
 
-      if (modules && modules.length > 0) {
-        const moduleIds = modules.map(m => m.id)
+      if (groups && groups.length > 0) {
+        const groupIds = groups.map(g => g.id)
 
-        const { data: lessons } = await supabase
-          .from('lessons')
+        const { data: modules } = await supabase
+          .from('modules')
           .select('id')
-          .in('module_id', moduleIds)
+          .in('group_id', groupIds)
 
-        if (lessons && lessons.length > 0) {
-          const lessonIds = lessons.map(l => l.id)
-          await supabase.from('attendance').delete().in('lesson_id', lessonIds)
-          await supabase.from('homework').delete().in('lesson_id', lessonIds)
-          await supabase.from('lesson_materials').delete().in('lesson_id', lessonIds)
+        if (modules && modules.length > 0) {
+          const moduleIds = modules.map(m => m.id)
+
+          const { data: lessons } = await supabase
+            .from('lessons')
+            .select('id')
+            .in('module_id', moduleIds)
+
+          if (lessons && lessons.length > 0) {
+            const lessonIds = lessons.map(l => l.id)
+            await supabase.from('attendance').delete().in('lesson_id', lessonIds)
+            await supabase.from('homework').delete().in('lesson_id', lessonIds)
+            await supabase.from('lesson_materials').delete().in('lesson_id', lessonIds)
+          }
+
+          await supabase.from('lessons').delete().in('module_id', moduleIds)
         }
 
-        await supabase.from('lessons').delete().in('module_id', moduleIds)
+        await supabase.from('modules').delete().in('group_id', groupIds)
+        await supabase.from('profiles').delete().eq('role', 'student').in('group_id', groupIds)
+        await supabase.from('groups').delete().eq('teacher_id', teacherId)
       }
 
-      await supabase.from('modules').delete().in('group_id', groupIds)
-      await supabase.from('profiles').delete().eq('role', 'student').in('group_id', groupIds)
-      await supabase.from('groups').delete().eq('teacher_id', teacherId)
+      await supabase.from('profiles').delete().eq('id', teacherId)
+      showToast('success', 'Преподаватель удалён')
+      setSelectedTeacher(null)
+      loadTeachers()
+      loadAllLessons()
+    } catch {
+      showToast('error', 'Не удалось удалить преподавателя')
     }
-
-    await supabase.from('profiles').delete().eq('id', teacherId)
-    setSelectedTeacher(null)
-    loadTeachers()
-    loadAllLessons()
   }
 
   const handleLogout = async () => {
@@ -329,6 +338,29 @@ export function AdminDashboard() {
     return `${val.toLocaleString('ru-RU')} ₽`
   }
 
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <header className="dashboard-header">
+          <div>
+            <h1>Админ-панель</h1>
+            <p>Управление преподавателями и статистика</p>
+          </div>
+        </header>
+        <div className="tabs">
+          <div className="skeleton skeleton-stat" style={{ width: 120, height: 36 }} />
+          <div className="skeleton skeleton-stat" style={{ width: 120, height: 36 }} />
+          <div className="skeleton skeleton-stat" style={{ width: 120, height: 36 }} />
+        </div>
+        <div className="groups-grid">
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -341,7 +373,6 @@ export function AdminDashboard() {
         </button>
       </header>
 
-      {loading && <div className="empty-state"><p>Загрузка...</p></div>}
       {error && <div className="empty-state"><p style={{color:'#ef4444'}}>{error}</p></div>}
 
       {!loading && !error && (<>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
+import { showToast } from './Toast'
 
 export function StudentDashboard() {
   const [modules, setModules] = useState<Module[]>([])
@@ -17,6 +18,7 @@ export function StudentDashboard() {
   const [notesMap, setNotesMap] = useState<Record<string, StudentNote>>({})
   const [editingNote, setEditingNote] = useState<string | null>(null)
   const [noteText, setNoteText] = useState('')
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   const groupId = localStorage.getItem('group_id')
@@ -30,42 +32,49 @@ export function StudentDashboard() {
       return
     }
 
-    const { data: modulesData } = await supabase
-      .from('modules')
-      .select('*')
-      .eq('group_id', groupId)
-      .order('sort_order')
-
-    if (modulesData) {
-      setModules(modulesData)
-      await loadAllModuleLessons(modulesData)
-    }
-
-    if (studentId) {
-      const { data: attendanceData } = await supabase
-        .from('attendance')
+    try {
+      const { data: modulesData, error: modErr } = await supabase
+        .from('modules')
         .select('*')
-        .eq('student_id', studentId)
+        .eq('group_id', groupId)
+        .order('sort_order')
 
-      if (attendanceData) setAttendance(attendanceData)
-
-      const { data: homeworkData } = await supabase
-        .from('homework')
-        .select('*')
-        .eq('student_id', studentId)
-
-      if (homeworkData) setHomework(homeworkData)
-
-      const { data: notesData } = await supabase
-        .from('student_notes')
-        .select('*')
-        .eq('student_id', studentId)
-
-      if (notesData) {
-        const nMap: Record<string, StudentNote> = {}
-        notesData.forEach((n: StudentNote) => { nMap[n.lesson_id] = n })
-        setNotesMap(nMap)
+      if (modErr) throw modErr
+      if (modulesData) {
+        setModules(modulesData)
+        await loadAllModuleLessons(modulesData)
       }
+
+      if (studentId) {
+        const { data: attendanceData } = await supabase
+          .from('attendance')
+          .select('*')
+          .eq('student_id', studentId)
+
+        if (attendanceData) setAttendance(attendanceData)
+
+        const { data: homeworkData } = await supabase
+          .from('homework')
+          .select('*')
+          .eq('student_id', studentId)
+
+        if (homeworkData) setHomework(homeworkData)
+
+        const { data: notesData } = await supabase
+          .from('student_notes')
+          .select('*')
+          .eq('student_id', studentId)
+
+        if (notesData) {
+          const nMap: Record<string, StudentNote> = {}
+          notesData.forEach((n: StudentNote) => { nMap[n.lesson_id] = n })
+          setNotesMap(nMap)
+        }
+      }
+    } catch {
+      showToast('error', 'Не удалось загрузить данные')
+    } finally {
+      setLoading(false)
     }
   }, [groupId, studentId, navigate])
 
@@ -143,7 +152,10 @@ export function StudentDashboard() {
         present: true,
       }, { onConflict: 'lesson_id,student_id' })
 
-    if (!error) {
+    if (error) {
+      showToast('error', 'Не удалось подтвердить посещение')
+    } else {
+      showToast('success', 'Посещение подтверждено')
       loadData()
     }
     setConfirmingAttendance(null)
@@ -161,7 +173,7 @@ export function StudentDashboard() {
       .upload(fileName, file)
 
     if (uploadError) {
-      console.error('Upload error:', uploadError)
+      showToast('error', 'Ошибка загрузки файла')
       setUploading(false)
       return
     }
@@ -170,15 +182,20 @@ export function StudentDashboard() {
       .from('homework')
       .getPublicUrl(fileName)
 
-    await supabase.from('homework').upsert({
+    const { error: dbError } = await supabase.from('homework').upsert({
       student_id: studentId,
       lesson_id: lessonId,
       file_url: urlData.publicUrl,
       file_name: file.name,
     })
 
+    if (dbError) {
+      showToast('error', 'Ошибка сохранения файла')
+    } else {
+      showToast('success', 'Файл загружен')
+      loadData()
+    }
     setUploading(false)
-    loadData()
   }
 
   const handleSaveNote = async (lessonId: string) => {
@@ -191,12 +208,15 @@ export function StudentDashboard() {
         .update({ content: noteText, updated_at: new Date().toISOString() })
         .eq('id', existing.id)
 
-      if (!error) {
+      if (error) {
+        showToast('error', 'Не удалось сохранить заметку')
+      } else {
         setNotesMap(prev => ({
           ...prev,
           [lessonId]: { ...prev[lessonId], content: noteText }
         }))
         setEditingNote(null)
+        showToast('success', 'Заметка сохранена')
       }
     } else {
       const { data, error } = await supabase
@@ -209,9 +229,12 @@ export function StudentDashboard() {
         .select()
         .single()
 
-      if (!error && data) {
+      if (error || !data) {
+        showToast('error', 'Не удалось сохранить заметку')
+      } else {
         setNotesMap(prev => ({ ...prev, [lessonId]: data }))
         setEditingNote(null)
+        showToast('success', 'Заметка сохранена')
       }
     }
   }
@@ -558,6 +581,30 @@ export function StudentDashboard() {
   }
 
   // === VIEW: Modules List ===
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <header className="dashboard-header">
+          <div>
+            <h1>{groupName || 'Speak'}</h1>
+            <p>{studentName}</p>
+          </div>
+        </header>
+        <div className="student-stats">
+          <div className="skeleton skeleton-stat" />
+          <div className="skeleton skeleton-stat" />
+          <div className="skeleton skeleton-stat" />
+          <div className="skeleton skeleton-stat" />
+        </div>
+        <div className="lessons-grid">
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card" />
+          <div className="skeleton skeleton-card" />
+        </div>
+      </div>
+    )
+  }
+
   const stats = getGlobalStats()
 
   return (
