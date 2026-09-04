@@ -26,8 +26,21 @@ export function TeacherDashboard() {
   const [newHomeworkDesc, setNewHomeworkDesc] = useState('')
   const [newStudentName, setNewStudentName] = useState('')
   const [newMaterials, setNewMaterials] = useState<{title: string; file: File | null; url: string}[]>([])
-  const [activeTab, setActiveTab] = useState<'students' | 'journal' | 'homework'>('students')
+  const [activeTab, setActiveTab] = useState<'students' | 'journal' | 'homework' | 'calendar'>('students')
   const [hwModuleLessons, setHwModuleLessons] = useState<Record<string, Lesson[]>>({})
+  const [calendarWeekStart, setCalendarWeekStart] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - d.getDay() + 1)
+    d.setHours(0, 0, 0, 0)
+    return d
+  })
+  const [allGroupLessons, setAllGroupLessons] = useState<Lesson[]>([])
+  const [selectedStudentProfile, setSelectedStudentProfile] = useState<Profile | null>(null)
+  const [studentProfileData, setStudentProfileData] = useState<{
+    attendance: Attendance[]
+    homework: Homework[]
+    notes: Record<string, string>
+  } | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -42,6 +55,7 @@ export function TeacherDashboard() {
   useEffect(() => {
     if (selectedGroup) {
       loadGroupData(selectedGroup.id)
+      loadAllGroupLessons(selectedGroup.id)
     }
   }, [selectedGroup])
 
@@ -117,6 +131,53 @@ export function TeacherDashboard() {
       .order('sort_order')
 
     if (modulesData) setModules(modulesData)
+  }
+
+  const loadAllGroupLessons = async (groupId: string) => {
+    const { data: mods } = await supabase
+      .from('modules')
+      .select('id')
+      .eq('group_id', groupId)
+
+    if (!mods || mods.length === 0) { setAllGroupLessons([]); return }
+
+    const { data: less } = await supabase
+      .from('lessons')
+      .select('*')
+      .in('module_id', mods.map(m => m.id))
+      .order('date')
+
+    if (less) setAllGroupLessons(less)
+  }
+
+  const loadStudentProfile = async (student: Profile) => {
+    setSelectedStudentProfile(student)
+
+    const { data: attData } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('student_id', student.id)
+
+    const { data: hwData } = await supabase
+      .from('homework')
+      .select('*')
+      .eq('student_id', student.id)
+
+    const { data: notesData } = await supabase
+      .from('student_notes')
+      .select('*')
+      .eq('student_id', student.id)
+
+    const notesMap: Record<string, string> = {}
+    if (notesData) {
+      notesData.forEach((n: any) => { notesMap[n.lesson_id] = n.content })
+    }
+
+    setStudentProfileData({
+      attendance: attData || [],
+      homework: hwData || [],
+      notes: notesMap,
+    })
   }
 
   const loadModuleLessons = async (moduleId: string) => {
@@ -731,7 +792,8 @@ export function TeacherDashboard() {
                             key={s.id}
                             className={`attendance-chip ${present ? 'present' : 'absent'}`}
                             onClick={() => handleToggleAttendance(lesson.id, s.id, present)}
-                            title={`${s.name} — ${present ? 'Присутствовал' : 'Отсутствовал'}`}
+                            onDoubleClick={() => loadStudentProfile(s)}
+                            title={`${s.name} — клик: сменить посещаемость, двойной клик: профиль`}
                           >
                             <span className="attendance-avatar">{s.name.charAt(0).toUpperCase()}</span>
                             <span className="attendance-name">{s.name.split(' ')[0]}</span>
@@ -793,6 +855,12 @@ export function TeacherDashboard() {
           >
             Домашние задания
           </button>
+          <button
+            className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
+            onClick={() => setActiveTab('calendar')}
+          >
+            Календарь
+          </button>
         </div>
 
         {activeTab === 'students' && (
@@ -827,9 +895,9 @@ export function TeacherDashboard() {
               <div className="students-list">
                 {students.map(s => (
                   <div key={s.id} className="student-item">
-                    <span className="student-avatar">{s.name.charAt(0).toUpperCase()}</span>
+                    <span className="student-avatar" onClick={() => loadStudentProfile(s)} style={{cursor:'pointer'}} title="Открыть профиль">{s.name.charAt(0).toUpperCase()}</span>
                     <div className="student-info">
-                      <span className="student-name">{s.name}</span>
+                      <span className="student-name" onClick={() => loadStudentProfile(s)} style={{cursor:'pointer'}} title="Открыть профиль">{s.name}</span>
                       {s.invite_code && (
                         <span className="student-code">Код: <code>{s.invite_code}</code></span>
                       )}
@@ -978,6 +1046,141 @@ export function TeacherDashboard() {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'calendar' && (
+          <div className="teacher-section">
+            <div className="calendar-header">
+              <button onClick={() => {
+                const d = new Date(calendarWeekStart)
+                d.setDate(d.getDate() - 7)
+                setCalendarWeekStart(d)
+              }} className="btn btn-outline btn-sm">&larr;</button>
+              <h2>
+                {calendarWeekStart.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                {' — '}
+                {new Date(calendarWeekStart.getTime() + 6 * 86400000).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </h2>
+              <button onClick={() => {
+                const d = new Date(calendarWeekStart)
+                d.setDate(d.getDate() + 7)
+                setCalendarWeekStart(d)
+              }} className="btn btn-outline btn-sm">&rarr;</button>
+              <button onClick={() => {
+                const d = new Date()
+                d.setDate(d.getDate() - d.getDay() + 1)
+                d.setHours(0, 0, 0, 0)
+                setCalendarWeekStart(d)
+              }} className="btn btn-primary btn-sm">Сегодня</button>
+            </div>
+            <div className="calendar-grid">
+              {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((dayName, i) => {
+                const dayDate = new Date(calendarWeekStart)
+                dayDate.setDate(dayDate.getDate() + i)
+                const dateStr = dayDate.toISOString().split('T')[0]
+                const dayLessons = allGroupLessons.filter(l => l.date === dateStr)
+                const isToday = new Date().toISOString().split('T')[0] === dateStr
+
+                return (
+                  <div key={i} className={`calendar-day ${isToday ? 'today' : ''} ${dayLessons.length > 0 ? 'has-events' : ''}`}>
+                    <div className="calendar-day-header">
+                      <span className="calendar-day-name">{dayName}</span>
+                      <span className="calendar-day-num">{dayDate.getDate()}</span>
+                    </div>
+                    <div className="calendar-day-events">
+                      {dayLessons.map(l => (
+                        <div key={l.id} className={`calendar-event ${l.is_completed ? 'completed' : 'planned'}`}>
+                          <span className="calendar-event-num">{l.lesson_number}</span>
+                          <span className="calendar-event-topic">{l.topic}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {selectedStudentProfile && studentProfileData && (
+          <div className="student-profile-overlay" onClick={() => setSelectedStudentProfile(null)}>
+            <div className="student-profile-card" onClick={e => e.stopPropagation()}>
+              <div className="student-profile-header">
+                <button onClick={() => setSelectedStudentProfile(null)} className="btn btn-back">&larr; Назад</button>
+                <h2>{selectedStudentProfile.name}</h2>
+                <span className="student-profile-code">{selectedStudentProfile.invite_code || '-'}</span>
+              </div>
+
+              {(() => {
+                const attended = studentProfileData.attendance.filter(a => a.present).length
+                const submitted = studentProfileData.homework.length
+                const total = allGroupLessons.length
+                const percent = total > 0 ? Math.round((attended / total) * 100) : 0
+
+                return (
+                  <>
+                    <div className="student-profile-stats">
+                      <div className="stat-card">
+                        <span className="stat-value">{total}</span>
+                        <span className="stat-label">Уроков</span>
+                      </div>
+                      <div className="stat-card">
+                        <span className="stat-value">{attended}</span>
+                        <span className="stat-label">Посещено</span>
+                      </div>
+                      <div className="stat-card">
+                        <span className="stat-value">{submitted}</span>
+                        <span className="stat-label">ДЗ сдано</span>
+                      </div>
+                      <div className="stat-card">
+                        <span className="stat-value">{percent}%</span>
+                        <span className="stat-label">Посещаемость</span>
+                      </div>
+                    </div>
+
+                    <h3>История уроков</h3>
+                    <div className="student-profile-history">
+                      {allGroupLessons.length === 0 ? (
+                        <p className="empty-text">Уроков пока нет</p>
+                      ) : (
+                        allGroupLessons.map(l => {
+                          const att = studentProfileData.attendance.find(a => a.lesson_id === l.id && a.present)
+                          const hw = studentProfileData.homework.find(h => h.lesson_id === l.id)
+                          const note = studentProfileData.notes[l.id]
+                          return (
+                            <div key={l.id} className="profile-history-row">
+                              <span className="ph-date">{new Date(l.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>
+                              <span className="ph-topic">Урок {l.lesson_number}: {l.topic}</span>
+                              <span className={`ph-badge ${att ? 'green' : 'red'}`}>{att ? 'Посещён' : 'Пропущен'}</span>
+                              <span className={`ph-badge ${hw ? 'blue' : 'gray'}`}>{hw ? 'ДЗ сдано' : 'Без ДЗ'}</span>
+                              {note && <span className="ph-note" title={note}>📝</span>}
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+
+                    {Object.keys(studentProfileData.notes).length > 0 && (
+                      <>
+                        <h3>Заметки</h3>
+                        <div className="student-profile-notes">
+                          {Object.entries(studentProfileData.notes).map(([lessonId, content]) => {
+                            const lesson = allGroupLessons.find(l => l.id === lessonId)
+                            return (
+                              <div key={lessonId} className="profile-note-item">
+                                <span className="pn-lesson">Урок {lesson?.lesson_number || '?'}</span>
+                                <p>{content}</p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
           </div>
         )}
       </div>
