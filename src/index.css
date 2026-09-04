@@ -2796,6 +2796,19 @@ body {
   flex-shrink: 0;
 }
 
+.calendar-event-group {
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-dim);
+  flex-shrink: 0;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .calendar-event-topic {
   overflow: hidden;
   text-overflow: ellipsis;

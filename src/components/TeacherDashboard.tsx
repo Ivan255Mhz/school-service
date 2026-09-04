@@ -26,7 +26,7 @@ export function TeacherDashboard() {
   const [newHomeworkDesc, setNewHomeworkDesc] = useState('')
   const [newStudentName, setNewStudentName] = useState('')
   const [newMaterials, setNewMaterials] = useState<{title: string; file: File | null; url: string}[]>([])
-  const [activeTab, setActiveTab] = useState<'students' | 'journal' | 'homework' | 'calendar'>('students')
+  const [activeTab, setActiveTab] = useState<'students' | 'journal' | 'homework'>('students')
   const [hwModuleLessons, setHwModuleLessons] = useState<Record<string, Lesson[]>>({})
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => {
     const d = new Date()
@@ -34,7 +34,7 @@ export function TeacherDashboard() {
     d.setHours(0, 0, 0, 0)
     return d
   })
-  const [allGroupLessons, setAllGroupLessons] = useState<Lesson[]>([])
+  const [allGroupLessons, setAllGroupLessons] = useState<(Lesson & { group_name: string })[]>([])
   const [selectedStudentProfile, setSelectedStudentProfile] = useState<Profile | null>(null)
   const [studentProfileData, setStudentProfileData] = useState<{
     attendance: Attendance[]
@@ -55,7 +55,6 @@ export function TeacherDashboard() {
   useEffect(() => {
     if (selectedGroup) {
       loadGroupData(selectedGroup.id)
-      loadAllGroupLessons(selectedGroup.id)
     }
   }, [selectedGroup])
 
@@ -112,7 +111,10 @@ export function TeacherDashboard() {
       .select('*')
       .eq('teacher_id', profileId)
 
-    if (data) setGroups(data)
+    if (data) {
+      setGroups(data)
+      loadAllGroupLessons()
+    }
   }
 
   const loadGroupData = async (groupId: string) => {
@@ -133,11 +135,21 @@ export function TeacherDashboard() {
     if (modulesData) setModules(modulesData)
   }
 
-  const loadAllGroupLessons = async (groupId: string) => {
+  const loadAllGroupLessons = async () => {
+    const teacherId = localStorage.getItem('teacher_id')
+    if (!teacherId) return
+
+    const { data: teacherGroups } = await supabase
+      .from('groups')
+      .select('id, name')
+      .eq('teacher_id', teacherId)
+
+    if (!teacherGroups || teacherGroups.length === 0) { setAllGroupLessons([]); return }
+
     const { data: mods } = await supabase
       .from('modules')
-      .select('id')
-      .eq('group_id', groupId)
+      .select('id, group_id')
+      .in('group_id', teacherGroups.map(g => g.id))
 
     if (!mods || mods.length === 0) { setAllGroupLessons([]); return }
 
@@ -147,7 +159,18 @@ export function TeacherDashboard() {
       .in('module_id', mods.map(m => m.id))
       .order('date')
 
-    if (less) setAllGroupLessons(less)
+    if (!less) { setAllGroupLessons([]); return }
+
+    const groupMap: Record<string, string> = {}
+    teacherGroups.forEach(g => { groupMap[g.id] = g.name })
+
+    const modGroupMap: Record<string, string> = {}
+    mods.forEach(m => { modGroupMap[m.id] = groupMap[m.group_id] || '' })
+
+    setAllGroupLessons(less.map(l => ({
+      ...l,
+      group_name: modGroupMap[l.module_id] || ''
+    })))
   }
 
   const loadStudentProfile = async (student: Profile) => {
@@ -855,12 +878,6 @@ export function TeacherDashboard() {
           >
             Домашние задания
           </button>
-          <button
-            className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
-            onClick={() => setActiveTab('calendar')}
-          >
-            Календарь
-          </button>
         </div>
 
         {activeTab === 'students' && (
@@ -1049,60 +1066,6 @@ export function TeacherDashboard() {
           </div>
         )}
 
-        {activeTab === 'calendar' && (
-          <div className="teacher-section">
-            <div className="calendar-header">
-              <button onClick={() => {
-                const d = new Date(calendarWeekStart)
-                d.setDate(d.getDate() - 7)
-                setCalendarWeekStart(d)
-              }} className="btn btn-outline btn-sm">&larr;</button>
-              <h2>
-                {calendarWeekStart.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-                {' — '}
-                {new Date(calendarWeekStart.getTime() + 6 * 86400000).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </h2>
-              <button onClick={() => {
-                const d = new Date(calendarWeekStart)
-                d.setDate(d.getDate() + 7)
-                setCalendarWeekStart(d)
-              }} className="btn btn-outline btn-sm">&rarr;</button>
-              <button onClick={() => {
-                const d = new Date()
-                d.setDate(d.getDate() - d.getDay() + 1)
-                d.setHours(0, 0, 0, 0)
-                setCalendarWeekStart(d)
-              }} className="btn btn-primary btn-sm">Сегодня</button>
-            </div>
-            <div className="calendar-grid">
-              {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((dayName, i) => {
-                const dayDate = new Date(calendarWeekStart)
-                dayDate.setDate(dayDate.getDate() + i)
-                const dateStr = dayDate.toISOString().split('T')[0]
-                const dayLessons = allGroupLessons.filter(l => l.date === dateStr)
-                const isToday = new Date().toISOString().split('T')[0] === dateStr
-
-                return (
-                  <div key={i} className={`calendar-day ${isToday ? 'today' : ''} ${dayLessons.length > 0 ? 'has-events' : ''}`}>
-                    <div className="calendar-day-header">
-                      <span className="calendar-day-name">{dayName}</span>
-                      <span className="calendar-day-num">{dayDate.getDate()}</span>
-                    </div>
-                    <div className="calendar-day-events">
-                      {dayLessons.map(l => (
-                        <div key={l.id} className={`calendar-event ${l.is_completed ? 'completed' : 'planned'}`}>
-                          <span className="calendar-event-num">{l.lesson_number}</span>
-                          <span className="calendar-event-topic">{l.topic}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         {selectedStudentProfile && studentProfileData && (
           <div className="student-profile-overlay" onClick={() => setSelectedStudentProfile(null)}>
             <div className="student-profile-card" onClick={e => e.stopPropagation()}>
@@ -1199,6 +1162,59 @@ export function TeacherDashboard() {
           Выйти
         </button>
       </header>
+
+      <div className="teacher-section">
+        <div className="calendar-header">
+          <button onClick={() => {
+            const d = new Date(calendarWeekStart)
+            d.setDate(d.getDate() - 7)
+            setCalendarWeekStart(d)
+          }} className="btn btn-outline btn-sm">&larr;</button>
+          <h2>
+            {calendarWeekStart.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+            {' — '}
+            {new Date(calendarWeekStart.getTime() + 6 * 86400000).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </h2>
+          <button onClick={() => {
+            const d = new Date(calendarWeekStart)
+            d.setDate(d.getDate() + 7)
+            setCalendarWeekStart(d)
+          }} className="btn btn-outline btn-sm">&rarr;</button>
+          <button onClick={() => {
+            const d = new Date()
+            d.setDate(d.getDate() - d.getDay() + 1)
+            d.setHours(0, 0, 0, 0)
+            setCalendarWeekStart(d)
+          }} className="btn btn-primary btn-sm">Сегодня</button>
+        </div>
+        <div className="calendar-grid">
+          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((dayName, i) => {
+            const dayDate = new Date(calendarWeekStart)
+            dayDate.setDate(dayDate.getDate() + i)
+            const dateStr = dayDate.toISOString().split('T')[0]
+            const dayLessons = allGroupLessons.filter(l => l.date === dateStr)
+            const isToday = new Date().toISOString().split('T')[0] === dateStr
+
+            return (
+              <div key={i} className={`calendar-day ${isToday ? 'today' : ''} ${dayLessons.length > 0 ? 'has-events' : ''}`}>
+                <div className="calendar-day-header">
+                  <span className="calendar-day-name">{dayName}</span>
+                  <span className="calendar-day-num">{dayDate.getDate()}</span>
+                </div>
+                <div className="calendar-day-events">
+                  {dayLessons.map(l => (
+                    <div key={l.id} className={`calendar-event ${l.is_completed ? 'completed' : 'planned'}`} title={`${l.group_name}: Урок ${l.lesson_number} — ${l.topic}`}>
+                      <span className="calendar-event-group">{l.group_name}</span>
+                      <span className="calendar-event-num">{l.lesson_number}</span>
+                      <span className="calendar-event-topic">{l.topic}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
 
       <div className="section-header">
         <h2>Мои группы</h2>
