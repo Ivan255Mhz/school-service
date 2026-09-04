@@ -27,56 +27,20 @@ export function LoginScreen() {
         .eq('role', 'student')
         .maybeSingle()
 
-      if (studentProfile) {
-        await supabase.auth.signInAnonymously()
-
-        const group = studentProfile.groups as any
-        localStorage.setItem('user_role', 'student')
-        localStorage.setItem('group_id', studentProfile.group_id)
-        localStorage.setItem('group_name', group?.name || '')
-        localStorage.setItem('student_name', studentProfile.name)
-        localStorage.setItem('student_id', studentProfile.id)
-        navigate('/student')
-        return
-      }
-
-      const { data: group } = await supabase
-        .from('groups')
-        .select('*')
-        .eq('invite_code', trimmedCode)
-        .maybeSingle()
-
-      if (!group) {
-        setError('Код не найден. Проверьте код.')
+      if (!studentProfile) {
+        setError('Ученик не найден. Проверьте код.')
         setLoading(false)
         return
       }
 
       await supabase.auth.signInAnonymously()
 
-      const newId = crypto.randomUUID()
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: newId,
-          name: 'Ученик',
-          full_name: 'Ученик',
-          role: 'student',
-          group_id: group.id,
-        })
-
-      if (profileError) {
-        setError('Ошибка создания профиля')
-        setLoading(false)
-        return
-      }
-
+      const group = studentProfile.groups as any
       localStorage.setItem('user_role', 'student')
-      localStorage.setItem('group_id', group.id)
-      localStorage.setItem('group_name', group.name)
-      localStorage.setItem('student_name', 'Ученик')
-      localStorage.setItem('student_id', newId)
+      localStorage.setItem('group_id', studentProfile.group_id)
+      localStorage.setItem('group_name', group?.name || '')
+      localStorage.setItem('student_name', studentProfile.name)
+      localStorage.setItem('student_id', studentProfile.id)
       navigate('/student')
     } catch {
       setError('Произошла ошибка')
@@ -201,17 +165,16 @@ export function LoginScreen() {
         {mode === 'student' && (
           <form onSubmit={handleStudentLogin} className="login-form">
             <div className="form-group">
-              <label htmlFor="code">Код</label>
+              <label htmlFor="code">Код ученика</label>
               <input
                 id="code"
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="STU-XXXXXX или GRPXXXXXX"
+                placeholder="STU-XXXXXX"
                 className="input"
                 required
               />
-              <span className="form-hint">Личный код ученика или код группы</span>
             </div>
 
             {error && <div className="error-message">{error}</div>}
