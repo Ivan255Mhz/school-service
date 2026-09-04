@@ -75,3 +75,17 @@ export type StudentNote = {
   created_at: string
   updated_at: string
 }
+
+export type LibraryItem = {
+  id: string
+  group_id: string
+  type: 'book' | 'article' | 'link'
+  title: string
+  description: string | null
+  url: string | null
+  file_url: string | null
+  file_name: string | null
+  lesson_id: string | null
+  added_by: string
+  created_at: string
+}

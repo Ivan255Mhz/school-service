@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote } from '../lib/supabase'
+import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote, LibraryItem } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
 
@@ -19,6 +19,9 @@ export function StudentDashboard() {
   const [editingNote, setEditingNote] = useState<string | null>(null)
   const [noteText, setNoteText] = useState('')
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'modules' | 'library'>('modules')
+  const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([])
+  const [libraryLessons, setLibraryLessons] = useState<(LessonMaterial & { lesson_number: number; lesson_topic: string; lesson_date: string })[]>([])
   const navigate = useNavigate()
 
   const groupId = localStorage.getItem('group_id')
@@ -70,6 +73,36 @@ export function StudentDashboard() {
           notesData.forEach((n: StudentNote) => { nMap[n.lesson_id] = n })
           setNotesMap(nMap)
         }
+      }
+
+      const { data: libItems } = await supabase
+        .from('library_items')
+        .select('*')
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: false })
+
+      if (libItems) setLibraryItems(libItems)
+
+      const { data: lessonsWithMaterials } = await supabase
+        .from('lesson_materials')
+        .select('*, lessons(lesson_number, topic, date)')
+        .in('lesson_id', (
+          await supabase.from('lessons').select('id').eq('group_id', groupId)
+        ).data?.map((l: { id: string }) => l.id) || [])
+
+      if (lessonsWithMaterials) {
+        const enriched = lessonsWithMaterials
+          .filter((m: Record<string, unknown>) => m.lessons)
+          .map((m: Record<string, unknown>) => {
+            const lesson = m.lessons as { lesson_number: number; topic: string; date: string }
+            return {
+              ...m,
+              lesson_number: lesson.lesson_number,
+              lesson_topic: lesson.topic,
+              lesson_date: lesson.date,
+            }
+          })
+        setLibraryLessons(enriched as (LessonMaterial & { lesson_number: number; lesson_topic: string; lesson_date: string })[])
       }
     } catch {
       showToast('error', 'Не удалось загрузить данные')
@@ -619,60 +652,182 @@ export function StudentDashboard() {
         </button>
       </header>
 
-      <div className="student-stats">
-        <div className="stat-card">
-          <span className="stat-value">{stats.total}</span>
-          <span className="stat-label">Всего уроков</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-value">{stats.attended}</span>
-          <span className="stat-label">Посещено</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-value">{stats.submitted}</span>
-          <span className="stat-label">ДЗ сдано</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-value">{stats.attendancePercent}%</span>
-          <span className="stat-label">Посещаемость</span>
-        </div>
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === 'modules' ? 'active' : ''}`}
+          onClick={() => setActiveTab('modules')}
+        >
+          Уроки
+        </button>
+        <button
+          className={`tab ${activeTab === 'library' ? 'active' : ''}`}
+          onClick={() => setActiveTab('library')}
+        >
+          Библиотека
+        </button>
       </div>
 
-      <div className="modules-grid">
-        {modules.length === 0 ? (
-          <div className="empty-state">
-            <p>Модули пока не добавлены.</p>
+      {activeTab === 'modules' && (
+        <>
+          <div className="student-stats">
+            <div className="stat-card">
+              <span className="stat-value">{stats.total}</span>
+              <span className="stat-label">Всего уроков</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-value">{stats.attended}</span>
+              <span className="stat-label">Посещено</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-value">{stats.submitted}</span>
+              <span className="stat-label">ДЗ сдано</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-value">{stats.attendancePercent}%</span>
+              <span className="stat-label">Посещаемость</span>
+            </div>
           </div>
-        ) : (
-          modules.map((module) => {
-            const progress = getModuleProgress(module.id)
-            return (
-              <div key={module.id} className="module-card">
-                <div className="module-card-header">
-                  <h3>{module.name}</h3>
-                </div>
-                <div className="module-progress">
-                  <div className="module-progress-info">
-                    <span>{progress.attended}/{progress.total} уроков</span>
-                    <span>{progress.percent}%</span>
-                  </div>
-                  <div className="progress-track progress-track-sm">
-                    <div className="progress-fill" style={{ width: `${progress.percent}%` }} />
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedModule(module)
-                  }}
-                  className="btn btn-primary btn-sm"
-                >
-                  Открыть
-                </button>
+
+          <div className="modules-grid">
+            {modules.length === 0 ? (
+              <div className="empty-state">
+                <p>Модули пока не добавлены.</p>
               </div>
-            )
-          })
-        )}
-      </div>
+            ) : (
+              modules.map((module) => {
+                const progress = getModuleProgress(module.id)
+                return (
+                  <div key={module.id} className="module-card">
+                    <div className="module-card-header">
+                      <h3>{module.name}</h3>
+                    </div>
+                    <div className="module-progress">
+                      <div className="module-progress-info">
+                        <span>{progress.attended}/{progress.total} уроков</span>
+                        <span>{progress.percent}%</span>
+                      </div>
+                      <div className="progress-track progress-track-sm">
+                        <div className="progress-fill" style={{ width: `${progress.percent}%` }} />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedModule(module)
+                      }}
+                      className="btn btn-primary btn-sm"
+                    >
+                      Открыть
+                    </button>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'library' && (
+        <div className="library-section">
+          {libraryItems.length === 0 && libraryLessons.length === 0 ? (
+            <div className="empty-state">
+              <p>Библиотека пока пуста.</p>
+            </div>
+          ) : (
+            <>
+              {libraryItems.filter(i => i.type === 'book').length > 0 && (
+                <div className="library-group">
+                  <h3 className="library-group-title">Книги</h3>
+                  <div className="library-list">
+                    {libraryItems.filter(i => i.type === 'book').map(item => (
+                      <div key={item.id} className="library-item">
+                        <div className="library-item-icon">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/>
+                          </svg>
+                        </div>
+                        <div className="library-item-info">
+                          <span className="library-item-title">{item.title}</span>
+                          {item.description && <span className="library-item-desc">{item.description}</span>}
+                        </div>
+                        <a
+                          href={item.file_url || item.url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-outline btn-sm"
+                        >
+                          Открыть
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {libraryItems.filter(i => i.type === 'article' || i.type === 'link').length > 0 && (
+                <div className="library-group">
+                  <h3 className="library-group-title">Статьи и ссылки</h3>
+                  <div className="library-list">
+                    {libraryItems.filter(i => i.type === 'article' || i.type === 'link').map(item => (
+                      <div key={item.id} className="library-item">
+                        <div className="library-item-icon">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                          </svg>
+                        </div>
+                        <div className="library-item-info">
+                          <span className="library-item-title">{item.title}</span>
+                          {item.description && <span className="library-item-desc">{item.description}</span>}
+                        </div>
+                        <a
+                          href={item.url || item.file_url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-outline btn-sm"
+                        >
+                          Открыть
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {libraryLessons.length > 0 && (
+                <div className="library-group">
+                  <h3 className="library-group-title">Материалы уроков</h3>
+                  <div className="library-list">
+                    {libraryLessons.map((mat, idx) => (
+                      <div key={mat.id || idx} className="library-item">
+                        <div className="library-item-icon">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                          </svg>
+                        </div>
+                        <div className="library-item-info">
+                          <span className="library-item-title">{mat.title}</span>
+                          <span className="library-item-desc">Урок {mat.lesson_number} — {mat.lesson_topic}</span>
+                        </div>
+                        <a
+                          href={mat.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-outline btn-sm"
+                        >
+                          Открыть
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

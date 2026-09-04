@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Profile, Group, Lesson } from '../lib/supabase'
+import type { Profile, Group, Lesson, LibraryItem } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
 
@@ -29,7 +29,7 @@ export function AdminDashboard() {
   const [selectedTeacher, setSelectedTeacher] = useState<TeacherWithStats | null>(null)
   const [editPrice, setEditPrice] = useState('')
   const [editBonus, setEditBonus] = useState('')
-  const [activeTab, setActiveTab] = useState<'teachers' | 'schedule' | 'payments'>('teachers')
+  const [activeTab, setActiveTab] = useState<'teachers' | 'schedule' | 'payments' | 'library'>('teachers')
   const [filterTeacher, setFilterTeacher] = useState('')
   const [filterGroup, setFilterGroup] = useState('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
@@ -38,6 +38,16 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([])
+  const [libraryGroups, setLibraryGroups] = useState<Group[]>([])
+  const [showAddLibraryItem, setShowAddLibraryItem] = useState(false)
+  const [newLibType, setNewLibType] = useState<'book' | 'article' | 'link'>('book')
+  const [newLibTitle, setNewLibTitle] = useState('')
+  const [newLibDesc, setNewLibDesc] = useState('')
+  const [newLibUrl, setNewLibUrl] = useState('')
+  const [newLibGroupId, setNewLibGroupId] = useState('')
+  const [newLibFile, setNewLibFile] = useState<File | null>(null)
+  const [uploadingLib, setUploadingLib] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -49,7 +59,7 @@ export function AdminDashboard() {
     (async () => {
       try {
         setLoading(true)
-        await Promise.all([loadTeachers(), loadAllLessons()])
+        await Promise.all([loadTeachers(), loadAllLessons(), loadLibrary()])
       } catch (e) {
         console.error('Load error:', e)
         setError('Ошибка загрузки данных')
@@ -189,6 +199,84 @@ export function AdminDashboard() {
     })
 
     setAllLessons(lessonsWithAttendance)
+  }
+
+  const loadLibrary = async () => {
+    const { data: libData } = await supabase
+      .from('library_items')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (libData) setLibraryItems(libData)
+
+    const { data: groupsData } = await supabase
+      .from('groups')
+      .select('id, name, invite_code, teacher_id')
+
+    if (groupsData) setLibraryGroups(groupsData)
+  }
+
+  const handleAddLibraryItem = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newLibGroupId || !newLibTitle.trim()) return
+
+    setUploadingLib(true)
+    let fileUrl = ''
+    let fileName = ''
+
+    if (newLibFile) {
+      const ext = newLibFile.name.split('.').pop()
+      const path = `library/${Date.now()}.${ext}`
+      const { error: uploadErr } = await supabase.storage
+        .from('library')
+        .upload(path, newLibFile)
+
+      if (uploadErr) {
+        showToast('error', 'Ошибка загрузки файла')
+        setUploadingLib(false)
+        return
+      }
+
+      const { data: urlData } = supabase.storage.from('library').getPublicUrl(path)
+      fileUrl = urlData.publicUrl
+      fileName = newLibFile.name
+    }
+
+    const { error } = await supabase.from('library_items').insert({
+      group_id: newLibGroupId,
+      type: newLibType,
+      title: newLibTitle.trim(),
+      description: newLibDesc.trim() || null,
+      url: (newLibType === 'article' || newLibType === 'link') ? newLibUrl.trim() || null : null,
+      file_url: fileUrl || null,
+      file_name: fileName || null,
+      added_by: localStorage.getItem('admin_id') || null,
+    })
+
+    if (error) {
+      showToast('error', 'Не удалось добавить материал')
+    } else {
+      showToast('success', 'Материал добавлен')
+      setNewLibTitle('')
+      setNewLibDesc('')
+      setNewLibUrl('')
+      setNewLibFile(null)
+      setNewLibGroupId('')
+      setShowAddLibraryItem(false)
+      loadLibrary()
+    }
+    setUploadingLib(false)
+  }
+
+  const handleDeleteLibraryItem = async (itemId: string) => {
+    if (!confirm('Удалить материал из библиотеки?')) return
+    const { error } = await supabase.from('library_items').delete().eq('id', itemId)
+    if (error) {
+      showToast('error', 'Не удалось удалить материал')
+    } else {
+      showToast('success', 'Материал удалён')
+      loadLibrary()
+    }
   }
 
   const generateLoginCode = () => {
@@ -399,6 +487,12 @@ export function AdminDashboard() {
           onClick={() => setActiveTab('payments')}
         >
           Оплата
+        </button>
+        <button
+          className={`tab ${activeTab === 'library' ? 'active' : ''}`}
+          onClick={() => setActiveTab('library')}
+        >
+          Библиотека
         </button>
       </div>
 
@@ -816,6 +910,124 @@ export function AdminDashboard() {
         )
       })()}
       </>)}
+
+      {activeTab === 'library' && (
+        <div className="teacher-section">
+          <div className="section-header">
+            <h2>Библиотека ({libraryItems.length})</h2>
+            <button onClick={() => setShowAddLibraryItem(true)} className="btn btn-primary btn-sm">
+              + Добавить материал
+            </button>
+          </div>
+
+          {showAddLibraryItem && (
+            <form onSubmit={handleAddLibraryItem} className="create-form" style={{ marginBottom: 24 }}>
+              <div className="form-row">
+                <select
+                  value={newLibType}
+                  onChange={e => setNewLibType(e.target.value as 'book' | 'article' | 'link')}
+                  className="input"
+                >
+                  <option value="book">Книга (PDF)</option>
+                  <option value="article">Статья</option>
+                  <option value="link">Ссылка</option>
+                </select>
+                <select
+                  value={newLibGroupId}
+                  onChange={e => setNewLibGroupId(e.target.value)}
+                  className="input"
+                  required
+                >
+                  <option value="">Выберите группу</option>
+                  {libraryGroups.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <input
+                type="text"
+                placeholder="Название"
+                value={newLibTitle}
+                onChange={e => setNewLibTitle(e.target.value)}
+                className="input"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Описание (необязательно)"
+                value={newLibDesc}
+                onChange={e => setNewLibDesc(e.target.value)}
+                className="input"
+              />
+              {(newLibType === 'article' || newLibType === 'link') && (
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={newLibUrl}
+                  onChange={e => setNewLibUrl(e.target.value)}
+                  className="input"
+                />
+              )}
+              {newLibType === 'book' && (
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={e => setNewLibFile(e.target.files?.[0] || null)}
+                  className="input"
+                />
+              )}
+              <div className="form-actions">
+                <button type="submit" className="btn btn-primary btn-sm" disabled={uploadingLib}>
+                  {uploadingLib ? '...' : 'Добавить'}
+                </button>
+                <button type="button" onClick={() => setShowAddLibraryItem(false)} className="btn btn-outline btn-sm">
+                  Отмена
+                </button>
+              </div>
+            </form>
+          )}
+
+          {libraryItems.length === 0 ? (
+            <div className="empty-state"><p>Библиотека пуста</p></div>
+          ) : (
+            <div className="library-list">
+              {libraryItems.map(item => {
+                const group = libraryGroups.find(g => g.id === item.group_id)
+                return (
+                  <div key={item.id} className="library-item">
+                    <div className="library-item-icon">
+                      {item.type === 'book' && (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/>
+                        </svg>
+                      )}
+                      {(item.type === 'article' || item.type === 'link') && (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                        </svg>
+                      )}
+                    </div>
+                    <div className="library-item-info">
+                      <span className="library-item-title">{item.title}</span>
+                      <span className="library-item-desc">
+                        {group?.name} · {item.type === 'book' ? 'Книга' : item.type === 'article' ? 'Статья' : 'Ссылка'}
+                        {item.file_name ? ` · ${item.file_name}` : ''}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteLibraryItem(item.id)}
+                      className="btn btn-danger btn-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
