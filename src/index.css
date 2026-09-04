@@ -3269,4 +3269,6 @@ body {
 .group-price-form .form-actions .btn {
   width: auto;
   flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 0.8125em;
 }

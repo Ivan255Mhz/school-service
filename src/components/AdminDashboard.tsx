@@ -81,7 +81,7 @@ export function AdminDashboard() {
 
     const { data: groupsData } = await supabase
       .from('groups')
-      .select('id, teacher_id, name, invite_code')
+      .select('id, teacher_id, name, invite_code, price_per_lesson, bonus_per_student')
       .in('teacher_id', teacherIds)
 
     const groupIds: string[] = []
