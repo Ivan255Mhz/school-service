@@ -164,12 +164,13 @@ export function TeacherDashboard() {
     const groupMap: Record<string, string> = {}
     teacherGroups.forEach(g => { groupMap[g.id] = g.name })
 
-    const modGroupMap: Record<string, string> = {}
-    mods.forEach(m => { modGroupMap[m.id] = groupMap[m.group_id] || '' })
+    const modGroupIdMap: Record<string, string> = {}
+    mods.forEach(m => { modGroupIdMap[m.id] = m.group_id })
 
     setAllGroupLessons(less.map(l => ({
       ...l,
-      group_name: modGroupMap[l.module_id] || ''
+      group_id: modGroupIdMap[l.module_id] || l.group_id || '',
+      group_name: groupMap[modGroupIdMap[l.module_id]] || ''
     })))
   }
 
@@ -1076,9 +1077,10 @@ export function TeacherDashboard() {
               </div>
 
               {(() => {
+                const studentLessons = allGroupLessons.filter(l => l.group_id === selectedStudentProfile.group_id)
                 const attended = studentProfileData.attendance.filter(a => a.present).length
                 const submitted = studentProfileData.homework.length
-                const total = allGroupLessons.length
+                const total = studentLessons.length
                 const percent = total > 0 ? Math.round((attended / total) * 100) : 0
 
                 return (
@@ -1104,10 +1106,10 @@ export function TeacherDashboard() {
 
                     <h3>История уроков</h3>
                     <div className="student-profile-history">
-                      {allGroupLessons.length === 0 ? (
+                      {studentLessons.length === 0 ? (
                         <p className="empty-text">Уроков пока нет</p>
                       ) : (
-                        allGroupLessons.map(l => {
+                        studentLessons.map(l => {
                           const att = studentProfileData.attendance.find(a => a.lesson_id === l.id && a.present)
                           const hw = studentProfileData.homework.find(h => h.lesson_id === l.id)
                           const note = studentProfileData.notes[l.id]
@@ -1129,7 +1131,7 @@ export function TeacherDashboard() {
                         <h3>Заметки</h3>
                         <div className="student-profile-notes">
                           {Object.entries(studentProfileData.notes).map(([lessonId, content]) => {
-                            const lesson = allGroupLessons.find(l => l.id === lessonId)
+                            const lesson = studentLessons.find(l => l.id === lessonId)
                             return (
                               <div key={lessonId} className="profile-note-item">
                                 <span className="pn-lesson">Урок {lesson?.lesson_number || '?'}</span>
