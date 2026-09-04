@@ -3257,3 +3257,16 @@ body {
   padding-top: 8px;
   border-top: 1px solid var(--border);
 }
+
+.group-price-form .form-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+.group-price-form .form-actions .btn {
+  width: auto;
+  flex-shrink: 0;
+}
