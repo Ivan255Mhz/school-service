@@ -28,7 +28,7 @@ export function AdminDashboard() {
   const [selectedTeacher, setSelectedTeacher] = useState<TeacherWithStats | null>(null)
   const [editPrice, setEditPrice] = useState('')
   const [editBonus, setEditBonus] = useState('')
-  const [activeTab, setActiveTab] = useState<'teachers' | 'schedule'>('teachers')
+  const [activeTab, setActiveTab] = useState<'teachers' | 'schedule' | 'payments'>('teachers')
   const [filterTeacher, setFilterTeacher] = useState('')
   const [filterGroup, setFilterGroup] = useState('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
@@ -358,6 +358,12 @@ export function AdminDashboard() {
         >
           Расписание ({allLessons.length})
         </button>
+        <button
+          className={`tab ${activeTab === 'payments' ? 'active' : ''}`}
+          onClick={() => setActiveTab('payments')}
+        >
+          Оплата
+        </button>
       </div>
 
       {activeTab === 'teachers' && (
@@ -685,6 +691,94 @@ export function AdminDashboard() {
           )}
         </div>
       )}
+
+      {activeTab === 'payments' && (() => {
+        const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+
+        type PaymentRow = {
+          teacherId: string
+          teacherName: string
+          month: string
+          monthIndex: number
+          year: number
+          lessonsCount: number
+          totalStudents: number
+          totalEarnings: number
+        }
+
+        const payments: PaymentRow[] = []
+
+        teachers.forEach(teacher => {
+          const teacherLessons = allLessons.filter(l =>
+            l.is_completed &&
+            teacher.groups.some(g => l.groupName === g.name)
+          )
+
+          const byMonth: Record<string, { lessons: number; students: number }> = {}
+
+          teacherLessons.forEach(l => {
+            const d = new Date(l.date)
+            const key = `${d.getFullYear()}-${d.getMonth()}`
+            if (!byMonth[key]) byMonth[key] = { lessons: 0, students: 0 }
+            byMonth[key].lessons++
+            byMonth[key].students += l.presentStudents.length
+          })
+
+          Object.entries(byMonth).forEach(([key, data]) => {
+            const [year, monthIdx] = key.split('-').map(Number)
+            const earnings = (teacher.price_per_lesson || 0) * data.lessons + (teacher.bonus_per_student || 0) * data.students
+            payments.push({
+              teacherId: teacher.id,
+              teacherName: teacher.full_name || teacher.name,
+              month: monthNames[monthIdx],
+              monthIndex: monthIdx,
+              year,
+              lessonsCount: data.lessons,
+              totalStudents: data.students,
+              totalEarnings: earnings,
+            })
+          })
+        })
+
+        payments.sort((a, b) => b.year - a.year || b.monthIndex - a.monthIndex || a.teacherName.localeCompare(b.teacherName))
+
+        return (
+          <div className="teacher-section">
+            <h2>Оплата преподавателям</h2>
+
+            {payments.length === 0 ? (
+              <div className="empty-state">
+                <p>Нет завершённых занятий для расчёта.</p>
+              </div>
+            ) : (
+              <div className="payments-table-wrap">
+                <table className="payments-table">
+                  <thead>
+                    <tr>
+                      <th>Преподаватель</th>
+                      <th>Месяц</th>
+                      <th>Уроков</th>
+                      <th>Учеников</th>
+                      <th>Итого</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((p, i) => (
+                      <tr key={i}>
+                        <td className="pay-teacher">{p.teacherName}</td>
+                        <td className="pay-month">{p.month} {p.year}</td>
+                        <td className="pay-num">{p.lessonsCount}</td>
+                        <td className="pay-num">{p.totalStudents}</td>
+                        <td className="pay-total">{p.totalEarnings.toLocaleString('ru-RU')} ₽</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )
+      })()}
       </>)}
     </div>
   )
