@@ -564,7 +564,7 @@ export function StudentDashboard() {
     <div className="dashboard">
       <header className="dashboard-header">
         <div>
-          <h1>{groupName || 'Курс C#'}</h1>
+          <h1>{groupName || 'Speak'}</h1>
           <p>{studentName}</p>
         </div>
         <button onClick={handleLogout} className="btn btn-outline">
