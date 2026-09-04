@@ -1367,6 +1367,10 @@ body {
   border-radius: var(--radius);
   cursor: pointer;
   transition: border-color 0.15s;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: var(--text);
 }
 
 .teacher-card:hover {
@@ -1475,11 +1479,30 @@ body {
   font-size: 0.8em;
   font-weight: 600;
   flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  padding: 0;
+}
+
+.student-avatar:hover {
+  opacity: 0.85;
 }
 
 .student-name {
   font-weight: 500;
   font-size: 0.9375em;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+}
+
+.student-name:hover {
+  color: var(--accent);
 }
 
 /* ===== Students Table ===== */

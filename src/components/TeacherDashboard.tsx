@@ -913,9 +913,9 @@ export function TeacherDashboard() {
               <div className="students-list">
                 {students.map(s => (
                   <div key={s.id} className="student-item">
-                    <span className="student-avatar" onClick={() => loadStudentProfile(s)} style={{cursor:'pointer'}} title="Открыть профиль">{s.name.charAt(0).toUpperCase()}</span>
+                    <button className="student-avatar" onClick={() => loadStudentProfile(s)} title="Открыть профиль">{s.name.charAt(0).toUpperCase()}</button>
                     <div className="student-info">
-                      <span className="student-name" onClick={() => loadStudentProfile(s)} style={{cursor:'pointer'}} title="Открыть профиль">{s.name}</span>
+                      <button className="student-name" onClick={() => loadStudentProfile(s)} title="Открыть профиль">{s.name}</button>
                       {s.invite_code && (
                         <span className="student-code">Код: <code>{s.invite_code}</code></span>
                       )}

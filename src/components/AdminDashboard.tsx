@@ -573,7 +573,7 @@ export function AdminDashboard() {
                 </div>
               ) : (
                 teachers.map(teacher => (
-                  <div key={teacher.id} className="teacher-card" onClick={() => {
+                  <button key={teacher.id} className="teacher-card" onClick={() => {
                     setSelectedTeacher(teacher)
                     setEditPrice(String(teacher.price_per_lesson || 0))
                     setEditBonus(String(teacher.bonus_per_student || 0))
@@ -594,7 +594,7 @@ export function AdminDashboard() {
                       <span>{teacher.totalStudents} учеников</span>
                       <span>{teacher.totalLessons} уроков</span>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
