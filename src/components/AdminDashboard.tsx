@@ -516,31 +516,35 @@ export function AdminDashboard() {
 
           {selectedTeacher && (
             <div className="teacher-detail">
-              <div className="teacher-detail-header">
+              <div className="teacher-detail-hero">
                 <button onClick={() => setSelectedTeacher(null)} className="btn btn-back">
-                  &larr; Назад к списку
+                  &larr; Назад
                 </button>
-                <h3 className="teacher-detail-name">{selectedTeacher.full_name || selectedTeacher.name}</h3>
+                <div className="teacher-hero-info">
+                  <div className="teacher-avatar teacher-avatar-lg">{(selectedTeacher.full_name || selectedTeacher.name).charAt(0)}</div>
+                  <div>
+                    <h2 className="teacher-detail-name">{selectedTeacher.full_name || selectedTeacher.name}</h2>
+                    <code className="teacher-detail-code">{selectedTeacher.login_code || '-'}</code>
+                  </div>
+                </div>
                 <button
                   onClick={() => {
                     if (confirm('Удалить преподавателя и все его группы, модули, уроки?')) {
                       handleDeleteTeacher(selectedTeacher.id)
                     }
                   }}
-                  className="btn-delete-teacher"
+                  className="btn btn-outline btn-sm btn-danger-text"
                   title="Удалить преподавателя"
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4l8 8M12 4l-8 8"/>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
                   </svg>
+                  Удалить
                 </button>
               </div>
 
               <div className="teacher-info-grid">
-                <div className="info-card">
-                  <span className="info-label">Код входа</span>
-                  <code className="info-value">{selectedTeacher.login_code || '-'}</code>
-                </div>
                 <div className="info-card">
                   <span className="info-label">Группы</span>
                   <span className="info-value">{selectedTeacher.groups.length}</span>
@@ -555,73 +559,80 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              <h4>Цены по группам</h4>
-              {selectedTeacher.groups.length === 0 ? (
-                <p className="empty-text">Групп нет</p>
-              ) : (
-                <div className="groups-list">
-                  {selectedTeacher.groups.map(group => {
-                    const isEditing = editingGroupPrices === group.id
-                    return (
-                      <div key={group.id} className="group-item group-item-price">
-                        <div className="group-item-header">
-                          <span className="group-name">{group.name}</span>
-                          <code className="group-code-small">{group.invite_code}</code>
+              <div className="teacher-section-block">
+                <h4 className="section-title">Цены по группам</h4>
+                {selectedTeacher.groups.length === 0 ? (
+                  <p className="empty-text">Групп нет</p>
+                ) : (
+                  <div className="groups-list">
+                    {selectedTeacher.groups.map(group => {
+                      const isEditing = editingGroupPrices === group.id
+                      return (
+                        <div key={group.id} className="group-item group-item-price">
+                          <div className="group-item-header">
+                            <div className="group-item-title">
+                              <span className="group-name">{group.name}</span>
+                              <code className="group-code-small">{group.invite_code}</code>
+                            </div>
+                            {!isEditing && (
+                              <button
+                                onClick={() => {
+                                  setEditingGroupPrices(group.id)
+                                  setGroupPrice(String(group.price_per_lesson || 0))
+                                  setGroupBonus(String(group.bonus_per_student || 0))
+                                }}
+                                className="btn btn-outline btn-xs"
+                              >
+                                Настроить
+                              </button>
+                            )}
+                          </div>
+                          {isEditing ? (
+                            <div className="group-price-form">
+                              <div className="form-row-3">
+                                <div className="form-field">
+                                  <label className="form-label">Цена/урок (₽)</label>
+                                  <input
+                                    type="number"
+                                    value={groupPrice}
+                                    onChange={e => setGroupPrice(e.target.value)}
+                                    className="input"
+                                    min="0"
+                                    step="0.01"
+                                  />
+                                </div>
+                                <div className="form-field">
+                                  <label className="form-label">Бонус/ученик (₽)</label>
+                                  <input
+                                    type="number"
+                                    value={groupBonus}
+                                    onChange={e => setGroupBonus(e.target.value)}
+                                    className="input"
+                                    min="0"
+                                    step="0.01"
+                                  />
+                                </div>
+                              </div>
+                              <div className="form-actions">
+                                <button onClick={() => handleSaveGroupPrices(group.id)} className="btn btn-primary btn-sm">Сохранить</button>
+                                <button onClick={() => setEditingGroupPrices(null)} className="btn btn-outline btn-sm">Отмена</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="group-item-prices">
+                              <span className="group-price-tag">{formatPrice(group.price_per_lesson)}/урок</span>
+                              <span className="group-price-tag bonus">{formatPrice(group.bonus_per_student)}/ученик</span>
+                            </div>
+                          )}
                         </div>
-                        {isEditing ? (
-                          <div className="group-price-form">
-                            <div className="form-row-3">
-                              <div className="form-field">
-                                <label className="form-label">Цена/урок (₽)</label>
-                                <input
-                                  type="number"
-                                  value={groupPrice}
-                                  onChange={e => setGroupPrice(e.target.value)}
-                                  className="input"
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </div>
-                              <div className="form-field">
-                                <label className="form-label">Бонус/ученик (₽)</label>
-                                <input
-                                  type="number"
-                                  value={groupBonus}
-                                  onChange={e => setGroupBonus(e.target.value)}
-                                  className="input"
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </div>
-                            </div>
-                            <div className="form-actions">
-                              <button onClick={() => handleSaveGroupPrices(group.id)} className="btn btn-primary btn-sm">Сохранить</button>
-                              <button onClick={() => setEditingGroupPrices(null)} className="btn btn-outline btn-sm">Отмена</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="group-item-prices">
-                            <span>Урок: {formatPrice(group.price_per_lesson)}</span>
-                            <span>Ученик: {formatPrice(group.bonus_per_student)}</span>
-                            <button
-                              onClick={() => {
-                                setEditingGroupPrices(group.id)
-                                setGroupPrice(String(group.price_per_lesson || 0))
-                                setGroupBonus(String(group.bonus_per_student || 0))
-                              }}
-                              className="btn btn-outline btn-xs"
-                            >
-                              Изменить
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
 
-              <h4>Занятия и посещаемость</h4>
+              <div className="teacher-section-block">
+                <h4 className="section-title">Занятия и посещаемость</h4>
               {(() => {
                 const teacherLessons = allLessons.filter(l =>
                   selectedTeacher.groups.some(g => l.groupName === g.name) && l.is_completed
@@ -668,7 +679,8 @@ export function AdminDashboard() {
                   </div>
                 )
               })()}
-            </div>
+              </div>
+              </div>
           )}
 
           {!selectedTeacher && (
@@ -682,17 +694,28 @@ export function AdminDashboard() {
                   <button key={teacher.id} className="teacher-card" onClick={() => {
                     setSelectedTeacher(teacher)
                   }}>
-                    <div className="teacher-card-info">
-                      <span className="teacher-avatar">{(teacher.full_name || teacher.name).charAt(0)}</span>
-                      <div>
+                    <div className="teacher-card-left">
+                      <div className="teacher-avatar">{(teacher.full_name || teacher.name).charAt(0)}</div>
+                      <div className="teacher-card-info">
                         <div className="teacher-card-name">{teacher.full_name || teacher.name}</div>
-                        <div className="teacher-card-code">Код: {teacher.login_code || '-'}</div>
+                        <code className="teacher-card-code">{teacher.login_code || '-'}</code>
                       </div>
                     </div>
-                    <div className="teacher-card-stats">
-                      <span>{teacher.groups.length} групп</span>
-                      <span>{teacher.totalStudents} учеников</span>
-                      <span>{teacher.totalLessons} уроков</span>
+                    <div className="teacher-card-right">
+                      <div className="teacher-card-stats">
+                        <span className="teacher-stat">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                          {teacher.totalStudents}
+                        </span>
+                        <span className="teacher-stat">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                          {teacher.totalLessons}
+                        </span>
+                        <span className="teacher-stat">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                          {teacher.groups.length}
+                        </span>
+                      </div>
                     </div>
                   </button>
                 ))
