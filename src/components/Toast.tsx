@@ -13,6 +13,31 @@ export function showToast(type: Toast['type'], message: string) {
   toastListener?.(toast)
 }
 
+function ToastIcon({ type }: { type: Toast['type'] }) {
+  if (type === 'success') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+        <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )
+  }
+  if (type === 'error') {
+    return (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+        <path d="M6 6l4 4M10 6l-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    )
+  }
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M8 7v3M8 5.5v0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 export function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -33,9 +58,7 @@ export function ToastContainer() {
       {toasts.map(t => (
         <div key={t.id} className={`toast toast-${t.type}`}>
           <span className="toast-icon">
-            {t.type === 'success' && '✓'}
-            {t.type === 'error' && '✕'}
-            {t.type === 'info' && 'ℹ'}
+            <ToastIcon type={t.type} />
           </span>
           {t.message}
         </div>

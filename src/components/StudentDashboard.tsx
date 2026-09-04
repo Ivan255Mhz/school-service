@@ -509,7 +509,7 @@ export function StudentDashboard() {
     const currentModuleLessons = getCurrentModuleLessons()
 
     return (
-      <div className="dashboard">
+      <div className="dashboard view-enter">
         <header className="dashboard-header">
           <div>
             <button onClick={() => { setSelectedModule(null); }} className="btn btn-back">
@@ -608,7 +608,7 @@ export function StudentDashboard() {
   const stats = getGlobalStats()
 
   return (
-    <div className="dashboard">
+    <div className="dashboard view-enter">
       <header className="dashboard-header">
         <div>
           <h1>{groupName || 'Speak'}</h1>

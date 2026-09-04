@@ -36,6 +36,7 @@ export function AdminDashboard() {
   const [filterDateTo, setFilterDateTo] = useState('')
   const [filterCompleted, setFilterCompleted] = useState<'all' | 'completed' | 'pending'>('all')
   const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
 
@@ -202,6 +203,7 @@ export function AdminDashboard() {
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    setCreating(true)
     const loginCode = generateLoginCode()
     const { data: existing } = await supabase
       .from('profiles')
@@ -211,6 +213,7 @@ export function AdminDashboard() {
 
     if (existing) {
       showToast('error', 'Код уже существует, попробуйте снова')
+      setCreating(false)
       return
     }
 
@@ -229,6 +232,7 @@ export function AdminDashboard() {
 
     if (error) {
       showToast('error', 'Не удалось создать преподавателя')
+      setCreating(false)
       return
     }
 
@@ -238,6 +242,7 @@ export function AdminDashboard() {
     setNewTeacherBonus('')
     setShowCreateTeacher(false)
     loadTeachers()
+    setCreating(false)
   }
 
   const handleSaveTeacherPrices = async () => {
@@ -362,7 +367,7 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="dashboard">
+    <div className="dashboard view-enter">
       <header className="dashboard-header">
         <div>
           <h1>Админ-панель</h1>
@@ -444,7 +449,7 @@ export function AdminDashboard() {
               </div>
               <div className="form-hint">Код для входа будет сгенерирован автоматически</div>
               <div className="form-actions">
-                <button type="submit" className="btn btn-primary btn-sm">Создать</button>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={creating}>{creating ? '...' : 'Создать'}</button>
                 <button type="button" onClick={() => setShowCreateTeacher(false)} className="btn btn-outline btn-sm">
                   Отмена
                 </button>

@@ -43,6 +43,11 @@ export function TeacherDashboard() {
     notes: Record<string, string>
   } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [creatingGroup, setCreatingGroup] = useState(false)
+  const [creatingModule, setCreatingModule] = useState(false)
+  const [creatingLesson, setCreatingLesson] = useState(false)
+  const [addingStudent, setAddingStudent] = useState(false)
+  const [savingLesson, setSavingLesson] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -347,6 +352,7 @@ export function TeacherDashboard() {
     const teacherId = localStorage.getItem('teacher_id')
     if (!teacherId) return
 
+    setCreatingGroup(true)
     const inviteCode = `GRP${Date.now().toString(36).toUpperCase().slice(-6)}`
 
     const { error } = await supabase.from('groups').insert({
@@ -363,12 +369,14 @@ export function TeacherDashboard() {
       showToast('success', 'Группа создана')
       loadGroups()
     }
+    setCreatingGroup(false)
   }
 
   const handleCreateModule = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedGroup) return
 
+    setCreatingModule(true)
     const { error } = await supabase.from('modules').insert({
       group_id: selectedGroup.id,
       name: newModuleName,
@@ -383,6 +391,7 @@ export function TeacherDashboard() {
       showToast('success', 'Модуль создан')
       loadGroupData(selectedGroup.id)
     }
+    setCreatingModule(false)
   }
 
   const uploadMaterialFile = async (file: File, lessonId: string, index: number): Promise<string | null> => {
@@ -409,6 +418,7 @@ export function TeacherDashboard() {
     e.preventDefault()
     if (!selectedModule) return
 
+    setCreatingLesson(true)
     const { data: lesson, error } = await supabase.from('lessons').insert({
       group_id: selectedGroup!.id,
       module_id: selectedModule.id,
@@ -447,12 +457,14 @@ export function TeacherDashboard() {
       setShowCreateLesson(false)
       loadModuleLessons(selectedModule.id)
     }
+    setCreatingLesson(false)
   }
 
   const handleEditLesson = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingLesson) return
 
+    setSavingLesson(true)
     const { error } = await supabase
       .from('lessons')
       .update({
@@ -469,6 +481,7 @@ export function TeacherDashboard() {
       setNewHomeworkDesc('')
       if (selectedModule) loadModuleLessons(selectedModule.id)
     }
+    setSavingLesson(false)
   }
 
   const startEditLesson = (lesson: Lesson) => {
@@ -538,6 +551,7 @@ export function TeacherDashboard() {
     e.preventDefault()
     if (!selectedGroup || !newStudentName.trim()) return
 
+    setAddingStudent(true)
     const inviteCode = generateInviteCode()
 
     const { error } = await supabase
@@ -553,6 +567,7 @@ export function TeacherDashboard() {
 
     if (error) {
       showToast('error', 'Не удалось добавить ученика')
+      setAddingStudent(false)
       return
     }
 
@@ -560,6 +575,7 @@ export function TeacherDashboard() {
     setNewStudentName('')
     setShowAddStudent(false)
     loadGroupData(selectedGroup.id)
+    setAddingStudent(false)
   }
 
   const handleDeleteStudent = async (studentId: string) => {
@@ -658,7 +674,7 @@ export function TeacherDashboard() {
   // === VIEW: Selected Module ===
   if (selectedModule && selectedGroup) {
     return (
-      <div className="dashboard">
+      <div className="dashboard view-enter">
         <header className="dashboard-header">
           <div>
             <button onClick={() => { setSelectedModule(null); setLessons([]); setEditingLesson(null); }} className="btn btn-back">
@@ -760,8 +776,8 @@ export function TeacherDashboard() {
             )}
 
             <div className="form-actions">
-              <button type="submit" className="btn btn-primary btn-sm">
-                {editingLesson ? 'Сохранить' : 'Создать'}
+              <button type="submit" className="btn btn-primary btn-sm" disabled={creatingLesson || savingLesson}>
+                {creatingLesson || savingLesson ? '...' : editingLesson ? 'Сохранить' : 'Создать'}
               </button>
               <button type="button" onClick={() => { setShowCreateLesson(false); setEditingLesson(null); setNewMaterials([]); setNewLessonTopic(''); setNewHomeworkDesc(''); }} className="btn btn-outline btn-sm">
                 Отмена
@@ -877,7 +893,7 @@ export function TeacherDashboard() {
   // === VIEW: Selected Group ===
   if (selectedGroup) {
     return (
-      <div className="dashboard">
+      <div className="dashboard view-enter">
         <header className="dashboard-header">
           <div>
             <button onClick={() => { setSelectedGroup(null); setSelectedModule(null); }} className="btn btn-back">
@@ -940,7 +956,7 @@ export function TeacherDashboard() {
                   required
                 />
                 <div className="form-actions">
-                  <button type="submit" className="btn btn-primary">Добавить</button>
+                  <button type="submit" className="btn btn-primary" disabled={addingStudent}>{addingStudent ? '...' : 'Добавить'}</button>
                   <button type="button" onClick={() => setShowAddStudent(false)} className="btn btn-ghost">Отмена</button>
                 </div>
               </form>
@@ -995,7 +1011,7 @@ export function TeacherDashboard() {
                   required
                 />
                 <div className="form-actions">
-                  <button type="submit" className="btn btn-primary btn-sm">Создать</button>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={creatingModule}>{creatingModule ? '...' : 'Создать'}</button>
                   <button type="button" onClick={() => setShowCreateModule(false)} className="btn btn-outline btn-sm">
                     Отмена
                   </button>
@@ -1211,7 +1227,7 @@ export function TeacherDashboard() {
   }
 
   return (
-    <div className="dashboard">
+    <div className="dashboard view-enter">
       <header className="dashboard-header">
         <div>
           <h1>Панель преподавателя</h1>
@@ -1293,7 +1309,7 @@ export function TeacherDashboard() {
             required
           />
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary btn-sm">Создать</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={creatingGroup}>{creatingGroup ? '...' : 'Создать'}</button>
             <button type="button" onClick={() => setShowCreateGroup(false)} className="btn btn-outline btn-sm">
               Отмена
             </button>
