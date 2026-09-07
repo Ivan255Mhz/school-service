@@ -2248,6 +2248,18 @@ body {
   border-top: 1px solid var(--border);
 }
 
+.lesson-attendance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.lesson-attendance-header .lesson-attendance-title {
+  margin-bottom: 0;
+}
+
 .lesson-attendance-title {
   font-size: 0.75em;
   color: var(--text-dim);

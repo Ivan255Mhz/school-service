@@ -49,6 +49,7 @@ export function TeacherDashboard() {
   const [creatingLesson, setCreatingLesson] = useState(false)
   const [addingStudent, setAddingStudent] = useState(false)
   const [savingLesson, setSavingLesson] = useState(false)
+  const [markingAttendance, setMarkingAttendance] = useState<string | null>(null)
   const [groupLibraryItems, setGroupLibraryItems] = useState<LibraryItem[]>([])
   const [showAddLibraryItem, setShowAddLibraryItem] = useState(false)
   const [newLibType, setNewLibType] = useState<'book' | 'article' | 'link'>('book')
@@ -949,6 +950,36 @@ export function TeacherDashboard() {
     }
   }
 
+  const handleMarkAllPresent = async (lessonId: string) => {
+    if (students.length === 0) {
+      showToast('info', 'В группе нет учеников')
+      return
+    }
+
+    setMarkingAttendance(lessonId)
+    const rows = students.map(s => ({
+      lesson_id: lessonId,
+      student_id: s.id,
+      present: true,
+    }))
+
+    const { error } = await supabase
+      .from('attendance')
+      .upsert(rows, { onConflict: 'lesson_id,student_id' })
+
+    if (error) {
+      showToast('error', 'Не удалось отметить учеников')
+    } else {
+      setAttendanceMap(prev => {
+        const lessonMap: Record<string, boolean> = {}
+        students.forEach(s => { lessonMap[s.id] = true })
+        return { ...prev, [lessonId]: lessonMap }
+      })
+      showToast('success', 'Все ученики отмечены присутствующими')
+    }
+    setMarkingAttendance(null)
+  }
+
   const handleToggleCompleted = async (lessonId: string, currentValue: boolean) => {
     const { error } = await supabase
       .from('lessons')
@@ -1213,7 +1244,17 @@ export function TeacherDashboard() {
                   )}
 
                   <div className="lesson-attendance">
-                    <span className="lesson-attendance-title">Посещаемость:</span>
+                    <div className="lesson-attendance-header">
+                      <span className="lesson-attendance-title">Посещаемость:</span>
+                      <button
+                        onClick={() => handleMarkAllPresent(lesson.id)}
+                        className="btn btn-outline btn-xs"
+                        disabled={markingAttendance === lesson.id}
+                        title="Отметить всех учеников присутствующими"
+                      >
+                        {markingAttendance === lesson.id ? '...' : 'Отметить всех'}
+                      </button>
+                    </div>
                     <div className="attendance-students">
                       {students.map(s => {
                         const present = attMap[s.id] === true
