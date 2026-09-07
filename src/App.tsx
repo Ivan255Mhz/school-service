@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginScreen } from './components/LoginScreen'
 import { StudentDashboard } from './components/StudentDashboard'
 import { TeacherDashboard } from './components/TeacherDashboard'
-import { AdminDashboard } from './components/AdminDashboard'
+import { AdminGate } from './components/AdminGate'
 import { MaterialViewer } from './components/MaterialViewer'
 import { ToastContainer } from './components/Toast'
 
@@ -47,11 +47,7 @@ export default function App() {
         />
         <Route
           path="/admin"
-          element={
-            <ProtectedRoute role="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
+          element={<AdminGate />}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

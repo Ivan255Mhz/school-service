@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
 export function LoginScreen() {
-  const [mode, setMode] = useState<'student' | 'teacher' | 'admin'>('student')
+  const [mode, setMode] = useState<'student' | 'teacher'>('student')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -78,37 +78,6 @@ export function LoginScreen() {
     }
   }
 
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-
-    try {
-      const { data: admin } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('login_code', code.trim().toUpperCase())
-        .eq('role', 'admin')
-        .maybeSingle()
-
-      if (!admin) {
-        setError('Администратор не найден. Проверьте код.')
-        setLoading(false)
-        return
-      }
-
-      await supabase.auth.signInAnonymously()
-
-      localStorage.setItem('user_role', 'admin')
-      localStorage.setItem('admin_id', admin.id)
-      navigate('/admin')
-    } catch {
-      setError('Произошла ошибка')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="login-container">
       <div className="login-card">
@@ -138,12 +107,6 @@ export function LoginScreen() {
             onClick={() => { setMode('teacher'); setError(''); setCode(''); }}
           >
             Преподаватель
-          </button>
-          <button
-            className={`login-tab ${mode === 'admin' ? 'active' : ''}`}
-            onClick={() => { setMode('admin'); setError(''); setCode(''); }}
-          >
-            Админ
           </button>
         </div>
 
@@ -180,29 +143,6 @@ export function LoginScreen() {
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="TCH-XXXXXX"
-                className="input"
-                required
-              />
-            </div>
-
-            {error && <div className="error-message">{error}</div>}
-
-            <button type="submit" className="btn btn-primary btn-full" disabled={loading || !code}>
-              {loading ? 'Вход...' : 'Войти'}
-            </button>
-          </form>
-        )}
-
-        {mode === 'admin' && (
-          <form onSubmit={handleAdminLogin} className="login-form">
-            <div className="form-group">
-              <label htmlFor="admin-code">Код администратора</label>
-              <input
-                id="admin-code"
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="ADM-XXXXXX"
                 className="input"
                 required
               />

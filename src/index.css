@@ -3466,6 +3466,36 @@ body {
   }
 }
 
+.admin-gate-card {
+  max-width: 380px;
+}
+
+.admin-gate-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.admin-gate-title {
+  font-size: 1.125em;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+.admin-gate-subtitle {
+  font-size: 0.8125em;
+  color: var(--text-dim);
+  text-align: center;
+  margin: 0 0 20px;
+}
+
 /* ===== MATERIAL VIEWER ===== */
 .material-viewer {
   position: fixed;
