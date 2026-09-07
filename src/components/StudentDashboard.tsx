@@ -20,9 +20,16 @@ export function StudentDashboard() {
   const [editingNote, setEditingNote] = useState<string | null>(null)
   const [noteText, setNoteText] = useState('')
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'modules' | 'library'>('modules')
+  const [activeTab, setActiveTab] = useState<'modules' | 'library' | 'schedule'>('modules')
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([])
   const [libraryLessons, setLibraryLessons] = useState<(LessonMaterial & { lesson_number: number; lesson_topic: string; lesson_date: string })[]>([])
+  const [scheduleLessons, setScheduleLessons] = useState<Lesson[]>([])
+  const [calWeekStart, setCalWeekStart] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - d.getDay() + 1)
+    d.setHours(0, 0, 0, 0)
+    return d
+  })
   const navigate = useNavigate()
 
   const groupId = localStorage.getItem('group_id')
@@ -83,6 +90,14 @@ export function StudentDashboard() {
         .order('created_at', { ascending: false })
 
       if (libItems) setLibraryItems(libItems)
+
+      const { data: schedData } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('group_id', groupId)
+        .order('date')
+
+      if (schedData) setScheduleLessons(schedData)
 
       const { data: lessonsWithMaterials } = await supabase
         .from('lesson_materials')
@@ -322,6 +337,16 @@ export function StudentDashboard() {
   const getCurrentModuleLessons = () => {
     if (!selectedModule) return []
     return moduleLessonsMap[selectedModule.id] || []
+  }
+
+  const openScheduleLesson = (lesson: Lesson) => {
+    if (!lesson.is_completed) {
+      showToast('info', 'Урок ещё не проведён — материалы появятся после занятия')
+      return
+    }
+    const mod = modules.find(m => m.id === lesson.module_id) || null
+    setSelectedModule(mod)
+    setSelectedLesson(lesson)
   }
 
   const getAdjacentLessons = () => {
@@ -647,6 +672,12 @@ export function StudentDashboard() {
           Уроки
         </button>
         <button
+          className={`tab ${activeTab === 'schedule' ? 'active' : ''}`}
+          onClick={() => setActiveTab('schedule')}
+        >
+          Расписание
+        </button>
+        <button
           className={`tab ${activeTab === 'library' ? 'active' : ''}`}
           onClick={() => setActiveTab('library')}
         >
@@ -813,6 +844,76 @@ export function StudentDashboard() {
               )}
             </>
           )}
+        </div>
+      )}
+
+      {activeTab === 'schedule' && (
+        <div className="teacher-section">
+          <div className="calendar-header">
+            <button onClick={() => {
+              const d = new Date(calWeekStart)
+              d.setDate(d.getDate() - 7)
+              setCalWeekStart(d)
+            }} className="btn btn-outline btn-sm">&larr;</button>
+            <h2>
+              {calWeekStart.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+              {' — '}
+              {new Date(calWeekStart.getTime() + 6 * 86400000).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </h2>
+            <button onClick={() => {
+              const d = new Date(calWeekStart)
+              d.setDate(d.getDate() + 7)
+              setCalWeekStart(d)
+            }} className="btn btn-outline btn-sm">&rarr;</button>
+          </div>
+
+          <div className="calendar-legend">
+            <span className="legend-item"><span className="legend-dot completed" />Пройден</span>
+            <span className="legend-item"><span className="legend-dot planned" />Запланирован</span>
+          </div>
+
+          <div className="calendar-grid">
+            {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((dayName, i) => {
+              const dayDate = new Date(calWeekStart)
+              dayDate.setDate(dayDate.getDate() + i)
+              const dateStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`
+              const dayLessons = scheduleLessons.filter(l => l.date === dateStr)
+              const today = new Date()
+              const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+              const isToday = todayStr === dateStr
+
+              return (
+                <div key={i} className={`calendar-day ${isToday ? 'today' : ''} ${dayLessons.length > 0 ? 'has-events' : ''}`}>
+                  <div className="calendar-day-header">
+                    <span className="calendar-day-name">{dayName}</span>
+                    <span className="calendar-day-num">{dayDate.getDate()}</span>
+                  </div>
+                  <div className="calendar-day-events">
+                    {dayLessons.map(l => (
+                      <button
+                        key={l.id}
+                        className={`calendar-event ${l.is_completed ? 'completed' : 'planned'}`}
+                        title={`Урок ${l.lesson_number} — ${l.topic}`}
+                        onClick={() => openScheduleLesson(l)}
+                      >
+                        <span className="calendar-event-num">{l.lesson_number}</span>
+                        <span className="calendar-event-topic">{l.topic}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="calendar-footer">
+            <button onClick={() => {
+              const d = new Date()
+              d.setDate(d.getDate() - d.getDay() + 1)
+              d.setHours(0, 0, 0, 0)
+              setCalWeekStart(d)
+            }} className="btn btn-outline btn-sm">Сегодня</button>
+          </div>
         </div>
       )}
     </div>
