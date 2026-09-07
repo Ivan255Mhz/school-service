@@ -1304,18 +1304,18 @@ export function TeacherDashboard() {
     return (
       <div className="dashboard view-enter">
         <header className="dashboard-header">
-          <div className="header-nav">
+          <div className="header-left">
             <button onClick={() => { setSelectedModule(null); setLessons([]); setEditingLesson(null); }} className="btn btn-back">
               &larr; Назад к модулям
             </button>
-            <button onClick={handleLogout} className="btn btn-outline btn-logout">
-              Выйти
-            </button>
+            <div className="header-title">
+              <h1>{selectedModule.name}</h1>
+              <p className="invite-code-inline">Группа: {selectedGroup.name}</p>
+            </div>
           </div>
-          <div className="header-title">
-            <h1>{selectedModule.name}</h1>
-            <p className="invite-code-inline">Группа: {selectedGroup.name}</p>
-          </div>
+          <button onClick={handleLogout} className="btn btn-outline btn-logout">
+            Выйти
+          </button>
         </header>
 
         <div className="section-header">
@@ -1579,17 +1579,17 @@ export function TeacherDashboard() {
     return (
       <div className="dashboard view-enter">
         <header className="dashboard-header">
-          <div className="header-nav">
+          <div className="header-left">
             <button onClick={() => { setSelectedGroup(null); setSelectedModule(null); }} className="btn btn-back">
               &larr; Назад к группам
             </button>
-            <button onClick={handleLogout} className="btn btn-outline btn-logout">
-              Выйти
-            </button>
+            <div className="header-title">
+              <h1>{selectedGroup.name}</h1>
+            </div>
           </div>
-          <div className="header-title">
-            <h1>{selectedGroup.name}</h1>
-          </div>
+          <button onClick={handleLogout} className="btn btn-outline btn-logout">
+            Выйти
+          </button>
         </header>
 
         <div className="tabs">
@@ -2049,15 +2049,13 @@ export function TeacherDashboard() {
   return (
     <div className="dashboard view-enter">
       <header className="dashboard-header">
-        <div className="header-nav">
-          <button onClick={handleLogout} className="btn btn-outline btn-logout">
-            Выйти
-          </button>
-        </div>
         <div className="header-title">
           <h1>Панель преподавателя</h1>
           <p>Управление группами и курсами</p>
         </div>
+        <button onClick={handleLogout} className="btn btn-outline btn-logout">
+          Выйти
+        </button>
       </header>
 
       <div className="tabs">
