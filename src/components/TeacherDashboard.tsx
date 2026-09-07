@@ -888,10 +888,44 @@ export function TeacherDashboard() {
       .eq('id', editingLesson.id)
 
     if (!error) {
+      const existingCount = (materialsMap[editingLesson.id] || []).length
+      for (let i = 0; i < newMaterials.length; i++) {
+        const mat = newMaterials[i]
+        if (!mat.title) continue
+
+        let url = mat.url
+        if (mat.file) {
+          const uploadedUrl = await uploadMaterialFile(mat.file, editingLesson.id, i)
+          if (uploadedUrl) url = uploadedUrl
+        }
+
+        if (url) {
+          const { error: matError } = await supabase.from('lesson_materials').insert({
+            lesson_id: editingLesson.id,
+            title: mat.title,
+            url: url,
+            sort_order: existingCount + i,
+          })
+          if (matError) {
+            console.error('Material insert error:', matError)
+          }
+        }
+      }
+
+      const addedCount = newMaterials.filter(m => m.title.trim()).length
+      if (addedCount > 0) {
+        showToast('success', `Урок сохранён, файлов добавлено: ${addedCount}`)
+      } else {
+        showToast('success', 'Урок сохранён')
+      }
+
       setEditingLesson(null)
       setNewLessonTopic('')
       setNewHomeworkDesc('')
+      setNewMaterials([])
       if (selectedModule) loadModuleLessons(selectedModule.id)
+    } else {
+      showToast('error', 'Не удалось сохранить урок')
     }
     setSavingLesson(false)
   }
@@ -902,6 +936,7 @@ export function TeacherDashboard() {
     setNewLessonDate(lesson.date || '')
     setNewLessonNumber(lesson.lesson_number)
     setNewHomeworkDesc(lesson.homework_description || '')
+    setNewMaterials([])
     setShowCreateLesson(false)
   }
 
@@ -1309,48 +1344,46 @@ export function TeacherDashboard() {
               rows={3}
             />
 
-            {!editingLesson && (
-              <div className="materials-section">
-                <div className="materials-header">
-                  <span>Файлы урока</span>
-                  <button type="button" onClick={addMaterial} className="btn btn-outline btn-sm">
-                    + Добавить файл
+            <div className="materials-section">
+              <div className="materials-header">
+                <span>{editingLesson ? 'Добавить файлы к уроку' : 'Файлы урока'}</span>
+                <button type="button" onClick={addMaterial} className="btn btn-outline btn-sm">
+                  + Добавить файл
+                </button>
+              </div>
+              {newMaterials.map((mat, i) => (
+                <div key={i} className="material-row">
+                  <input
+                    type="text"
+                    value={mat.title}
+                    onChange={(e) => updateMaterialTitle(i, e.target.value)}
+                    placeholder="Название файла"
+                    className="input"
+                  />
+                  <label className="btn btn-outline btn-sm material-upload-btn">
+                    {mat.file ? mat.file.name : 'Выбрать файл'}
+                    <input
+                      type="file"
+                      style={{ display: 'none' }}
+                      onChange={(e) => updateMaterialFile(i, e.target.files?.[0] || null)}
+                    />
+                  </label>
+                  <span className="material-or">или</span>
+                  <input
+                    type="text"
+                    value={mat.url}
+                    onChange={(e) => updateMaterialUrl(i, e.target.value)}
+                    placeholder="URL"
+                    className="input"
+                  />
+                  <button type="button" onClick={() => removeMaterial(i)} className="btn btn-danger btn-xs">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M2 2l8 8M10 2l-8 8"/>
+                    </svg>
                   </button>
                 </div>
-                {newMaterials.map((mat, i) => (
-                  <div key={i} className="material-row">
-                    <input
-                      type="text"
-                      value={mat.title}
-                      onChange={(e) => updateMaterialTitle(i, e.target.value)}
-                      placeholder="Название файла"
-                      className="input"
-                    />
-                    <label className="btn btn-outline btn-sm material-upload-btn">
-                      {mat.file ? mat.file.name : 'Выбрать файл'}
-                      <input
-                        type="file"
-                        style={{ display: 'none' }}
-                        onChange={(e) => updateMaterialFile(i, e.target.files?.[0] || null)}
-                      />
-                    </label>
-                    <span className="material-or">или</span>
-                    <input
-                      type="text"
-                      value={mat.url}
-                      onChange={(e) => updateMaterialUrl(i, e.target.value)}
-                      placeholder="URL"
-                      className="input"
-                    />
-                    <button type="button" onClick={() => removeMaterial(i)} className="btn btn-danger btn-xs">
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M2 2l8 8M10 2l-8 8"/>
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+              ))}
+            </div>
 
             <div className="form-actions">
               <button type="submit" className="btn btn-primary btn-sm" disabled={creatingLesson || savingLesson}>
