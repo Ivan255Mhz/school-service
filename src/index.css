@@ -1960,6 +1960,18 @@ body {
   cursor: pointer;
 }
 
+.group-rename {
+  flex: 1;
+  cursor: default;
+}
+
+.group-rename .input {
+  flex: 1;
+  min-width: 120px;
+  padding: 6px 10px;
+  font-size: 0.875em;
+}
+
 .group-avatar {
   width: 42px;
   height: 42px;

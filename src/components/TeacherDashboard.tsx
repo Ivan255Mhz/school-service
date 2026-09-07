@@ -56,6 +56,9 @@ export function TeacherDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Profile[]>([])
   const [searching, setSearching] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<string | null>(null)
+  const [editingGroupName, setEditingGroupName] = useState('')
+  const [savingGroupName, setSavingGroupName] = useState(false)
   const [groupLibraryItems, setGroupLibraryItems] = useState<LibraryItem[]>([])
   const [showAddLibraryItem, setShowAddLibraryItem] = useState(false)
   const [newLibType, setNewLibType] = useState<'book' | 'article' | 'link'>('book')
@@ -902,6 +905,28 @@ export function TeacherDashboard() {
     setShowCreateLesson(false)
   }
 
+  const handleRenameGroup = async (groupId: string) => {
+    if (!editingGroupName.trim()) return
+
+    setSavingGroupName(true)
+    const { error } = await supabase
+      .from('groups')
+      .update({ name: editingGroupName.trim() })
+      .eq('id', groupId)
+
+    if (error) {
+      showToast('error', 'Не удалось переименовать группу')
+    } else {
+      const newName = editingGroupName.trim()
+      showToast('success', 'Название группы обновлено')
+      setEditingGroup(null)
+      setGroups(prev => prev.map(g => g.id === groupId ? { ...g, name: newName } : g))
+      setSelectedGroup(prev => prev?.id === groupId ? { ...prev, name: newName } : prev)
+      setAllGroupLessons(prev => prev.map(l => l.group_id === groupId ? { ...l, group_name: newName } : l))
+    }
+    setSavingGroupName(false)
+  }
+
   const handleDeleteGroup = async (groupId: string) => {
     if (!confirm('Удалить группу со всеми модулями и уроками?')) return
     const { error } = await supabase.from('groups').delete().eq('id', groupId)
@@ -1506,15 +1531,6 @@ export function TeacherDashboard() {
               &larr; Назад к группам
             </button>
             <h1>{selectedGroup.name}</h1>
-            <div className="invite-code-inline">
-              Код: <code>{selectedGroup.invite_code}</code>
-              <button
-                className="btn-copy"
-                onClick={() => navigator.clipboard.writeText(selectedGroup.invite_code)}
-              >
-                Копировать
-              </button>
-            </div>
           </div>
           <button onClick={handleLogout} className="btn btn-outline">
             Выйти
@@ -2151,25 +2167,59 @@ export function TeacherDashboard() {
             const lessonsCount = allGroupLessons.filter(l => l.group_id === group.id).length
             return (
               <div key={group.id} className="group-card">
-                <div
-                  className="group-card-left"
-                  onClick={() => {
-                    setSelectedGroup(group)
-                    loadGroupLibrary(group.id)
-                    setActiveTab('students')
-                  }}
-                >
-                  <div className="group-avatar">{group.name.charAt(0)}</div>
-                  <div className="group-card-info">
-                    <div className="group-card-name">{group.name}</div>
-                    <code className="group-card-code">{group.invite_code}</code>
+                {editingGroup === group.id ? (
+                  <div className="group-card-left group-rename">
+                    <div className="group-avatar">{group.name.charAt(0)}</div>
+                    <input
+                      type="text"
+                      value={editingGroupName}
+                      onChange={(e) => setEditingGroupName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRenameGroup(group.id)
+                        if (e.key === 'Escape') setEditingGroup(null)
+                      }}
+                      className="input"
+                      autoFocus
+                    />
+                    <button onClick={() => handleRenameGroup(group.id)} className="btn btn-primary btn-xs" disabled={savingGroupName}>
+                      {savingGroupName ? '...' : 'OK'}
+                    </button>
+                    <button onClick={() => setEditingGroup(null)} className="btn btn-outline btn-xs">
+                      ✕
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  <div
+                    className="group-card-left"
+                    onClick={() => {
+                      setSelectedGroup(group)
+                      loadGroupLibrary(group.id)
+                      setActiveTab('students')
+                    }}
+                  >
+                    <div className="group-avatar">{group.name.charAt(0)}</div>
+                    <div className="group-card-info">
+                      <div className="group-card-name">{group.name}</div>
+                    </div>
+                  </div>
+                )}
                 <div className="group-card-right">
                   <span className="group-stat" title="Уроков в группе">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     {lessonsCount}
                   </span>
+                  <button
+                    onClick={() => {
+                      setEditingGroup(group.id)
+                      setEditingGroupName(group.name)
+                    }}
+                    className="btn btn-outline btn-xs"
+                    title="Переименовать группу"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M8.5 1.5l2 2M1 11l.5-2.5L9 1l2 2L3.5 10.5 1 11z"/>
+                    </svg>
+                  </button>
                   <button
                     onClick={() => handleDeleteGroup(group.id)}
                     className="btn btn-danger btn-xs"
