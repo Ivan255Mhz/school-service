@@ -433,6 +433,30 @@ export function TeacherDashboard() {
     return text
   }
 
+  const openLessonFromCalendar = async (lesson: Lesson & { group_name: string }) => {
+    const group = groups.find(g => g.id === lesson.group_id)
+    if (!group) return
+
+    setSelectedGroup(group)
+    loadGroupLibrary(group.id)
+    setActiveTab('journal')
+
+    const { data: modulesData } = await supabase
+      .from('modules')
+      .select('*')
+      .eq('group_id', group.id)
+      .order('sort_order')
+
+    if (!modulesData || modulesData.length === 0) {
+      setSelectedModule(null)
+      return
+    }
+
+    const mod = modulesData.find(m => m.id === lesson.module_id) || modulesData[0]
+    setSelectedModule(mod)
+    loadModuleLessons(mod.id)
+  }
+
   const generateDaySummary = async (dateStr: string) => {
     const dayLessons = allGroupLessons.filter(l => l.date === dateStr)
     if (dayLessons.length === 0) {
@@ -1830,11 +1854,16 @@ export function TeacherDashboard() {
                 </div>
                 <div className="calendar-day-events">
                   {dayLessons.map(l => (
-                    <div key={l.id} className={`calendar-event ${l.is_completed ? 'completed' : 'planned'}`} title={`${l.group_name}: Урок ${l.lesson_number} — ${l.topic}`}>
+                    <button
+                      key={l.id}
+                      className={`calendar-event ${l.is_completed ? 'completed' : 'planned'}`}
+                      title={`${l.group_name}: Урок ${l.lesson_number} — ${l.topic}`}
+                      onClick={() => openLessonFromCalendar(l)}
+                    >
                       <span className="calendar-event-group">{l.group_name}</span>
                       <span className="calendar-event-num">{l.lesson_number}</span>
                       <span className="calendar-event-topic">{l.topic}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>

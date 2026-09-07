@@ -2656,6 +2656,16 @@ body {
   align-items: center;
   gap: 4px;
   line-height: 1.3;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: filter 0.15s;
+  border: none;
+  width: 100%;
+}
+
+.calendar-event:hover {
+  filter: brightness(1.3);
 }
 
 .calendar-event.completed {
