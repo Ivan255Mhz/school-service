@@ -447,13 +447,15 @@ export function AdminDashboard() {
   return (
     <div className="dashboard view-enter">
       <header className="dashboard-header">
-        <div>
+        <div className="header-nav">
+          <button onClick={handleLogout} className="btn btn-outline btn-logout">
+            Выйти
+          </button>
+        </div>
+        <div className="header-title">
           <h1>Админ-панель</h1>
           <p>Управление преподавателями и статистика</p>
         </div>
-        <button onClick={handleLogout} className="btn btn-outline">
-          Выйти
-        </button>
       </header>
 
       {error && <div className="empty-state"><p style={{color:'#ef4444'}}>{error}</p></div>}

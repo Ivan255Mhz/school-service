@@ -544,15 +544,17 @@ export function StudentDashboard() {
     return (
       <div className="dashboard view-enter">
         <header className="dashboard-header">
-          <div>
+          <div className="header-nav">
             <button onClick={() => { setSelectedModule(null); }} className="btn btn-back">
               &larr; Назад к модулям
             </button>
+            <button onClick={handleLogout} className="btn btn-outline btn-logout">
+              Выйти
+            </button>
+          </div>
+          <div className="header-title">
             <h1>{selectedModule.name}</h1>
           </div>
-          <button onClick={handleLogout} className="btn btn-outline">
-            Выйти
-          </button>
         </header>
 
         <div className="module-progress-bar">
@@ -643,13 +645,15 @@ export function StudentDashboard() {
   return (
     <div className="dashboard view-enter">
       <header className="dashboard-header">
-        <div>
+        <div className="header-nav">
+          <button onClick={handleLogout} className="btn btn-outline btn-logout">
+            Выйти
+          </button>
+        </div>
+        <div className="header-title">
           <h1>{groupName || 'Speak'}</h1>
           <p>{studentName}</p>
         </div>
-        <button onClick={handleLogout} className="btn btn-outline">
-          Выйти
-        </button>
       </header>
 
       <div className="tabs">
