@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { materialHref } from '../lib/materials'
 import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem, ModuleTemplate, ModuleTemplateLesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -806,13 +807,30 @@ export function TeacherDashboard() {
     setCreatingModule(false)
   }
 
+  const getContentType = (ext: string): string => {
+    switch ((ext || '').toLowerCase()) {
+      case 'html': case 'htm': return 'text/html'
+      case 'pdf': return 'application/pdf'
+      case 'png': return 'image/png'
+      case 'jpg': case 'jpeg': return 'image/jpeg'
+      case 'gif': return 'image/gif'
+      case 'svg': return 'image/svg+xml'
+      case 'mp4': return 'video/mp4'
+      case 'txt': return 'text/plain'
+      case 'json': return 'application/json'
+      case 'js': return 'text/javascript'
+      case 'css': return 'text/css'
+      default: return 'application/octet-stream'
+    }
+  }
+
   const uploadMaterialFile = async (file: File, lessonId: string, index: number): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop()
+    const fileExt = (file.name.split('.').pop() || '').toLowerCase()
     const fileName = `${lessonId}/${Date.now()}-${index}.${fileExt}`
 
     const { error } = await supabase.storage
       .from('lesson-materials')
-      .upload(fileName, file)
+      .upload(fileName, file, { contentType: getContentType(fileExt) })
 
     if (error) {
       console.error('Upload error:', error)
@@ -1499,7 +1517,7 @@ export function TeacherDashboard() {
                       {mats.map(m => (
                         <div key={m.id} className="material-tag">
                           <span className="material-icon">{getFileIcon(m.url)}</span>
-                          <a href={m.url} target="_blank" rel="noopener noreferrer">{m.title}</a>
+                          <a href={materialHref(m.url, m.title)} target="_blank" rel="noopener noreferrer">{m.title}</a>
                           <button onClick={() => handleDeleteMaterial(m.id)} className="material-remove">
                             <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                               <path d="M2 2l8 8M10 2l-8 8"/>

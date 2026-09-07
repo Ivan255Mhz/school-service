@@ -3,6 +3,7 @@ import { LoginScreen } from './components/LoginScreen'
 import { StudentDashboard } from './components/StudentDashboard'
 import { TeacherDashboard } from './components/TeacherDashboard'
 import { AdminDashboard } from './components/AdminDashboard'
+import { MaterialViewer } from './components/MaterialViewer'
 import { ToastContainer } from './components/Toast'
 
 function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: string }) {
@@ -27,6 +28,7 @@ export default function App() {
       <ToastContainer />
       <Routes>
         <Route path="/" element={<LoginScreen />} />
+        <Route path="/material" element={<MaterialViewer />} />
         <Route
           path="/student"
           element={

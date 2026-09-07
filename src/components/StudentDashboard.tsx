@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { materialHref } from '../lib/materials'
 import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote, LibraryItem } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -397,7 +398,7 @@ export function StudentDashboard() {
                   {mats.map(m => (
                     <a
                       key={m.id}
-                      href={m.url}
+                      href={materialHref(m.url, m.title)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="material-card"
@@ -754,7 +755,7 @@ export function StudentDashboard() {
                           {item.description && <span className="library-item-desc">{item.description}</span>}
                         </div>
                         <a
-                          href={item.file_url || item.url || '#'}
+                          href={materialHref(item.file_url || item.url || '#', item.title)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-outline btn-sm"
@@ -816,7 +817,7 @@ export function StudentDashboard() {
                           <span className="library-item-desc">Урок {mat.lesson_number} — {mat.lesson_topic}</span>
                         </div>
                         <a
-                          href={mat.url}
+                          href={materialHref(mat.url, mat.title)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-outline btn-sm"
