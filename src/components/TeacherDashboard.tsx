@@ -2035,17 +2035,6 @@ export function TeacherDashboard() {
             d.setDate(d.getDate() + 7)
             setCalendarWeekStart(d)
           }} className="btn btn-outline btn-sm">&rarr;</button>
-          <button onClick={() => {
-            const d = new Date()
-            d.setDate(d.getDate() - d.getDay() + 1)
-            d.setHours(0, 0, 0, 0)
-            setCalendarWeekStart(d)
-          }} className="btn btn-primary btn-sm">Сегодня</button>
-          <button onClick={() => {
-            const today = new Date()
-            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-            generateDaySummary(todayStr)
-          }} className="btn btn-outline btn-sm">Сводка за день</button>
         </div>
         <div className="calendar-grid">
           {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((dayName, i) => {
@@ -2080,6 +2069,19 @@ export function TeacherDashboard() {
               </div>
             )
           })}
+        </div>
+        <div className="calendar-footer">
+          <button onClick={() => {
+            const d = new Date()
+            d.setDate(d.getDate() - d.getDay() + 1)
+            d.setHours(0, 0, 0, 0)
+            setCalendarWeekStart(d)
+          }} className="btn btn-outline btn-sm">Сегодня</button>
+          <button onClick={() => {
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            generateDaySummary(todayStr)
+          }} className="btn btn-outline btn-sm">Сводка за день</button>
         </div>
       </div>
 

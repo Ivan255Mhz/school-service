@@ -2754,6 +2754,12 @@ body {
   font-weight: 600;
 }
 
+.calendar-footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
