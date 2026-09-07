@@ -2,12 +2,9 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
-const ADMIN_PASSWORD = 'admin'
-
 export function LoginScreen() {
   const [mode, setMode] = useState<'student' | 'teacher' | 'admin'>('student')
   const [code, setCode] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
@@ -84,38 +81,26 @@ export function LoginScreen() {
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-
-    if (password !== ADMIN_PASSWORD) {
-      setError('Неверный пароль')
-      return
-    }
-
     setLoading(true)
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInAnonymously()
-
-      if (authError || !authData.user) {
-        setError('Ошибка авторизации')
-        setLoading(false)
-        return
-      }
-
-      const { error: profileError } = await supabase
+      const { data: admin } = await supabase
         .from('profiles')
-        .upsert({
-          id: authData.user.id,
-          name: 'Администратор',
-          role: 'admin',
-        })
+        .select('*')
+        .eq('login_code', code.trim().toUpperCase())
+        .eq('role', 'admin')
+        .maybeSingle()
 
-      if (profileError) {
-        setError('Ошибка создания профиля')
+      if (!admin) {
+        setError('Администратор не найден. Проверьте код.')
         setLoading(false)
         return
       }
+
+      await supabase.auth.signInAnonymously()
 
       localStorage.setItem('user_role', 'admin')
+      localStorage.setItem('admin_id', admin.id)
       navigate('/admin')
     } catch {
       setError('Произошла ошибка')
@@ -144,19 +129,19 @@ export function LoginScreen() {
         <div className="login-tabs">
           <button
             className={`login-tab ${mode === 'student' ? 'active' : ''}`}
-            onClick={() => { setMode('student'); setError(''); setCode(''); setPassword(''); }}
+            onClick={() => { setMode('student'); setError(''); setCode(''); }}
           >
             Ученик
           </button>
           <button
             className={`login-tab ${mode === 'teacher' ? 'active' : ''}`}
-            onClick={() => { setMode('teacher'); setError(''); setCode(''); setPassword(''); }}
+            onClick={() => { setMode('teacher'); setError(''); setCode(''); }}
           >
             Преподаватель
           </button>
           <button
             className={`login-tab ${mode === 'admin' ? 'active' : ''}`}
-            onClick={() => { setMode('admin'); setError(''); setCode(''); setPassword(''); }}
+            onClick={() => { setMode('admin'); setError(''); setCode(''); }}
           >
             Админ
           </button>
@@ -211,13 +196,13 @@ export function LoginScreen() {
         {mode === 'admin' && (
           <form onSubmit={handleAdminLogin} className="login-form">
             <div className="form-group">
-              <label htmlFor="admin-password">Пароль</label>
+              <label htmlFor="admin-code">Код администратора</label>
               <input
-                id="admin-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Введите пароль"
+                id="admin-code"
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                placeholder="ADM-XXXXXX"
                 className="input"
                 required
               />
@@ -225,7 +210,7 @@ export function LoginScreen() {
 
             {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" className="btn btn-primary btn-full" disabled={loading || !password}>
+            <button type="submit" className="btn btn-primary btn-full" disabled={loading || !code}>
               {loading ? 'Вход...' : 'Войти'}
             </button>
           </form>
