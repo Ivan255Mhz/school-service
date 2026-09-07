@@ -52,6 +52,7 @@ export function TeacherDashboard() {
   const [markingAttendance, setMarkingAttendance] = useState<string | null>(null)
   const [datesStartDate, setDatesStartDate] = useState('')
   const [assigningDates, setAssigningDates] = useState(false)
+  const [cloningLesson, setCloningLesson] = useState<string | null>(null)
   const [groupLibraryItems, setGroupLibraryItems] = useState<LibraryItem[]>([])
   const [showAddLibraryItem, setShowAddLibraryItem] = useState(false)
   const [newLibType, setNewLibType] = useState<'book' | 'article' | 'link'>('book')
@@ -1073,6 +1074,41 @@ export function TeacherDashboard() {
     }
   }
 
+  const handleCloneLesson = async (lesson: Lesson) => {
+    if (!selectedModule) return
+
+    setCloningLesson(lesson.id)
+    try {
+      const maxNum = lessons.reduce((max, l) => Math.max(max, l.lesson_number), 0)
+
+      let newDate: string | null = null
+      if (lesson.date) {
+        const d = new Date(lesson.date + 'T00:00:00')
+        d.setDate(d.getDate() + 7)
+        newDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      }
+
+      const { error } = await supabase.from('lessons').insert({
+        group_id: lesson.group_id,
+        module_id: lesson.module_id,
+        date: newDate,
+        topic: lesson.topic,
+        lesson_number: maxNum + 1,
+        homework_description: lesson.homework_description,
+      })
+
+      if (error) throw error
+
+      showToast('success', 'Урок скопирован (+7 дней)')
+      loadModuleLessons(selectedModule.id)
+      loadAllGroupLessons()
+    } catch {
+      showToast('error', 'Не удалось скопировать урок')
+    } finally {
+      setCloningLesson(null)
+    }
+  }
+
   const handleToggleCompleted = async (lessonId: string, currentValue: boolean) => {
     const { error } = await supabase
       .from('lessons')
@@ -1310,6 +1346,19 @@ export function TeacherDashboard() {
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <path d="M8.5 1.5l2 2M1 11l.5-2.5L9 1l2 2L3.5 10.5 1 11z"/>
                       </svg>
+                    </button>
+                    <button
+                      onClick={() => handleCloneLesson(lesson)}
+                      className="btn btn-outline btn-xs"
+                      title="Клонировать на +7 дней"
+                      disabled={cloningLesson === lesson.id}
+                    >
+                      {cloningLesson === lesson.id ? '...' : (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                        </svg>
+                      )}
                     </button>
                     <button
                       onClick={() => handleDeleteLesson(lesson.id)}
