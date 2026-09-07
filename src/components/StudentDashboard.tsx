@@ -345,166 +345,59 @@ export function StudentDashboard() {
 
     return (
       <div className="lesson-view">
-        <div className="lesson-view-top">
-          <button onClick={() => setSelectedLesson(null)} className="btn btn-back">
-            &larr; Назад к урокам
+        <header className="dashboard-header">
+          <div className="header-left">
+            <button onClick={() => setSelectedLesson(null)} className="btn btn-back">
+              &larr; Назад к урокам
+            </button>
+            <div className="header-title">
+              <h1>{selectedLesson.topic}</h1>
+              <p>
+                Урок {selectedLesson.lesson_number}
+                {selectedLesson.date && ` · ${new Date(selectedLesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                {selectedModule && ` · ${selectedModule.name}`}
+              </p>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="btn btn-outline btn-logout">
+            Выйти
           </button>
-        </div>
+        </header>
 
-        <div className="lesson-title-section">
-          <span className="lesson-number-big">{selectedLesson.lesson_number}</span>
-          <div className="lesson-title-info">
-            <h1>{selectedLesson.topic}</h1>
-            <span className="lesson-date-full">{selectedLesson.date ? new Date(selectedLesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Дата не задана'}</span>
-          </div>
-        </div>
-
-        <div className="lesson-status-row">
-          <div className={`lesson-status-chip ${hasAttendance ? 'done' : 'pending'}`}>
-            <span className="status-icon">{hasAttendance ? '✓' : '○'}</span>
-            <span>Посещение</span>
-          </div>
-          <div className={`lesson-status-chip ${hw ? 'done' : 'pending'}`}>
-            <span className="status-icon">{hw ? '✓' : '○'}</span>
-            <span>Домашнее задание</span>
-          </div>
-          {mats.length > 0 && (
-            <div className="lesson-status-chip info">
-              <span className="status-icon">{mats.length}</span>
-              <span>файл(ов)</span>
-            </div>
-          )}
-        </div>
-
-        <div className="lesson-body">
-          <div className="lesson-main-col">
-            {selectedLesson.homework_description && (
-              <div className="lesson-section">
-                <h2 className="section-title">Домашнее задание</h2>
-                <div className="homework-card">
-                  <p>{selectedLesson.homework_description}</p>
-                </div>
+        <div className="lesson-actions-row">
+          <div className="lesson-action-card">
+            <h3>Посещение</h3>
+            {hasAttendance ? (
+              <div className="action-done">
+                <span className="action-done-icon">✓</span>
+                <span>Посещение подтверждено</span>
               </div>
+            ) : (
+              <>
+                <p className="action-hint">Подтвердите, что вы были на уроке</p>
+                <button
+                  onClick={() => handleConfirmAttendance(selectedLesson.id)}
+                  className="btn btn-primary btn-full"
+                  disabled={confirmingAttendance === selectedLesson.id}
+                >
+                  {confirmingAttendance === selectedLesson.id ? 'Отмечаем...' : 'Я был на уроке'}
+                </button>
+              </>
             )}
-
-            <div className="lesson-section">
-              <h2 className="section-title">Материалы урока</h2>
-              {mats.length === 0 ? (
-                <div className="empty-state-inline">
-                  <p>Файлы пока не добавлены</p>
-                </div>
-              ) : (
-                <div className="materials-grid">
-                  {mats.map(m => (
-                    <a
-                      key={m.id}
-                      href={materialHref(m.url, m.title)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="material-card"
-                    >
-                      <div className="material-card-icon">{getFileType(m.url)}</div>
-                      <div className="material-card-info">
-                        <span className="material-card-name">{m.title}</span>
-                      </div>
-                      <span className="material-card-arrow">&rarr;</span>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="lesson-section">
-              <div className="section-title-row">
-                <h2 className="section-title">Мои заметки</h2>
-                {!isEditingNote && (
-                  <button
-                    onClick={() => handleStartEditNote(selectedLesson.id)}
-                    className="btn btn-ghost btn-sm"
-                  >
-                    {note ? 'Редактировать' : '+ Добавить'}
-                  </button>
-                )}
-              </div>
-              {isEditingNote ? (
-                <div className="note-editor">
-                  <textarea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Запишите важное..."
-                    className="note-textarea"
-                    rows={4}
-                  />
-                  <div className="note-actions">
-                    <button onClick={() => handleSaveNote(selectedLesson.id)} className="btn btn-primary btn-sm">
-                      Сохранить
-                    </button>
-                    <button onClick={() => setEditingNote(null)} className="btn btn-ghost btn-sm">
-                      Отмена
-                    </button>
-                  </div>
-                </div>
-              ) : note ? (
-                <div className="note-display">
-                  <p>{note.content}</p>
-                </div>
-              ) : (
-                <div className="empty-state-inline">
-                  <p>Заметок пока нет</p>
-                </div>
-              )}
-            </div>
           </div>
 
-          <div className="lesson-side-col">
-            <div className="lesson-action-card">
-              <h3>Посещение</h3>
-              {hasAttendance ? (
-                <div className="action-done">
-                  <span className="action-done-icon">✓</span>
-                  <span>Посещение подтверждено</span>
+          <div className="lesson-action-card">
+            <h3>Домашнее задание</h3>
+            {!hasAttendance ? (
+              <p className="action-hint">Сначала отметьте посещение</p>
+            ) : hw ? (
+              <>
+                <div className="uploaded-file">
+                  <span className="uploaded-file-icon">✓</span>
+                  <span className="uploaded-file-name">{hw.file_name}</span>
                 </div>
-              ) : (
-                <>
-                  <p className="action-hint">Подтвердите, что вы были на уроке</p>
-                  <button
-                    onClick={() => handleConfirmAttendance(selectedLesson.id)}
-                    className="btn btn-primary btn-full"
-                    disabled={confirmingAttendance === selectedLesson.id}
-                  >
-                    {confirmingAttendance === selectedLesson.id ? 'Отмечаем...' : 'Я был на уроке'}
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div className="lesson-action-card">
-              <h3>Домашнее задание</h3>
-              {!hasAttendance ? (
-                <p className="action-hint">Сначала отметьте посещение</p>
-              ) : hw ? (
-                <>
-                  <div className="uploaded-file">
-                    <span className="uploaded-file-icon">✓</span>
-                    <span className="uploaded-file-name">{hw.file_name}</span>
-                  </div>
-                  <label className="btn btn-outline btn-sm btn-full">
-                    Заменить файл
-                    <input
-                      type="file"
-                      accept=".cs,.txt,.pdf,.zip"
-                      style={{ display: 'none' }}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) handleFileUpload(selectedLesson.id, file)
-                      }}
-                      disabled={uploading}
-                    />
-                  </label>
-                </>
-              ) : (
-                <label className="btn btn-outline btn-full">
-                  {uploading ? 'Загрузка...' : 'Загрузить файл'}
+                <label className="btn btn-outline btn-sm btn-full">
+                  Заменить файл
                   <input
                     type="file"
                     accept=".cs,.txt,.pdf,.zip"
@@ -516,9 +409,100 @@ export function StudentDashboard() {
                     disabled={uploading}
                   />
                 </label>
-              )}
+              </>
+            ) : (
+              <label className="btn btn-outline btn-full">
+                {uploading ? 'Загрузка...' : 'Загрузить файл'}
+                <input
+                  type="file"
+                  accept=".cs,.txt,.pdf,.zip"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFileUpload(selectedLesson.id, file)
+                  }}
+                  disabled={uploading}
+                />
+              </label>
+            )}
+          </div>
+        </div>
+
+        {selectedLesson.homework_description && (
+          <div className="lesson-section">
+            <h2 className="section-title">Домашнее задание</h2>
+            <div className="homework-card">
+              <p>{selectedLesson.homework_description}</p>
             </div>
           </div>
+        )}
+
+        <div className="lesson-section">
+          <h2 className="section-title">Материалы урока</h2>
+          {mats.length === 0 ? (
+            <div className="empty-state-inline">
+              <p>Файлы пока не добавлены</p>
+            </div>
+          ) : (
+            <div className="materials-grid">
+              {mats.map(m => (
+                <a
+                  key={m.id}
+                  href={materialHref(m.url, m.title)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="material-card"
+                >
+                  <div className="material-card-icon">{getFileType(m.url)}</div>
+                  <div className="material-card-info">
+                    <span className="material-card-name">{m.title}</span>
+                  </div>
+                  <span className="material-card-arrow">&rarr;</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="lesson-section">
+          <div className="section-title-row">
+            <h2 className="section-title">Мои заметки</h2>
+            {!isEditingNote && (
+              <button
+                onClick={() => handleStartEditNote(selectedLesson.id)}
+                className="btn btn-ghost btn-sm"
+              >
+                {note ? 'Редактировать' : '+ Добавить'}
+              </button>
+            )}
+          </div>
+          {isEditingNote ? (
+            <div className="note-editor">
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Запишите важное..."
+                className="note-textarea"
+                rows={4}
+              />
+              <div className="note-actions">
+                <button onClick={() => handleSaveNote(selectedLesson.id)} className="btn btn-primary btn-sm">
+                  Сохранить
+                </button>
+                <button onClick={() => setEditingNote(null)} className="btn btn-ghost btn-sm">
+                  Отмена
+                </button>
+              </div>
+            </div>
+          ) : note ? (
+            <div className="note-display">
+              <p>{note.content}</p>
+            </div>
+          ) : (
+            <div className="empty-state-inline">
+              <p>Заметок пока нет</p>
+            </div>
+          )}
         </div>
 
         <div className="lesson-nav-bottom">
