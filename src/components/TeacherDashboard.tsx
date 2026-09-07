@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem } from '../lib/supabase'
+import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem, ModuleTemplate, ModuleTemplateLesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
 
@@ -57,6 +57,15 @@ export function TeacherDashboard() {
   const [newLibUrl, setNewLibUrl] = useState('')
   const [newLibFile, setNewLibFile] = useState<File | null>(null)
   const [uploadingLib, setUploadingLib] = useState(false)
+  const [mainTab, setMainTab] = useState<'groups' | 'templates'>('groups')
+  const [templates, setTemplates] = useState<(ModuleTemplate & { lessons: ModuleTemplateLesson[] })[]>([])
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false)
+  const [newTemplateName, setNewTemplateName] = useState('')
+  const [templateLessonsDraft, setTemplateLessonsDraft] = useState<{ topic: string; homework: string }[]>([])
+  const [creatingTemplate, setCreatingTemplate] = useState(false)
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+  const [applyingTemplate, setApplyingTemplate] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -228,6 +237,142 @@ export function TeacherDashboard() {
     } else {
       showToast('success', 'Материал удалён')
       if (selectedGroup) loadGroupLibrary(selectedGroup.id)
+    }
+  }
+
+  const loadTemplates = async () => {
+    const teacherId = localStorage.getItem('teacher_id')
+    if (!teacherId) return
+    setLoadingTemplates(true)
+
+    try {
+      const { data: templatesData, error } = await supabase
+        .from('module_templates')
+        .select('*')
+        .eq('teacher_id', teacherId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      const templateIds = (templatesData || []).map(t => t.id)
+      let lessonsByTemplate: Record<string, ModuleTemplateLesson[]> = {}
+
+      if (templateIds.length > 0) {
+        const { data: lessonsData } = await supabase
+          .from('module_template_lessons')
+          .select('*')
+          .in('template_id', templateIds)
+          .order('sort_order')
+
+        if (lessonsData) {
+          lessonsByTemplate = lessonsData.reduce((acc, l) => {
+            if (!acc[l.template_id]) acc[l.template_id] = []
+            acc[l.template_id].push(l)
+            return acc
+          }, {} as Record<string, ModuleTemplateLesson[]>)
+        }
+      }
+
+      setTemplates((templatesData || []).map(t => ({ ...t, lessons: lessonsByTemplate[t.id] || [] })))
+    } catch {
+      showToast('error', 'Не удалось загрузить шаблоны')
+    } finally {
+      setLoadingTemplates(false)
+    }
+  }
+
+  const handleCreateTemplate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const teacherId = localStorage.getItem('teacher_id')
+    if (!teacherId || !newTemplateName.trim()) return
+
+    setCreatingTemplate(true)
+    try {
+      const { data: tpl, error: tplErr } = await supabase
+        .from('module_templates')
+        .insert({ teacher_id: teacherId, name: newTemplateName.trim() })
+        .select()
+        .single()
+
+      if (tplErr) throw tplErr
+
+      const validLessons = templateLessonsDraft.filter(l => l.topic.trim())
+      if (validLessons.length > 0) {
+        const { error: lessonsErr } = await supabase
+          .from('module_template_lessons')
+          .insert(validLessons.map((l, i) => ({
+            template_id: tpl.id,
+            lesson_number: i + 1,
+            topic: l.topic.trim(),
+            homework_description: l.homework.trim() || null,
+            sort_order: i,
+          })))
+
+        if (lessonsErr) throw lessonsErr
+      }
+
+      showToast('success', `Шаблон «${tpl.name}» создан`)
+      setNewTemplateName('')
+      setTemplateLessonsDraft([])
+      setShowCreateTemplate(false)
+      loadTemplates()
+    } catch {
+      showToast('error', 'Не удалось создать шаблон')
+    } finally {
+      setCreatingTemplate(false)
+    }
+  }
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (!confirm('Удалить шаблон?')) return
+    const { error } = await supabase.from('module_templates').delete().eq('id', templateId)
+    if (error) {
+      showToast('error', 'Не удалось удалить шаблон')
+    } else {
+      showToast('success', 'Шаблон удалён')
+      loadTemplates()
+    }
+  }
+
+  const handleApplyTemplate = async (template: ModuleTemplate & { lessons: ModuleTemplateLesson[] }) => {
+    if (!selectedGroup) return
+
+    setApplyingTemplate(true)
+    try {
+      const { data: mod, error: modErr } = await supabase
+        .from('modules')
+        .insert({
+          group_id: selectedGroup.id,
+          name: template.name,
+          sort_order: modules.length,
+        })
+        .select()
+        .single()
+
+      if (modErr) throw modErr
+
+      if (template.lessons.length > 0) {
+        const { error: lessonsErr } = await supabase
+          .from('lessons')
+          .insert(template.lessons.map(l => ({
+            group_id: selectedGroup.id,
+            module_id: mod.id,
+            date: null,
+            topic: l.topic,
+            lesson_number: l.lesson_number,
+            homework_description: l.homework_description,
+          })))
+
+        if (lessonsErr) throw lessonsErr
+      }
+
+      showToast('success', `Модуль «${template.name}» добавлен (${template.lessons.length} уроков)`)
+      setShowTemplatePicker(false)
+      loadGroupData(selectedGroup.id)
+    } catch {
+      showToast('error', 'Не удалось добавить модуль из шаблона')
+    } finally {
+      setApplyingTemplate(false)
     }
   }
 
@@ -616,7 +761,7 @@ export function TeacherDashboard() {
     const { data: lesson, error } = await supabase.from('lessons').insert({
       group_id: selectedGroup!.id,
       module_id: selectedModule.id,
-      date: newLessonDate,
+      date: newLessonDate || null,
       topic: newLessonTopic,
       lesson_number: newLessonNumber,
       homework_description: newHomeworkDesc || null,
@@ -663,7 +808,7 @@ export function TeacherDashboard() {
       .from('lessons')
       .update({
         topic: newLessonTopic,
-        date: newLessonDate,
+        date: newLessonDate || null,
         lesson_number: newLessonNumber,
         homework_description: newHomeworkDesc || null,
       })
@@ -681,7 +826,7 @@ export function TeacherDashboard() {
   const startEditLesson = (lesson: Lesson) => {
     setEditingLesson(lesson)
     setNewLessonTopic(lesson.topic)
-    setNewLessonDate(lesson.date)
+    setNewLessonDate(lesson.date || '')
     setNewLessonNumber(lesson.lesson_number)
     setNewHomeworkDesc(lesson.homework_description || '')
     setShowCreateLesson(false)
@@ -996,7 +1141,7 @@ export function TeacherDashboard() {
                 <div key={lesson.id} className={`lesson-item ${isEditing ? 'lesson-editing' : ''}`}>
                   <div className="lesson-item-header">
                     <span className="lesson-number">{lesson.lesson_number}</span>
-                    <span className="lesson-date">{new Date(lesson.date).toLocaleDateString('ru-RU')}</span>
+                    <span className="lesson-date">{lesson.date ? new Date(lesson.date).toLocaleDateString('ru-RU') : '—'}</span>
                     <span className="lesson-topic-text">{lesson.topic}</span>
                     <span className="lesson-stats">
                       {attCount}/{students.length} посещ.
@@ -1207,10 +1352,43 @@ export function TeacherDashboard() {
           <div className="teacher-section">
             <div className="section-header">
               <h2>Модули курса</h2>
-              <button onClick={() => setShowCreateModule(true)} className="btn btn-primary btn-sm">
-                + Создать модуль
-              </button>
+              <div className="section-header-actions">
+                <button onClick={() => { setShowTemplatePicker(true); loadTemplates() }} className="btn btn-outline btn-sm">
+                  Из шаблона
+                </button>
+                <button onClick={() => setShowCreateModule(true)} className="btn btn-primary btn-sm">
+                  + Создать модуль
+                </button>
+              </div>
             </div>
+
+            {showTemplatePicker && (
+              <div className="template-picker">
+                <div className="template-picker-header">
+                  <span>Выберите шаблон для группы «{selectedGroup?.name}»</span>
+                  <button onClick={() => setShowTemplatePicker(false)} className="btn btn-outline btn-xs">✕</button>
+                </div>
+                {loadingTemplates ? (
+                  <p className="template-picker-empty">Загрузка...</p>
+                ) : templates.length === 0 ? (
+                  <p className="template-picker-empty">Шаблонов нет. Создайте их на вкладке «Шаблоны модулей» главного экрана.</p>
+                ) : (
+                  <div className="template-picker-list">
+                    {templates.map(tpl => (
+                      <button
+                        key={tpl.id}
+                        onClick={() => handleApplyTemplate(tpl)}
+                        className="template-picker-item"
+                        disabled={applyingTemplate}
+                      >
+                        <span className="template-picker-name">{tpl.name}</span>
+                        <span className="template-picker-count">{tpl.lessons.length} уроков</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {showCreateModule && (
               <form onSubmit={handleCreateModule} className="create-form">
@@ -1285,7 +1463,7 @@ export function TeacherDashboard() {
                             <div className="homework-lesson-header">
                               <span className="homework-lesson-num">Урок {lesson.lesson_number}</span>
                               <span className="homework-lesson-topic">{lesson.topic}</span>
-                              <span className="homework-lesson-date">{new Date(lesson.date).toLocaleDateString('ru-RU')}</span>
+                              <span className="homework-lesson-date">{lesson.date ? new Date(lesson.date).toLocaleDateString('ru-RU') : '—'}</span>
                             </div>
                             {hw.length === 0 && students.length > 0 ? (
                               <p className="homework-empty">Нет сданных работ</p>
@@ -1382,7 +1560,7 @@ export function TeacherDashboard() {
                           const note = studentProfileData.notes[l.id]
                           return (
                             <div key={l.id} className="profile-history-row">
-                              <span className="ph-date">{new Date(l.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span>
+                              <span className="ph-date">{l.date ? new Date(l.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '—'}</span>
                               <span className="ph-topic">Урок {l.lesson_number}: {l.topic}</span>
                               <span className={`ph-badge ${att ? 'green' : 'red'}`}>{att ? 'Посещён' : 'Пропущен'}</span>
                               <span className={`ph-badge ${hw ? 'blue' : 'gray'}`}>{hw ? 'ДЗ сдано' : 'Без ДЗ'}</span>
@@ -1554,6 +1732,16 @@ export function TeacherDashboard() {
         </button>
       </header>
 
+      <div className="tabs">
+        <button className={`tab ${mainTab === 'groups' ? 'active' : ''}`} onClick={() => setMainTab('groups')}>
+          Группы ({groups.length})
+        </button>
+        <button className={`tab ${mainTab === 'templates' ? 'active' : ''}`} onClick={() => setMainTab('templates')}>
+          Шаблоны модулей
+        </button>
+      </div>
+
+      {mainTab === 'groups' && (<>
       <div className="teacher-section">
         <div className="calendar-header">
           <button onClick={() => {
@@ -1682,6 +1870,118 @@ export function TeacherDashboard() {
               </div>
             )
           })}
+        </div>
+      )}
+      </>)}
+
+      {mainTab === 'templates' && (
+        <div className="teacher-section">
+          <div className="section-header">
+            <h2>Шаблоны модулей</h2>
+            <button onClick={() => { setShowCreateTemplate(true); setTemplateLessonsDraft([{ topic: '', homework: '' }]) }} className="btn btn-primary btn-sm">
+              + Создать шаблон
+            </button>
+          </div>
+          <p className="template-hint">Готовые модули с уроками и домашними заданиями. Добавляйте их в группы одним кликом — вкладка «Модули и уроки» → «Из шаблона».</p>
+
+          {showCreateTemplate && (
+            <form onSubmit={handleCreateTemplate} className="create-form">
+              <input
+                type="text"
+                value={newTemplateName}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+                placeholder="Название модуля (например: Модуль 1 — Основы C#)"
+                className="input"
+                required
+              />
+              <div className="template-lessons-draft">
+                {templateLessonsDraft.map((l, i) => (
+                  <div key={i} className="material-row">
+                    <span className="template-lesson-num">{i + 1}</span>
+                    <input
+                      type="text"
+                      value={l.topic}
+                      onChange={(e) => {
+                        const updated = [...templateLessonsDraft]
+                        updated[i].topic = e.target.value
+                        setTemplateLessonsDraft(updated)
+                      }}
+                      placeholder="Тема урока"
+                      className="input"
+                    />
+                    <input
+                      type="text"
+                      value={l.homework}
+                      onChange={(e) => {
+                        const updated = [...templateLessonsDraft]
+                        updated[i].homework = e.target.value
+                        setTemplateLessonsDraft(updated)
+                      }}
+                      placeholder="Домашнее задание (необязательно)"
+                      className="input"
+                    />
+                    <button type="button" onClick={() => setTemplateLessonsDraft(templateLessonsDraft.filter((_, j) => j !== i))} className="btn btn-danger btn-xs">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setTemplateLessonsDraft([...templateLessonsDraft, { topic: '', homework: '' }])} className="btn btn-outline btn-sm">
+                  + Добавить урок
+                </button>
+              </div>
+              <div className="form-actions">
+                <button type="submit" className="btn btn-primary btn-sm" disabled={creatingTemplate}>{creatingTemplate ? '...' : 'Создать шаблон'}</button>
+                <button type="button" onClick={() => setShowCreateTemplate(false)} className="btn btn-outline btn-sm">Отмена</button>
+              </div>
+            </form>
+          )}
+
+          {loadingTemplates ? (
+            <div className="groups-grid">
+              <div className="skeleton skeleton-card" />
+              <div className="skeleton skeleton-card" />
+            </div>
+          ) : templates.length === 0 ? (
+            <div className="empty-state">
+              <p>Шаблонов пока нет. Создайте первый шаблон модуля.</p>
+            </div>
+          ) : (
+            <div className="groups-grid">
+              {templates.map(tpl => (
+                <div key={tpl.id} className="group-card">
+                  <div className="group-card-left" style={{ cursor: 'default' }}>
+                    <div className="group-avatar template-avatar">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </div>
+                    <div className="group-card-info">
+                      <div className="group-card-name">{tpl.name}</div>
+                      <span className="group-card-code">{tpl.lessons.length} уроков</span>
+                    </div>
+                  </div>
+                  <div className="group-card-right">
+                    <button
+                      onClick={() => handleDeleteTemplate(tpl.id)}
+                      className="btn btn-danger btn-xs"
+                      title="Удалить шаблон"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                    </button>
+                  </div>
+                  {tpl.lessons.length > 0 && (
+                    <div className="template-lessons-list">
+                      {tpl.lessons.map(l => (
+                        <div key={l.id} className="template-lesson-row">
+                          <span className="template-lesson-num">{l.lesson_number}</span>
+                          <span className="template-lesson-topic">{l.topic}</span>
+                          {l.homework_description && <span className="template-lesson-hw">ДЗ</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

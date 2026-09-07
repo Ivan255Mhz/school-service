@@ -354,7 +354,7 @@ export function StudentDashboard() {
           <span className="lesson-number-big">{selectedLesson.lesson_number}</span>
           <div className="lesson-title-info">
             <h1>{selectedLesson.topic}</h1>
-            <span className="lesson-date-full">{new Date(selectedLesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <span className="lesson-date-full">{selectedLesson.date ? new Date(selectedLesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Дата не задана'}</span>
           </div>
         </div>
 
@@ -580,7 +580,7 @@ export function StudentDashboard() {
                 <div key={lesson.id} className="lesson-card">
                   <div className="lesson-card-header">
                     <span className="lesson-number">{lesson.lesson_number}</span>
-                    <span className="lesson-date">{new Date(lesson.date).toLocaleDateString('ru-RU')}</span>
+                    <span className="lesson-date">{lesson.date ? new Date(lesson.date).toLocaleDateString('ru-RU') : '—'}</span>
                   </div>
                   <h3 className="lesson-topic">{lesson.topic}</h3>
 

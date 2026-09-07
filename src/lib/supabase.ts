@@ -30,7 +30,7 @@ export type Lesson = {
   id: string
   group_id: string
   module_id: string | null
-  date: string
+  date: string | null
   topic: string
   lesson_number: number
   material_url: string | null
@@ -90,4 +90,20 @@ export type LibraryItem = {
   lesson_id: string | null
   added_by: string
   created_at: string
+}
+
+export type ModuleTemplate = {
+  id: string
+  teacher_id: string
+  name: string
+  created_at: string
+}
+
+export type ModuleTemplateLesson = {
+  id: string
+  template_id: string
+  lesson_number: number
+  topic: string
+  homework_description: string | null
+  sort_order: number
 }

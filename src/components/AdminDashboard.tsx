@@ -405,6 +405,7 @@ export function AdminDashboard() {
   const filteredLessons = allLessons.filter(l => {
     if (filterTeacher && l.teacherName !== filterTeacher) return false
     if (filterGroup && l.groupName !== filterGroup) return false
+    if (!l.date) return false
     if (filterDateFrom && l.date < filterDateFrom) return false
     if (filterDateTo && l.date > filterDateTo) return false
     if (filterCompleted === 'completed' && !l.is_completed) return false
@@ -653,7 +654,7 @@ export function AdminDashboard() {
                     {teacherLessons.map(lesson => (
                       <div key={lesson.id} className="attendance-grid-row">
                         <span className="ag-col-date">
-                          {new Date(lesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                          {lesson.date ? new Date(lesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '—'}
                         </span>
                         <span className="ag-col-topic">
                           {lesson.lesson_number}. {lesson.topic}
@@ -780,7 +781,7 @@ export function AdminDashboard() {
               {filteredLessons.map(lesson => (
                 <div key={lesson.id} className={`schedule-item ${lesson.is_completed ? 'schedule-completed' : ''}`}>
                   <div className="schedule-date">
-                    {new Date(lesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                    {lesson.date ? new Date(lesson.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '—'}
                   </div>
                   <div className="schedule-info">
                     <div className="schedule-topic">
@@ -840,6 +841,7 @@ export function AdminDashboard() {
           const byMonth: Record<string, { lessons: number; students: number; earnings: number }> = {}
 
           teacherLessons.forEach(l => {
+            if (!l.date) return
             const d = new Date(l.date)
             const key = `${d.getFullYear()}-${d.getMonth()}`
             if (!byMonth[key]) byMonth[key] = { lessons: 0, students: 0, earnings: 0 }
