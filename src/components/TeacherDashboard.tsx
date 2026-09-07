@@ -54,6 +54,7 @@ export function TeacherDashboard() {
   const [datesStartDate, setDatesStartDate] = useState('')
   const [assigningDates, setAssigningDates] = useState(false)
   const [cloningLesson, setCloningLesson] = useState<string | null>(null)
+  const [expandedLesson, setExpandedLesson] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Profile[]>([])
   const [searching, setSearching] = useState(false)
@@ -1447,9 +1448,18 @@ export function TeacherDashboard() {
               const attCount = Object.values(attMap).filter(Boolean).length
               const hwCount = (homeworkMap[lesson.id] || []).length
               const isEditing = editingLesson?.id === lesson.id
+              const expanded = expandedLesson === lesson.id || isEditing
               return (
-                <div key={lesson.id} className={`lesson-item ${isEditing ? 'lesson-editing' : ''}`}>
-                  <div className="lesson-item-header">
+                <div key={lesson.id} className={`lesson-item ${isEditing ? 'lesson-editing' : ''} ${expanded ? 'lesson-expanded' : ''}`}>
+                  <div
+                    className="lesson-item-header"
+                    onClick={() => setExpandedLesson(expanded ? null : lesson.id)}
+                  >
+                    <span className={`lesson-chevron ${expanded ? 'open' : ''}`}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="9,18 15,12 9,6"/>
+                      </svg>
+                    </span>
                     <span className="lesson-number">{lesson.lesson_number}</span>
                     <span className="lesson-date">{lesson.date ? new Date(lesson.date).toLocaleDateString('ru-RU') : '—'}</span>
                     <span className="lesson-topic-text">{lesson.topic}</span>
@@ -1457,114 +1467,120 @@ export function TeacherDashboard() {
                       {attCount}/{students.length} посещ.
                       {hwCount > 0 && ` | ${hwCount} ДЗ`}
                     </span>
-                    <label className="lesson-completed-toggle" title={lesson.is_completed ? 'Завершён' : 'В процессе'}>
-                      <input
-                        type="checkbox"
-                        checked={lesson.is_completed}
-                        onChange={() => handleToggleCompleted(lesson.id, lesson.is_completed)}
-                      />
-                      <span className={`toggle-mark ${lesson.is_completed ? 'done' : ''}`}>
-                        {lesson.is_completed ? '✓' : '○'}
-                      </span>
-                    </label>
-                    <button
-                      onClick={() => startEditLesson(lesson)}
-                      className="btn btn-outline btn-xs"
-                      title="Редактировать"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M8.5 1.5l2 2M1 11l.5-2.5L9 1l2 2L3.5 10.5 1 11z"/>
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleCloneLesson(lesson)}
-                      className="btn btn-outline btn-xs"
-                      title="Клонировать на +7 дней"
-                      disabled={cloningLesson === lesson.id}
-                    >
-                      {cloningLesson === lesson.id ? '...' : (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                        </svg>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteLesson(lesson.id)}
-                      className="btn btn-danger btn-xs"
-                      title="Удалить"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M2 2l8 8M10 2l-8 8"/>
-                      </svg>
-                    </button>
-                    {lesson.is_completed && (
+                    <div className="lesson-item-actions" onClick={(e) => e.stopPropagation()}>
+                      <label className="lesson-completed-toggle" title={lesson.is_completed ? 'Завершён' : 'В процессе'}>
+                        <input
+                          type="checkbox"
+                          checked={lesson.is_completed}
+                          onChange={() => handleToggleCompleted(lesson.id, lesson.is_completed)}
+                        />
+                        <span className={`toggle-mark ${lesson.is_completed ? 'done' : ''}`}>
+                          {lesson.is_completed ? '✓' : '○'}
+                        </span>
+                      </label>
                       <button
-                        onClick={() => generateLessonSummary(lesson)}
+                        onClick={() => startEditLesson(lesson)}
                         className="btn btn-outline btn-xs"
-                        title="Сводка для родителей"
+                        title="Редактировать"
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M8.5 1.5l2 2M1 11l.5-2.5L9 1l2 2L3.5 10.5 1 11z"/>
                         </svg>
                       </button>
-                    )}
+                      <button
+                        onClick={() => handleCloneLesson(lesson)}
+                        className="btn btn-outline btn-xs"
+                        title="Клонировать на +7 дней"
+                        disabled={cloningLesson === lesson.id}
+                      >
+                        {cloningLesson === lesson.id ? '...' : (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteLesson(lesson.id)}
+                        className="btn btn-danger btn-xs"
+                        title="Удалить"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M2 2l8 8M10 2l-8 8"/>
+                        </svg>
+                      </button>
+                      {lesson.is_completed && (
+                        <button
+                          onClick={() => generateLessonSummary(lesson)}
+                          className="btn btn-outline btn-xs"
+                          title="Сводка для родителей"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {mats.length > 0 && (
-                    <div className="lesson-materials">
-                      {mats.map(m => (
-                        <div key={m.id} className="material-tag">
-                          <span className="material-icon">{getFileIcon(m.url)}</span>
-                          <a href={materialHref(m.url, m.title)} target="_blank" rel="noopener noreferrer">{m.title}</a>
-                          <button onClick={() => handleDeleteMaterial(m.id)} className="material-remove">
-                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                              <path d="M2 2l8 8M10 2l-8 8"/>
-                            </svg>
+                  {expanded && (
+                    <>
+                      {mats.length > 0 && (
+                        <div className="lesson-materials">
+                          {mats.map(m => (
+                            <div key={m.id} className="material-tag">
+                              <span className="material-icon">{getFileIcon(m.url)}</span>
+                              <a href={materialHref(m.url, m.title)} target="_blank" rel="noopener noreferrer">{m.title}</a>
+                              <button onClick={() => handleDeleteMaterial(m.id)} className="material-remove">
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                  <path d="M2 2l8 8M10 2l-8 8"/>
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {lesson.homework_description && (
+                        <div className="lesson-homework-desc">
+                          <span className="hw-desc-label">Домашнее задание:</span>
+                          <span className="hw-desc-text">{lesson.homework_description}</span>
+                        </div>
+                      )}
+
+                      <div className="lesson-attendance">
+                        <div className="lesson-attendance-header">
+                          <span className="lesson-attendance-title">Посещаемость:</span>
+                          <button
+                            onClick={() => handleMarkAllPresent(lesson.id)}
+                            className="btn btn-outline btn-xs"
+                            disabled={markingAttendance === lesson.id}
+                            title="Отметить всех учеников присутствующими"
+                          >
+                            {markingAttendance === lesson.id ? '...' : 'Отметить всех'}
                           </button>
                         </div>
-                      ))}
-                    </div>
+                        <div className="attendance-students">
+                          {students.map(s => {
+                            const present = attMap[s.id] === true
+                            return (
+                              <button
+                                key={s.id}
+                                className={`attendance-chip ${present ? 'present' : 'absent'}`}
+                                onClick={() => handleToggleAttendance(lesson.id, s.id, present)}
+                                onDoubleClick={() => loadStudentProfile(s)}
+                                title={`${s.name} — клик: сменить посещаемость, двойной клик: профиль`}
+                              >
+                                <span className="attendance-avatar">{s.name.charAt(0).toUpperCase()}</span>
+                                <span className="attendance-name">{s.name.split(' ')[0]}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </>
                   )}
-
-                  {lesson.homework_description && (
-                    <div className="lesson-homework-desc">
-                      <span className="hw-desc-label">Домашнее задание:</span>
-                      <span className="hw-desc-text">{lesson.homework_description}</span>
-                    </div>
-                  )}
-
-                  <div className="lesson-attendance">
-                    <div className="lesson-attendance-header">
-                      <span className="lesson-attendance-title">Посещаемость:</span>
-                      <button
-                        onClick={() => handleMarkAllPresent(lesson.id)}
-                        className="btn btn-outline btn-xs"
-                        disabled={markingAttendance === lesson.id}
-                        title="Отметить всех учеников присутствующими"
-                      >
-                        {markingAttendance === lesson.id ? '...' : 'Отметить всех'}
-                      </button>
-                    </div>
-                    <div className="attendance-students">
-                      {students.map(s => {
-                        const present = attMap[s.id] === true
-                        return (
-                          <button
-                            key={s.id}
-                            className={`attendance-chip ${present ? 'present' : 'absent'}`}
-                            onClick={() => handleToggleAttendance(lesson.id, s.id, present)}
-                            onDoubleClick={() => loadStudentProfile(s)}
-                            title={`${s.name} — клик: сменить посещаемость, двойной клик: профиль`}
-                          >
-                            <span className="attendance-avatar">{s.name.charAt(0).toUpperCase()}</span>
-                            <span className="attendance-name">{s.name.split(' ')[0]}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
                 </div>
               )
             })}

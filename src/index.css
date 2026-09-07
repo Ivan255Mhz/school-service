@@ -1618,6 +1618,26 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+}
+
+.lesson-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--text-dim);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.lesson-chevron.open {
+  transform: rotate(90deg);
+}
+
+.lesson-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .lesson-topic-text {
