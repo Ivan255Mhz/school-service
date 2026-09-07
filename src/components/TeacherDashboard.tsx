@@ -65,6 +65,7 @@ export function TeacherDashboard() {
   const [newTemplateName, setNewTemplateName] = useState('')
   const [templateLessonsDraft, setTemplateLessonsDraft] = useState<{ topic: string; homework: string }[]>([])
   const [creatingTemplate, setCreatingTemplate] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<(ModuleTemplate & { lessons: ModuleTemplateLesson[] }) | null>(null)
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [applyingTemplate, setApplyingTemplate] = useState(false)
   const navigate = useNavigate()
@@ -289,20 +290,40 @@ export function TeacherDashboard() {
 
     setCreatingTemplate(true)
     try {
-      const { data: tpl, error: tplErr } = await supabase
-        .from('module_templates')
-        .insert({ teacher_id: teacherId, name: newTemplateName.trim() })
-        .select()
-        .single()
+      let templateId: string
 
-      if (tplErr) throw tplErr
+      if (editingTemplate) {
+        const { error: updErr } = await supabase
+          .from('module_templates')
+          .update({ name: newTemplateName.trim() })
+          .eq('id', editingTemplate.id)
+
+        if (updErr) throw updErr
+        templateId = editingTemplate.id
+
+        const { error: delErr } = await supabase
+          .from('module_template_lessons')
+          .delete()
+          .eq('template_id', templateId)
+
+        if (delErr) throw delErr
+      } else {
+        const { data: tpl, error: tplErr } = await supabase
+          .from('module_templates')
+          .insert({ teacher_id: teacherId, name: newTemplateName.trim() })
+          .select()
+          .single()
+
+        if (tplErr) throw tplErr
+        templateId = tpl.id
+      }
 
       const validLessons = templateLessonsDraft.filter(l => l.topic.trim())
       if (validLessons.length > 0) {
         const { error: lessonsErr } = await supabase
           .from('module_template_lessons')
           .insert(validLessons.map((l, i) => ({
-            template_id: tpl.id,
+            template_id: templateId,
             lesson_number: i + 1,
             topic: l.topic.trim(),
             homework_description: l.homework.trim() || null,
@@ -312,16 +333,34 @@ export function TeacherDashboard() {
         if (lessonsErr) throw lessonsErr
       }
 
-      showToast('success', `Шаблон «${tpl.name}» создан`)
+      showToast('success', editingTemplate ? 'Шаблон обновлён' : `Шаблон «${newTemplateName.trim()}» создан`)
       setNewTemplateName('')
       setTemplateLessonsDraft([])
+      setEditingTemplate(null)
       setShowCreateTemplate(false)
       loadTemplates()
     } catch {
-      showToast('error', 'Не удалось создать шаблон')
+      showToast('error', editingTemplate ? 'Не удалось обновить шаблон' : 'Не удалось создать шаблон')
     } finally {
       setCreatingTemplate(false)
     }
+  }
+
+  const startEditTemplate = (tpl: ModuleTemplate & { lessons: ModuleTemplateLesson[] }) => {
+    setEditingTemplate(tpl)
+    setNewTemplateName(tpl.name)
+    setTemplateLessonsDraft(tpl.lessons.map(l => ({
+      topic: l.topic,
+      homework: l.homework_description || '',
+    })))
+    setShowCreateTemplate(true)
+  }
+
+  const cancelTemplateForm = () => {
+    setShowCreateTemplate(false)
+    setEditingTemplate(null)
+    setNewTemplateName('')
+    setTemplateLessonsDraft([])
   }
 
   const handleDeleteTemplate = async (templateId: string) => {
@@ -1969,7 +2008,7 @@ export function TeacherDashboard() {
         <div className="teacher-section">
           <div className="section-header">
             <h2>Шаблоны модулей</h2>
-            <button onClick={() => { setShowCreateTemplate(true); setTemplateLessonsDraft([{ topic: '', homework: '' }]) }} className="btn btn-primary btn-sm">
+            <button onClick={() => { setEditingTemplate(null); setShowCreateTemplate(true); setTemplateLessonsDraft([{ topic: '', homework: '' }]) }} className="btn btn-primary btn-sm">
               + Создать шаблон
             </button>
           </div>
@@ -1977,6 +2016,7 @@ export function TeacherDashboard() {
 
           {showCreateTemplate && (
             <form onSubmit={handleCreateTemplate} className="create-form">
+              <div className="form-hint">{editingTemplate ? `Редактирование: ${editingTemplate.name}` : 'Новый шаблон'}</div>
               <input
                 type="text"
                 value={newTemplateName}
@@ -2021,8 +2061,8 @@ export function TeacherDashboard() {
                 </button>
               </div>
               <div className="form-actions">
-                <button type="submit" className="btn btn-primary btn-sm" disabled={creatingTemplate}>{creatingTemplate ? '...' : 'Создать шаблон'}</button>
-                <button type="button" onClick={() => setShowCreateTemplate(false)} className="btn btn-outline btn-sm">Отмена</button>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={creatingTemplate}>{creatingTemplate ? '...' : editingTemplate ? 'Сохранить' : 'Создать шаблон'}</button>
+                <button type="button" onClick={cancelTemplateForm} className="btn btn-outline btn-sm">Отмена</button>
               </div>
             </form>
           )}
@@ -2050,6 +2090,15 @@ export function TeacherDashboard() {
                     </div>
                   </div>
                   <div className="group-card-right">
+                    <button
+                      onClick={() => startEditTemplate(tpl)}
+                      className="btn btn-outline btn-xs"
+                      title="Редактировать шаблон"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M8.5 1.5l2 2M1 11l.5-2.5L9 1l2 2L3.5 10.5 1 11z"/>
+                      </svg>
+                    </button>
                     <button
                       onClick={() => handleDeleteTemplate(tpl.id)}
                       className="btn btn-danger btn-xs"
