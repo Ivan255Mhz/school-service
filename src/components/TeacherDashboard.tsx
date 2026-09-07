@@ -68,7 +68,7 @@ export function TeacherDashboard() {
   const [newLibUrl, setNewLibUrl] = useState('')
   const [newLibFile, setNewLibFile] = useState<File | null>(null)
   const [uploadingLib, setUploadingLib] = useState(false)
-  const [mainTab, setMainTab] = useState<'groups' | 'templates'>('groups')
+  const [mainTab, setMainTab] = useState<'groups' | 'schedule' | 'templates'>('groups')
   const [templates, setTemplates] = useState<(ModuleTemplate & { lessons: ModuleTemplateLesson[] })[]>([])
   const [loadingTemplates, setLoadingTemplates] = useState(false)
   const [showCreateTemplate, setShowCreateTemplate] = useState(false)
@@ -2062,100 +2062,15 @@ export function TeacherDashboard() {
         <button className={`tab ${mainTab === 'groups' ? 'active' : ''}`} onClick={() => setMainTab('groups')}>
           Группы ({groups.length})
         </button>
+        <button className={`tab ${mainTab === 'schedule' ? 'active' : ''}`} onClick={() => setMainTab('schedule')}>
+          Расписание
+        </button>
         <button className={`tab ${mainTab === 'templates' ? 'active' : ''}`} onClick={() => setMainTab('templates')}>
           Шаблоны модулей
         </button>
       </div>
 
       {mainTab === 'groups' && (<>
-      {(() => {
-        const now = new Date()
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-        const todayLessons = allGroupLessons.filter(l => l.date === todayStr)
-        if (todayLessons.length === 0) return null
-        return (
-          <div className="today-lessons-panel">
-            <div className="today-lessons-title">Уроки сегодня ({todayLessons.length})</div>
-            {todayLessons.map(l => (
-              <div key={l.id} className="today-lesson-row">
-                <span className={`today-lesson-status ${l.is_completed ? 'done' : ''}`} />
-                <span className="today-lesson-group">{l.group_name}</span>
-                <span className="today-lesson-topic">Урок {l.lesson_number}: {l.topic}</span>
-                <button onClick={() => openLessonFromCalendar(l)} className="btn btn-outline btn-xs">
-                  Открыть
-                </button>
-              </div>
-            ))}
-          </div>
-        )
-      })()}
-      <div className="teacher-section">
-        <div className="calendar-header">
-          <button onClick={() => {
-            const d = new Date(calendarWeekStart)
-            d.setDate(d.getDate() - 7)
-            setCalendarWeekStart(d)
-          }} className="btn btn-outline btn-sm">&larr;</button>
-          <h2>
-            {calendarWeekStart.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-            {' — '}
-            {new Date(calendarWeekStart.getTime() + 6 * 86400000).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </h2>
-          <button onClick={() => {
-            const d = new Date(calendarWeekStart)
-            d.setDate(d.getDate() + 7)
-            setCalendarWeekStart(d)
-          }} className="btn btn-outline btn-sm">&rarr;</button>
-        </div>
-        <div className="calendar-grid">
-          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((dayName, i) => {
-            const dayDate = new Date(calendarWeekStart)
-            dayDate.setDate(dayDate.getDate() + i)
-            const dateStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`
-            const dayLessons = allGroupLessons.filter(l => l.date === dateStr)
-            const today = new Date()
-            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-            const isToday = todayStr === dateStr
-
-            return (
-              <div key={i} className={`calendar-day ${isToday ? 'today' : ''} ${dayLessons.length > 0 ? 'has-events' : ''}`}>
-                <div className="calendar-day-header">
-                  <span className="calendar-day-name">{dayName}</span>
-                  <span className="calendar-day-num">{dayDate.getDate()}</span>
-                </div>
-                <div className="calendar-day-events">
-                  {dayLessons.map(l => (
-                    <button
-                      key={l.id}
-                      className={`calendar-event ${l.is_completed ? 'completed' : 'planned'}`}
-                      title={`${l.group_name}: Урок ${l.lesson_number} — ${l.topic}`}
-                      onClick={() => openLessonFromCalendar(l)}
-                    >
-                      <span className="calendar-event-group">{l.group_name}</span>
-                      <span className="calendar-event-num">{l.lesson_number}</span>
-                      <span className="calendar-event-topic">{l.topic}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <div className="calendar-footer">
-          <button onClick={() => {
-            const d = new Date()
-            d.setDate(d.getDate() - d.getDay() + 1)
-            d.setHours(0, 0, 0, 0)
-            setCalendarWeekStart(d)
-          }} className="btn btn-outline btn-sm">Сегодня</button>
-          <button onClick={() => {
-            const today = new Date()
-            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-            generateDaySummary(todayStr)
-          }} className="btn btn-outline btn-sm">Сводка за день</button>
-        </div>
-      </div>
-
       <div className="section-header">
         <h2>Мои группы</h2>
         <button onClick={() => setShowCreateGroup(true)} className="btn btn-primary">
@@ -2290,6 +2205,96 @@ export function TeacherDashboard() {
           })}
         </div>
       )}
+      </>)}
+
+      {mainTab === 'schedule' && (<>
+      {(() => {
+        const now = new Date()
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+        const todayLessons = allGroupLessons.filter(l => l.date === todayStr)
+        if (todayLessons.length === 0) return null
+        return (
+          <div className="today-lessons-panel">
+            <div className="today-lessons-title">Уроки сегодня ({todayLessons.length})</div>
+            {todayLessons.map(l => (
+              <div key={l.id} className="today-lesson-row">
+                <span className={`today-lesson-status ${l.is_completed ? 'done' : ''}`} />
+                <span className="today-lesson-group">{l.group_name}</span>
+                <span className="today-lesson-topic">Урок {l.lesson_number}: {l.topic}</span>
+                <button onClick={() => openLessonFromCalendar(l)} className="btn btn-outline btn-xs">
+                  Открыть
+                </button>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
+      <div className="teacher-section">
+        <div className="calendar-header">
+          <button onClick={() => {
+            const d = new Date(calendarWeekStart)
+            d.setDate(d.getDate() - 7)
+            setCalendarWeekStart(d)
+          }} className="btn btn-outline btn-sm">&larr;</button>
+          <h2>
+            {calendarWeekStart.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+            {' — '}
+            {new Date(calendarWeekStart.getTime() + 6 * 86400000).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </h2>
+          <button onClick={() => {
+            const d = new Date(calendarWeekStart)
+            d.setDate(d.getDate() + 7)
+            setCalendarWeekStart(d)
+          }} className="btn btn-outline btn-sm">&rarr;</button>
+        </div>
+        <div className="calendar-grid">
+          {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((dayName, i) => {
+            const dayDate = new Date(calendarWeekStart)
+            dayDate.setDate(dayDate.getDate() + i)
+            const dateStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`
+            const dayLessons = allGroupLessons.filter(l => l.date === dateStr)
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            const isToday = todayStr === dateStr
+
+            return (
+              <div key={i} className={`calendar-day ${isToday ? 'today' : ''} ${dayLessons.length > 0 ? 'has-events' : ''}`}>
+                <div className="calendar-day-header">
+                  <span className="calendar-day-name">{dayName}</span>
+                  <span className="calendar-day-num">{dayDate.getDate()}</span>
+                </div>
+                <div className="calendar-day-events">
+                  {dayLessons.map(l => (
+                    <button
+                      key={l.id}
+                      className={`calendar-event ${l.is_completed ? 'completed' : 'planned'}`}
+                      title={`${l.group_name}: Урок ${l.lesson_number} — ${l.topic}`}
+                      onClick={() => openLessonFromCalendar(l)}
+                    >
+                      <span className="calendar-event-group">{l.group_name}</span>
+                      <span className="calendar-event-num">{l.lesson_number}</span>
+                      <span className="calendar-event-topic">{l.topic}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <div className="calendar-footer">
+          <button onClick={() => {
+            const d = new Date()
+            d.setDate(d.getDate() - d.getDay() + 1)
+            d.setHours(0, 0, 0, 0)
+            setCalendarWeekStart(d)
+          }} className="btn btn-outline btn-sm">Сегодня</button>
+          <button onClick={() => {
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            generateDaySummary(todayStr)
+          }} className="btn btn-outline btn-sm">Сводка за день</button>
+        </div>
+      </div>
       </>)}
 
       {mainTab === 'templates' && (
