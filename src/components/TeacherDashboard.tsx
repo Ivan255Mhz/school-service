@@ -1807,6 +1807,27 @@ export function TeacherDashboard() {
       </div>
 
       {mainTab === 'groups' && (<>
+      {(() => {
+        const now = new Date()
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+        const todayLessons = allGroupLessons.filter(l => l.date === todayStr)
+        if (todayLessons.length === 0) return null
+        return (
+          <div className="today-lessons-panel">
+            <div className="today-lessons-title">Уроки сегодня ({todayLessons.length})</div>
+            {todayLessons.map(l => (
+              <div key={l.id} className="today-lesson-row">
+                <span className={`today-lesson-status ${l.is_completed ? 'done' : ''}`} />
+                <span className="today-lesson-group">{l.group_name}</span>
+                <span className="today-lesson-topic">Урок {l.lesson_number}: {l.topic}</span>
+                <button onClick={() => openLessonFromCalendar(l)} className="btn btn-outline btn-xs">
+                  Открыть
+                </button>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
       <div className="teacher-section">
         <div className="calendar-header">
           <button onClick={() => {

@@ -2015,6 +2015,66 @@ body {
   opacity: 0.5;
 }
 
+/* ===== TODAY LESSONS PANEL ===== */
+.today-lessons-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.today-lessons-title {
+  font-size: 0.75em;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.today-lesson-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.today-lesson-row + .today-lesson-row {
+  border-top: 1px solid var(--border);
+}
+
+.today-lesson-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.today-lesson-status.done {
+  background: var(--green);
+}
+
+.today-lesson-group {
+  font-size: 0.75em;
+  padding: 2px 8px;
+  background: var(--bg-input);
+  border-radius: 4px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.today-lesson-topic {
+  flex: 1;
+  font-size: 0.875em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ===== MODULE TEMPLATES ===== */
 .template-avatar {
   background: var(--green);
