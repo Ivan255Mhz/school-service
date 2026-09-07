@@ -50,6 +50,8 @@ export function TeacherDashboard() {
   const [addingStudent, setAddingStudent] = useState(false)
   const [savingLesson, setSavingLesson] = useState(false)
   const [markingAttendance, setMarkingAttendance] = useState<string | null>(null)
+  const [datesStartDate, setDatesStartDate] = useState('')
+  const [assigningDates, setAssigningDates] = useState(false)
   const [groupLibraryItems, setGroupLibraryItems] = useState<LibraryItem[]>([])
   const [showAddLibraryItem, setShowAddLibraryItem] = useState(false)
   const [newLibType, setNewLibType] = useState<'book' | 'article' | 'link'>('book')
@@ -1043,6 +1045,34 @@ export function TeacherDashboard() {
     setMarkingAttendance(null)
   }
 
+  const handleAssignDates = async () => {
+    if (!selectedModule || !datesStartDate) return
+
+    const undated = lessons.filter(l => !l.date).sort((a, b) => a.lesson_number - b.lesson_number)
+    if (undated.length === 0) return
+
+    setAssigningDates(true)
+    try {
+      const start = new Date(datesStartDate + 'T00:00:00')
+      for (let i = 0; i < undated.length; i++) {
+        const d = new Date(start)
+        d.setDate(d.getDate() + i * 7)
+        const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        const { error } = await supabase.from('lessons').update({ date: ds }).eq('id', undated[i].id)
+        if (error) throw error
+      }
+
+      showToast('success', `Даты расставлены (${undated.length} уроков)`)
+      setDatesStartDate('')
+      loadModuleLessons(selectedModule.id)
+      loadAllGroupLessons()
+    } catch {
+      showToast('error', 'Не удалось расставить даты')
+    } finally {
+      setAssigningDates(false)
+    }
+  }
+
   const handleToggleCompleted = async (lessonId: string, currentValue: boolean) => {
     const { error } = await supabase
       .from('lessons')
@@ -1217,6 +1247,27 @@ export function TeacherDashboard() {
               </button>
             </div>
           </form>
+        )}
+
+        {lessons.some(l => !l.date) && (
+          <div className="assign-dates-panel">
+            <span className="assign-dates-label">
+              Уроков без дат: {lessons.filter(l => !l.date).length}
+            </span>
+            <input
+              type="date"
+              value={datesStartDate}
+              onChange={(e) => setDatesStartDate(e.target.value)}
+              className="input input-sm"
+            />
+            <button
+              onClick={handleAssignDates}
+              className="btn btn-primary btn-sm"
+              disabled={!datesStartDate || assigningDates}
+            >
+              {assigningDates ? '...' : 'Расставить (+7 дней)'}
+            </button>
+          </div>
         )}
 
         {lessons.length === 0 ? (
