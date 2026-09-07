@@ -53,6 +53,9 @@ export function TeacherDashboard() {
   const [datesStartDate, setDatesStartDate] = useState('')
   const [assigningDates, setAssigningDates] = useState(false)
   const [cloningLesson, setCloningLesson] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<Profile[]>([])
+  const [searching, setSearching] = useState(false)
   const [groupLibraryItems, setGroupLibraryItems] = useState<LibraryItem[]>([])
   const [showAddLibraryItem, setShowAddLibraryItem] = useState(false)
   const [newLibType, setNewLibType] = useState<'book' | 'article' | 'link'>('book')
@@ -1074,6 +1077,54 @@ export function TeacherDashboard() {
     }
   }
 
+  useEffect(() => {
+    if (mainTab !== 'groups') return
+    const q = searchQuery.trim()
+    if (q.length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const groupIds = groups.map(g => g.id)
+        if (groupIds.length === 0) {
+          setSearchResults([])
+          return
+        }
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('role', 'student')
+          .in('group_id', groupIds)
+          .or(`full_name.ilike.%${q}%,name.ilike.%${q}%`)
+          .limit(10)
+
+        if (error) throw error
+        setSearchResults(data || [])
+      } catch {
+        setSearchResults([])
+      } finally {
+        setSearching(false)
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery, groups, mainTab])
+
+  const handleSearchResultClick = (student: Profile) => {
+    const group = groups.find(g => g.id === student.group_id)
+    if (!group) return
+
+    setSearchQuery('')
+    setSearchResults([])
+    setSelectedGroup(group)
+    loadGroupLibrary(group.id)
+    setActiveTab('students')
+    loadStudentProfile(student)
+  }
+
   const handleCloneLesson = async (lesson: Lesson) => {
     if (!selectedModule) return
 
@@ -2037,6 +2088,36 @@ export function TeacherDashboard() {
         <button onClick={() => setShowCreateGroup(true)} className="btn btn-primary">
           + Создать группу
         </button>
+      </div>
+
+      <div className="student-search">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Поиск ученика по имени..."
+          className="input"
+        />
+        {searchQuery.trim().length >= 2 && (
+          <div className="search-results">
+            {searching ? (
+              <p className="search-empty">Поиск...</p>
+            ) : searchResults.length === 0 ? (
+              <p className="search-empty">Ничего не найдено</p>
+            ) : (
+              searchResults.map(s => {
+                const group = groups.find(g => g.id === s.group_id)
+                return (
+                  <button key={s.id} className="search-result-item" onClick={() => handleSearchResultClick(s)}>
+                    <span className="search-result-avatar">{(s.full_name || s.name).charAt(0)}</span>
+                    <span className="search-result-name">{s.full_name || s.name}</span>
+                    <span className="search-result-group">{group?.name || '—'}</span>
+                  </button>
+                )
+              })
+            )}
+          </div>
+        )}
       </div>
 
       {showCreateGroup && (

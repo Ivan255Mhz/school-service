@@ -2015,6 +2015,87 @@ body {
   opacity: 0.5;
 }
 
+/* ===== STUDENT SEARCH ===== */
+.student-search {
+  position: relative;
+  margin-bottom: 16px;
+  max-width: 420px;
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.search-empty {
+  padding: 12px 14px;
+  font-size: 0.8125em;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: var(--bg-input);
+}
+
+.search-result-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75em;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.search-result-name {
+  flex: 1;
+  font-size: 0.875em;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-group {
+  font-size: 0.75em;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
 /* ===== ASSIGN DATES PANEL ===== */
 .assign-dates-panel {
   display: flex;
