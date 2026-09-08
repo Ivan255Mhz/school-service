@@ -1,32 +1,37 @@
-# React + TypeScript + Vite
+# School Service «Speak м.Купчино»
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Веб-платформа управления учебным процессом: ученики, преподаватели, администратор.
 
-Currently, two official plugins are available:
+- **Стек:** React 19 + TypeScript + Vite + Supabase (Postgres, Storage, Realtime, Edge Functions) + Vercel
+- **Прод:** https://school-service-nine.vercel.app
+- **Вход:** по кодам — ученик `STU-XXXXXX`, преподаватель `TCH-XXXXXX`, админ `ADM-XXXXXX` (по URL `/admin`)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Возможности
 
-## React Compiler
+- **Ученик** — уроки и модули, расписание-календарь, сдача ДЗ, заметки, библиотека, статистика
+- **Преподаватель** — группы, модули и уроки, посещаемость, проверка ДЗ, шаблоны модулей, календарь
+- **Админ** — преподаватели и цены, расписание, расчёт зарплаты, библиотека, удаление фото
+- **Telegram-бот** — сводки завершённых уроков в родительские чаты групп, короткий отчёт директору за день
+- **Уведомления** — колокольчик с Realtime-обновлением (сдача ДЗ, завершение урока, новые материалы)
+- **Фото профиля** — аватарки преподавателей и учеников с модерацией администратором
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Разработка
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # dev-сервер
+npm run build    # сборка (tsc + vite)
+npm run lint     # oxlint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Переменные окружения — в `.env.local` (шаблон: `.env.example`).
+
+## Инфраструктура
+
+- **Supabase:** таблицы, Storage-бакеты, анонимный auth, Realtime, Edge Function `send-telegram`
+- **Vercel:** автодеплой из ветки `main`
+- **SQL-миграции:** `supabase/migrations/` (все выполнены в прод-БД)
+
+## Документация для продолжения работы
+
+Полный handoff (доступы, состояние, нюансы, план работ): **[CONTINUE.md](./CONTINUE.md)**
