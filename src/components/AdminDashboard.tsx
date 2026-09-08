@@ -4,6 +4,7 @@ import { deleteAvatar } from '../lib/avatar'
 import type { Profile, Group, Lesson, LibraryItem } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
+import { NotificationBell } from './NotificationBell'
 
 type TeacherWithStats = Profile & {
   groups: Group[]
@@ -21,6 +22,7 @@ type LessonWithAttendance = Lesson & {
 }
 
 export function AdminDashboard() {
+  const adminId = localStorage.getItem('admin_id') || ''
   const [teachers, setTeachers] = useState<TeacherWithStats[]>([])
   const [allLessons, setAllLessons] = useState<LessonWithAttendance[]>([])
   const [showCreateTeacher, setShowCreateTeacher] = useState(false)
@@ -559,9 +561,12 @@ export function AdminDashboard() {
           <h1>Админ-панель</h1>
           <p>Управление преподавателями и статистика</p>
         </div>
-        <button onClick={handleLogout} className="btn btn-outline btn-logout">
-          Выйти
-        </button>
+        <div className="header-actions">
+          <NotificationBell recipientId={adminId} />
+          <button onClick={handleLogout} className="btn btn-outline btn-logout">
+            Выйти
+          </button>
+        </div>
       </header>
 
       {error && <div className="empty-state"><p style={{color:'#ef4444'}}>{error}</p></div>}

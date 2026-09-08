@@ -109,3 +109,13 @@ export type ModuleTemplateLesson = {
   homework_description: string | null
   sort_order: number
 }
+
+export type Notification = {
+  id: string
+  recipient_id: string
+  type: 'homework_submitted' | 'lesson_completed' | 'material_added'
+  title: string
+  lesson_id: string | null
+  is_read: boolean
+  created_at: string
+}

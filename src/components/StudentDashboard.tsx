@@ -5,6 +5,7 @@ import { uploadAvatar, MAX_AVATAR_SIZE } from '../lib/avatar'
 import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote, LibraryItem } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
+import { NotificationBell } from './NotificationBell'
 
 export function StudentDashboard() {
   const [modules, setModules] = useState<Module[]>([])
@@ -279,9 +280,39 @@ export function StudentDashboard() {
       showToast('error', 'Ошибка сохранения файла')
     } else {
       showToast('success', 'Файл загружен')
+      notifyHomeworkSubmitted(lessonId)
       loadData()
     }
     setUploading(false)
+  }
+
+  const notifyHomeworkSubmitted = async (lessonId: string) => {
+    if (!studentId) return
+
+    const lesson = allLessons.find(l => l.id === lessonId)
+
+    const [groupRes, adminsRes] = await Promise.all([
+      supabase.from('groups').select('teacher_id').eq('id', groupId).maybeSingle(),
+      supabase.from('profiles').select('id').eq('role', 'admin'),
+    ])
+
+    const recipients = new Set<string>()
+    if (groupRes.data?.teacher_id) recipients.add(groupRes.data.teacher_id)
+    ;(adminsRes.data || []).forEach(a => recipients.add(a.id))
+    if (recipients.size === 0) return
+
+    const title = lesson
+      ? `${studentName} сдал ДЗ: Урок ${lesson.lesson_number} — ${lesson.topic}`
+      : `${studentName} сдал ДЗ по уроку`
+
+    await supabase.from('notifications').insert(
+      [...recipients].map(rid => ({
+        recipient_id: rid,
+        type: 'homework_submitted',
+        title,
+        lesson_id: lessonId,
+      }))
+    )
   }
 
   const handleSaveNote = async (lessonId: string) => {
@@ -720,9 +751,12 @@ export function StudentDashboard() {
             <p>{studentName}</p>
           </div>
         </div>
-        <button onClick={handleLogout} className="btn btn-outline btn-logout">
-          Выйти
-        </button>
+        <div className="header-actions">
+          {studentId && <NotificationBell recipientId={studentId} />}
+          <button onClick={handleLogout} className="btn btn-outline btn-logout">
+            Выйти
+          </button>
+        </div>
       </header>
 
       <div className="tabs">

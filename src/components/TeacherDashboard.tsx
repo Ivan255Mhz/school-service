@@ -5,8 +5,47 @@ import { uploadAvatar, MAX_AVATAR_SIZE } from '../lib/avatar'
 import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem, ModuleTemplate, ModuleTemplateLesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
+import { NotificationBell } from './NotificationBell'
+
+const getContentType = (ext: string): string => {
+  switch ((ext || '').toLowerCase()) {
+    case 'html': case 'htm': return 'text/html'
+    case 'pdf': return 'application/pdf'
+    case 'png': return 'image/png'
+    case 'jpg': case 'jpeg': return 'image/jpeg'
+    case 'gif': return 'image/gif'
+    case 'svg': return 'image/svg+xml'
+    case 'mp4': return 'video/mp4'
+    case 'txt': return 'text/plain'
+    case 'json': return 'application/json'
+    case 'js': return 'text/javascript'
+    case 'css': return 'text/css'
+    default: return 'application/octet-stream'
+  }
+}
+
+const uploadMaterialFile = async (file: File, lessonId: string, index: number): Promise<string | null> => {
+  const fileExt = (file.name.split('.').pop() || '').toLowerCase()
+  const fileName = `${lessonId}/${Date.now()}-${index}.${fileExt}`
+
+  const { error } = await supabase.storage
+    .from('lesson-materials')
+    .upload(fileName, file, { contentType: getContentType(fileExt) })
+
+  if (error) {
+    console.error('Upload error:', error)
+    return null
+  }
+
+  const { data } = supabase.storage
+    .from('lesson-materials')
+    .getPublicUrl(fileName)
+
+  return data.publicUrl
+}
 
 export function TeacherDashboard() {
+  const teacherId = localStorage.getItem('teacher_id') || ''
   const [groups, setGroups] = useState<Group[]>([])
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
   const [modules, setModules] = useState<Module[]>([])
@@ -1009,43 +1048,6 @@ export function TeacherDashboard() {
     setCreatingModule(false)
   }
 
-  const getContentType = (ext: string): string => {
-    switch ((ext || '').toLowerCase()) {
-      case 'html': case 'htm': return 'text/html'
-      case 'pdf': return 'application/pdf'
-      case 'png': return 'image/png'
-      case 'jpg': case 'jpeg': return 'image/jpeg'
-      case 'gif': return 'image/gif'
-      case 'svg': return 'image/svg+xml'
-      case 'mp4': return 'video/mp4'
-      case 'txt': return 'text/plain'
-      case 'json': return 'application/json'
-      case 'js': return 'text/javascript'
-      case 'css': return 'text/css'
-      default: return 'application/octet-stream'
-    }
-  }
-
-  const uploadMaterialFile = async (file: File, lessonId: string, index: number): Promise<string | null> => {
-    const fileExt = (file.name.split('.').pop() || '').toLowerCase()
-    const fileName = `${lessonId}/${Date.now()}-${index}.${fileExt}`
-
-    const { error } = await supabase.storage
-      .from('lesson-materials')
-      .upload(fileName, file, { contentType: getContentType(fileExt) })
-
-    if (error) {
-      console.error('Upload error:', error)
-      return null
-    }
-
-    const { data } = supabase.storage
-      .from('lesson-materials')
-      .getPublicUrl(fileName)
-
-    return data.publicUrl
-  }
-
   const handleCreateLesson = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedModule) return
@@ -1135,6 +1137,18 @@ export function TeacherDashboard() {
       const addedCount = newMaterials.filter(m => m.title.trim()).length
       if (addedCount > 0) {
         showToast('success', `Урок сохранён, файлов добавлено: ${addedCount}`)
+        if (editingLesson.is_completed) {
+          const addedTitles = newMaterials
+            .filter(m => m.title.trim())
+            .map(m => m.title.trim())
+            .join(', ')
+          await notifyGroupStudents(
+            editingLesson.group_id,
+            'material_added',
+            `Новый материал к уроку ${editingLesson.lesson_number} (${editingLesson.topic}): ${addedTitles}`,
+            editingLesson.id
+          )
+        }
       } else {
         showToast('success', 'Урок сохранён')
       }
@@ -1405,6 +1419,25 @@ export function TeacherDashboard() {
     loadStudentProfile(student)
   }
 
+  const notifyGroupStudents = async (groupId: string, type: string, title: string, lessonId: string) => {
+    const { data: groupStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('group_id', groupId)
+      .eq('role', 'student')
+
+    if (!groupStudents || groupStudents.length === 0) return
+
+    await supabase.from('notifications').insert(
+      groupStudents.map(s => ({
+        recipient_id: s.id,
+        type,
+        title,
+        lesson_id: lessonId,
+      }))
+    )
+  }
+
   const handleToggleCompleted = async (lessonId: string, currentValue: boolean) => {
     const { error } = await supabase
       .from('lessons')
@@ -1413,6 +1446,15 @@ export function TeacherDashboard() {
 
     if (!error && selectedModule) {
       loadModuleLessons(selectedModule.id)
+
+      if (!currentValue) {
+        const lesson = lessons.find(l => l.id === lessonId)
+        if (lesson) {
+          let title = `Урок ${lesson.lesson_number} завершён: ${lesson.topic}`
+          if (lesson.homework_description) title += '. Задано ДЗ'
+          await notifyGroupStudents(lesson.group_id, 'lesson_completed', title, lesson.id)
+        }
+      }
     }
   }
 
@@ -1760,9 +1802,12 @@ export function TeacherDashboard() {
               <h1>{selectedGroup.name}</h1>
             </div>
           </div>
-          <button onClick={handleLogout} className="btn btn-outline btn-logout">
-            Выйти
-          </button>
+          <div className="header-actions">
+            <NotificationBell recipientId={teacherId} />
+            <button onClick={handleLogout} className="btn btn-outline btn-logout">
+              Выйти
+            </button>
+          </div>
         </header>
 
         <div className="telegram-bar">
@@ -2319,9 +2364,12 @@ export function TeacherDashboard() {
             <p>Управление группами и курсами</p>
           </div>
         </div>
-        <button onClick={handleLogout} className="btn btn-outline btn-logout">
-          Выйти
-        </button>
+        <div className="header-actions">
+          <NotificationBell recipientId={teacherId} />
+          <button onClick={handleLogout} className="btn btn-outline btn-logout">
+            Выйти
+          </button>
+        </div>
       </header>
 
       <div className="tabs">
