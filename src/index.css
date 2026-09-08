@@ -4352,3 +4352,258 @@ textarea.input:focus {
     width: min(340px, calc(100vw - 48px));
   }
 }
+
+/* ============================================================
+   MOBILE UX LAYER (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  /* --- Header: one compact row --- */
+  .dashboard-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+
+  .header-left {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .header-title {
+    min-width: 0;
+  }
+
+  .header-title h1 {
+    font-size: 1.05em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dashboard-header p {
+    font-size: 0.75em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-title-with-avatar .avatar-editable {
+    width: 44px;
+    height: 44px;
+  }
+
+  .btn-logout {
+    padding: 10px 14px;
+    font-size: 0.8125em;
+  }
+
+  /* --- Touch targets: 44px minimum --- */
+  .btn {
+    min-height: 44px;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .btn-xs {
+    width: 36px;
+    height: 36px;
+  }
+
+  .notif-bell {
+    width: 44px;
+    height: 44px;
+  }
+
+  .notif-dropdown {
+    top: 52px;
+  }
+
+  /* --- Tabs: scrollable pills, no squeezing --- */
+  .tab {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 8px 18px;
+  }
+
+  /* --- Section headers: stacked, full-width buttons --- */
+  .section-header .btn {
+    width: 100%;
+  }
+
+  .section-header-actions {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .section-header-actions .btn {
+    flex: 1;
+  }
+
+  /* --- Cards: tighter padding --- */
+  .teacher-section {
+    padding: 16px;
+  }
+
+  .lesson-item {
+    padding: 12px;
+  }
+
+  /* --- Lesson rows: actions on their own line --- */
+  .lesson-item-header {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .lesson-topic-text {
+    flex: 1 1 100%;
+    order: 10;
+  }
+
+  .lesson-item-actions {
+    width: 100%;
+    order: 20;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+
+  /* --- Forms: full-width actions --- */
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+  }
+
+  .create-form {
+    padding: 14px;
+  }
+
+  /* --- Inputs: prevent iOS zoom on focus --- */
+  .input,
+  select.input,
+  textarea.input {
+    font-size: 16px !important;
+  }
+
+  /* --- Attendance chips --- */
+  .attendance-chip {
+    padding: 8px 10px;
+  }
+
+  /* --- Telegram bars: stack --- */
+  .telegram-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .telegram-bar .tg-actions {
+    width: 100%;
+  }
+
+  .telegram-bar .tg-actions .btn {
+    flex: 1;
+  }
+
+  /* --- Admin filters: stack --- */
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-input {
+    width: 100%;
+  }
+
+  /* --- Payments table: horizontal scroll --- */
+  .payments-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .payments-table {
+    min-width: 460px;
+  }
+
+  /* --- Calendar footer --- */
+  .calendar-footer {
+    gap: 8px;
+  }
+
+  .calendar-footer .btn {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  /* --- Profile sheet --- */
+  .student-profile-card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* --- Safe area (iPhone home indicator) --- */
+  .dashboard {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ============================================================
+   MOBILE UX LAYER (max-width: 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+  .dashboard {
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .tabs {
+    padding: 3px;
+  }
+
+  .tab {
+    padding: 7px 14px;
+    font-size: 0.78em;
+    min-height: 38px;
+  }
+
+  .teacher-section {
+    padding: 12px;
+  }
+
+  .lesson-item {
+    padding: 10px;
+  }
+
+  .attendance-chip {
+    padding: 6px 8px;
+  }
+
+  .attendance-name {
+    font-size: 0.75em;
+  }
+
+  .attendance-students {
+    gap: 6px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .telegram-bind {
+    padding: 12px;
+  }
+
+  .student-item,
+  .group-item,
+  .schedule-item,
+  .library-item {
+    padding: 12px;
+  }
+}
