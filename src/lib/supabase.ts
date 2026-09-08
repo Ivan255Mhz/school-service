@@ -24,6 +24,7 @@ export type Group = {
   teacher_id: string
   price_per_lesson: number | null
   bonus_per_student: number | null
+  telegram_chat_id?: number | null
 }
 
 export type Lesson = {

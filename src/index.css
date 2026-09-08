@@ -2289,6 +2289,80 @@ body {
   font-weight: 500;
 }
 
+/* ===== Telegram (привязка чата, отправка сводок) ===== */
+.telegram-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 24px 12px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.tg-status {
+  font-size: 0.8125em;
+  color: var(--text-dim);
+}
+
+.tg-status-ok {
+  color: var(--green);
+}
+
+.tg-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.telegram-bind {
+  margin: 0 24px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.telegram-bind-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.875em;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.telegram-bind-hint {
+  font-size: 0.8125em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.telegram-bind-empty {
+  font-size: 0.8125em;
+  color: var(--text-dim);
+  margin-top: 10px;
+}
+
+.telegram-bind-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+@media (max-width: 640px) {
+  .telegram-bar,
+  .telegram-bind {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+}
+
 .template-picker-count {
   font-size: 0.75em;
   color: var(--text-dim);

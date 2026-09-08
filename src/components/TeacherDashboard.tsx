@@ -79,6 +79,11 @@ export function TeacherDashboard() {
   const [editingTemplate, setEditingTemplate] = useState<(ModuleTemplate & { lessons: ModuleTemplateLesson[] }) | null>(null)
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [applyingTemplate, setApplyingTemplate] = useState(false)
+  const [sendingSummary, setSendingSummary] = useState<string | null>(null)
+  const [showBindChat, setShowBindChat] = useState(false)
+  const [telegramChats, setTelegramChats] = useState<{ id: number; title: string }[]>([])
+  const [loadingChats, setLoadingChats] = useState(false)
+  const [savingChat, setSavingChat] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -427,7 +432,7 @@ export function TeacherDashboard() {
     }
   }
 
-  const generateLessonSummary = async (lesson: Lesson) => {
+  const buildLessonSummary = async (lesson: Lesson): Promise<string> => {
     const groupName = selectedGroup?.name || 'Группа'
 
     const { data: studentsData } = await supabase
@@ -473,6 +478,12 @@ export function TeacherDashboard() {
       text += `\n\nДомашнее задание:\n${lesson.homework_description}`
     }
 
+    return text
+  }
+
+  const generateLessonSummary = async (lesson: Lesson) => {
+    const text = await buildLessonSummary(lesson)
+
     try {
       await navigator.clipboard.writeText(text)
       showToast('success', 'Сводка скопирована в буфер обмена')
@@ -481,6 +492,106 @@ export function TeacherDashboard() {
     }
 
     return text
+  }
+
+  const sendLessonToTelegram = async (lesson: Lesson) => {
+    if (!selectedGroup) return
+    if (!selectedGroup.telegram_chat_id) {
+      showToast('info', 'Сначала привяжите Telegram-чат группы')
+      setShowBindChat(true)
+      setTelegramChats([])
+      fetchTelegramChats()
+      return
+    }
+
+    const loginCode = localStorage.getItem('login_code')
+    if (!loginCode) {
+      showToast('error', 'Код входа не найден. Перевойдите в систему.')
+      return
+    }
+
+    setSendingSummary(lesson.id)
+    try {
+      const text = await buildLessonSummary(lesson)
+      const { data, error } = await supabase.functions.invoke('send-telegram', {
+        body: { action: 'send', login_code: loginCode, group_id: lesson.group_id, text },
+      })
+
+      if (error || !data?.ok) {
+        showToast('error', data?.error === 'chat_not_bound' ? 'Чат не привязан к группе' : 'Не удалось отправить сводку в Telegram')
+        return
+      }
+
+      showToast('success', 'Сводка отправлена в Telegram')
+    } catch {
+      showToast('error', 'Не удалось отправить сводку в Telegram')
+    } finally {
+      setSendingSummary(null)
+    }
+  }
+
+  const fetchTelegramChats = async () => {
+    if (!selectedGroup) return
+
+    const loginCode = localStorage.getItem('login_code')
+    if (!loginCode) {
+      showToast('error', 'Код входа не найден. Перевойдите в систему.')
+      return
+    }
+
+    setLoadingChats(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('send-telegram', {
+        body: { action: 'bind', login_code: loginCode, group_id: selectedGroup.id },
+      })
+
+      if (error || !data?.ok) {
+        showToast('error', 'Не удалось получить список чатов')
+        return
+      }
+
+      setTelegramChats(data.chats || [])
+    } catch {
+      showToast('error', 'Не удалось получить список чатов')
+    } finally {
+      setLoadingChats(false)
+    }
+  }
+
+  const setGroupTelegramChat = async (chatId: number | null) => {
+    if (!selectedGroup) return
+
+    const loginCode = localStorage.getItem('login_code')
+    if (!loginCode) {
+      showToast('error', 'Код входа не найден. Перевойдите в систему.')
+      return
+    }
+
+    setSavingChat(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('send-telegram', {
+        body: { action: 'set_chat', login_code: loginCode, group_id: selectedGroup.id, chat_id: chatId },
+      })
+
+      if (error || !data?.ok) {
+        showToast('error', chatId === null ? 'Не удалось отвязать чат' : 'Не удалось привязать чат')
+        return
+      }
+
+      setSelectedGroup({ ...selectedGroup, telegram_chat_id: chatId })
+      setGroups(prev => prev.map(g => g.id === selectedGroup.id ? { ...g, telegram_chat_id: chatId } : g))
+
+      if (chatId === null) {
+        showToast('success', 'Telegram-чат отвязан')
+      } else {
+        setShowBindChat(false)
+        showToast('success', 'Telegram-чат привязан')
+      }
+    } catch {
+      showToast('error', chatId === null ? 'Не удалось отвязать чат' : 'Не удалось привязать чат')
+    } finally {
+      setSavingChat(false)
+    }
   }
 
   const openLessonFromCalendar = async (lesson: Lesson & { group_name: string }) => {
@@ -1511,6 +1622,20 @@ export function TeacherDashboard() {
                       </button>
                       {lesson.is_completed && (
                         <button
+                          onClick={() => sendLessonToTelegram(lesson)}
+                          className="btn btn-outline btn-xs"
+                          title="Отправить сводку в Telegram"
+                          disabled={sendingSummary === lesson.id}
+                        >
+                          {sendingSummary === lesson.id ? '...' : (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M21.9 4.6l-3.1 14.7c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9.1-8.2c.4-.4-.1-.6-.6-.2L6.3 12.9 1.5 11.4c-1-.3-1-1 .2-1.5l18.8-7.2c.9-.3 1.6.2 1.4 1.9z"/>
+                            </svg>
+                          )}
+                        </button>
+                      )}
+                      {lesson.is_completed && (
+                        <button
                           onClick={() => generateLessonSummary(lesson)}
                           className="btn btn-outline btn-xs"
                           title="Сводка для родителей"
@@ -1607,6 +1732,70 @@ export function TeacherDashboard() {
             Выйти
           </button>
         </header>
+
+        <div className="telegram-bar">
+          {selectedGroup.telegram_chat_id ? (
+            <>
+              <span className="tg-status tg-status-ok">✓ Родительский Telegram-чат подключён</span>
+              <div className="tg-actions">
+                <button
+                  onClick={() => { setShowBindChat(true); setTelegramChats([]); fetchTelegramChats() }}
+                  className="btn btn-outline btn-xs"
+                  disabled={savingChat}
+                >
+                  Изменить
+                </button>
+                <button onClick={() => setGroupTelegramChat(null)} className="btn btn-outline btn-xs" disabled={savingChat}>
+                  Отвязать
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="tg-status">Telegram-чат не подключён</span>
+              <button
+                onClick={() => { setShowBindChat(true); setTelegramChats([]); fetchTelegramChats() }}
+                className="btn btn-outline btn-xs"
+              >
+                Привязать чат
+              </button>
+            </>
+          )}
+        </div>
+
+        {showBindChat && (
+          <div className="telegram-bind">
+            <div className="telegram-bind-header">
+              <span>Привязка Telegram-чата</span>
+              <button onClick={() => setShowBindChat(false)} className="btn btn-outline btn-xs">✕</button>
+            </div>
+            <p className="telegram-bind-hint">
+              Добавьте бота в родительский чат группы и напишите там любое сообщение,
+              затем нажмите «Обновить список» и выберите чат.
+            </p>
+            <button onClick={fetchTelegramChats} className="btn btn-outline btn-sm" disabled={loadingChats}>
+              {loadingChats ? 'Загрузка...' : 'Обновить список'}
+            </button>
+            {loadingChats ? null : telegramChats.length === 0 ? (
+              <p className="telegram-bind-empty">
+                Чаты не найдены. Убедитесь, что бот добавлен в чат и в нём есть свежие сообщения.
+              </p>
+            ) : (
+              <div className="telegram-bind-list">
+                {telegramChats.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setGroupTelegramChat(c.id)}
+                    className="btn btn-outline btn-sm"
+                    disabled={savingChat}
+                  >
+                    {c.title || `Чат ${c.id}`}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="tabs">
           <button
