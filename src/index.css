@@ -8,8 +8,8 @@
   --accent: #3b82f6;
   --accent-hover: #60a5fa;
   --border: #262626;
-  --green: #22c55e;
-  --red: #ef4444;
+  --green: #34d399;
+  --red: #f43f5e;
   --yellow: #eab308;
   --radius: 8px;
   --radius-lg: 12px;
@@ -163,7 +163,7 @@ body {
 }
 
 .input:invalid:not(:placeholder-shown):focus {
-  outline: 2px solid rgba(239, 68, 68, 0.3);
+  outline: 2px solid rgba(244, 63, 94, 0.3);
   outline-offset: 1px;
 }
 
@@ -177,8 +177,8 @@ body {
 }
 
 .error-message {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.2);
   color: var(--red);
   padding: 10px 14px;
   border-radius: var(--radius);
@@ -349,8 +349,8 @@ body {
 }
 
 .btn-danger:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.3);
   color: var(--red);
 }
 
@@ -500,12 +500,12 @@ body {
 }
 
 .badge-green {
-  background: rgba(34, 197, 94, 0.12);
+  background: rgba(52, 211, 153, 0.12);
   color: var(--green);
 }
 
 .badge-red {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(244, 63, 94, 0.12);
   color: var(--red);
 }
 
@@ -1072,9 +1072,9 @@ body {
 }
 
 .toggle-mark.done {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: #22c55e;
-  color: #22c55e;
+  background: rgba(52, 211, 153, 0.15);
+  border-color: #34d399;
+  color: #34d399;
 }
 
 .lesson-completed-toggle:hover .toggle-mark {
@@ -1129,8 +1129,8 @@ body {
 }
 
 .status-confirmed {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.2);
   color: var(--green);
   padding: 10px 14px;
   border-radius: var(--radius);
@@ -1389,11 +1389,11 @@ body {
 
 .btn-danger-text {
   color: var(--red);
-  border-color: rgba(239, 68, 68, 0.3);
+  border-color: rgba(244, 63, 94, 0.3);
 }
 
 .btn-danger-text:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(244, 63, 94, 0.1);
   border-color: var(--red);
   color: var(--red);
 }
@@ -1429,13 +1429,13 @@ body {
 }
 
 .group-price-tag.bonus {
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(52, 211, 153, 0.1);
   color: var(--green);
 }
 
 .teacher-price-item.bonus {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
+  background: rgba(52, 211, 153, 0.1);
+  color: #34d399;
 }
 
 /* ===== Students List ===== */
@@ -1586,7 +1586,7 @@ body {
 }
 
 .attendance-indicator.present {
-  background: rgba(34, 197, 94, 0.12);
+  background: rgba(52, 211, 153, 0.12);
   color: var(--green);
 }
 
@@ -1757,7 +1757,7 @@ body {
 }
 
 .homework-student.submitted {
-  background: rgba(34, 197, 94, 0.05);
+  background: rgba(52, 211, 153, 0.05);
 }
 
 .homework-student-avatar {
@@ -1786,7 +1786,7 @@ body {
 
 .homework-status.green {
   color: var(--green);
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(52, 211, 153, 0.1);
 }
 
 .homework-status.gray {
@@ -2209,7 +2209,7 @@ body {
 .template-lesson-hw {
   font-size: 0.75em;
   padding: 1px 6px;
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(52, 211, 153, 0.1);
   color: var(--green);
   border-radius: 4px;
   font-weight: 500;
@@ -2803,7 +2803,7 @@ body {
 }
 
 .attendance-chip.present {
-  background: rgba(34, 197, 94, 0.15);
+  background: rgba(52, 211, 153, 0.15);
   border-color: var(--green);
   color: var(--green);
 }
@@ -2844,7 +2844,7 @@ body {
 
 .att-badge.green {
   color: var(--green);
-  background: rgba(34, 197, 94, 0.1);
+  background: rgba(52, 211, 153, 0.1);
 }
 
 .att-badge.yellow {
@@ -2853,8 +2853,8 @@ body {
 }
 
 .att-badge.red {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.1);
 }
 
 /* ===== Admin: Attendance Grid ===== */
@@ -2929,13 +2929,13 @@ body {
 }
 
 .ag-student.present {
-  background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
 }
 
 .ag-student.absent {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: rgba(244, 63, 94, 0.1);
+  color: #f43f5e;
   text-decoration: line-through;
 }
 
@@ -3023,10 +3023,10 @@ body {
   align-items: center;
   gap: 8px;
   padding: 10px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.2);
   border-radius: var(--radius);
-  color: #22c55e;
+  color: #34d399;
   font-size: 0.8125em;
   font-weight: 500;
 }
@@ -3065,14 +3065,14 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.2);
   border-radius: var(--radius);
   font-size: 0.8125em;
 }
 
 .uploaded-file-icon {
-  color: #22c55e;
+  color: #34d399;
 }
 
 .uploaded-file-name {
@@ -3124,7 +3124,7 @@ body {
 }
 
 .legend-dot.completed {
-  background: #22c55e;
+  background: #34d399;
 }
 
 .legend-dot.planned {
@@ -3212,8 +3212,8 @@ body {
 }
 
 .calendar-event.completed {
-  background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
 }
 
 .calendar-event.planned {
@@ -3352,8 +3352,8 @@ body {
   white-space: nowrap;
 }
 
-.ph-badge.green { color: #22c55e; background: rgba(34, 197, 94, 0.1); }
-.ph-badge.red   { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.ph-badge.green { color: #34d399; background: rgba(52, 211, 153, 0.1); }
+.ph-badge.red   { color: #f43f5e; background: rgba(244, 63, 94, 0.1); }
 .ph-badge.blue  { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
 .ph-badge.gray  { color: var(--text-dim); background: rgba(255,255,255,0.05); }
 
@@ -3745,14 +3745,14 @@ body {
 }
 
 .toast-success {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
   color: var(--green);
 }
 
 .toast-error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
   color: var(--red);
 }
 
@@ -4164,7 +4164,7 @@ h1, h2, h3 {
 }
 
 .btn-danger {
-  box-shadow: 0 2px 12px rgba(239, 68, 68, 0.25);
+  box-shadow: 0 2px 12px rgba(244, 63, 94, 0.25);
 }
 
 /* --- Tabs: segmented pills --- */

@@ -569,7 +569,7 @@ export function AdminDashboard() {
         </div>
       </header>
 
-      {error && <div className="empty-state"><p style={{color:'#ef4444'}}>{error}</p></div>}
+      {error && <div className="empty-state"><p style={{color:'#f43f5e'}}>{error}</p></div>}
 
       {!loading && !error && (<>
       <div className="tabs">
