@@ -53,7 +53,6 @@ export function TeacherDashboard() {
   const [markingAttendance, setMarkingAttendance] = useState<string | null>(null)
   const [datesStartDate, setDatesStartDate] = useState('')
   const [assigningDates, setAssigningDates] = useState(false)
-  const [cloningLesson, setCloningLesson] = useState<string | null>(null)
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Profile[]>([])
@@ -476,19 +475,6 @@ export function TeacherDashboard() {
 
     if (lesson.homework_description) {
       text += `\n\nДомашнее задание:\n${lesson.homework_description}`
-    }
-
-    return text
-  }
-
-  const generateLessonSummary = async (lesson: Lesson) => {
-    const text = await buildLessonSummary(lesson)
-
-    try {
-      await navigator.clipboard.writeText(text)
-      showToast('success', 'Сводка скопирована в буфер обмена')
-    } catch {
-      showToast('error', 'Не удалось скопировать. Выделите и скопируйте вручную.')
     }
 
     return text
@@ -1315,41 +1301,6 @@ export function TeacherDashboard() {
     loadStudentProfile(student)
   }
 
-  const handleCloneLesson = async (lesson: Lesson) => {
-    if (!selectedModule) return
-
-    setCloningLesson(lesson.id)
-    try {
-      const maxNum = lessons.reduce((max, l) => Math.max(max, l.lesson_number), 0)
-
-      let newDate: string | null = null
-      if (lesson.date) {
-        const d = new Date(lesson.date + 'T00:00:00')
-        d.setDate(d.getDate() + 7)
-        newDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      }
-
-      const { error } = await supabase.from('lessons').insert({
-        group_id: lesson.group_id,
-        module_id: lesson.module_id,
-        date: newDate,
-        topic: lesson.topic,
-        lesson_number: maxNum + 1,
-        homework_description: lesson.homework_description,
-      })
-
-      if (error) throw error
-
-      showToast('success', 'Урок скопирован (+7 дней)')
-      loadModuleLessons(selectedModule.id)
-      loadAllGroupLessons()
-    } catch {
-      showToast('error', 'Не удалось скопировать урок')
-    } finally {
-      setCloningLesson(null)
-    }
-  }
-
   const handleToggleCompleted = async (lessonId: string, currentValue: boolean) => {
     const { error } = await supabase
       .from('lessons')
@@ -1599,19 +1550,6 @@ export function TeacherDashboard() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleCloneLesson(lesson)}
-                        className="btn btn-outline btn-xs"
-                        title="Клонировать на +7 дней"
-                        disabled={cloningLesson === lesson.id}
-                      >
-                        {cloningLesson === lesson.id ? '...' : (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                          </svg>
-                        )}
-                      </button>
-                      <button
                         onClick={() => handleDeleteLesson(lesson.id)}
                         className="btn btn-danger btn-xs"
                         title="Удалить"
@@ -1632,18 +1570,6 @@ export function TeacherDashboard() {
                               <path d="M21.9 4.6l-3.1 14.7c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9.1-8.2c.4-.4-.1-.6-.6-.2L6.3 12.9 1.5 11.4c-1-.3-1-1 .2-1.5l18.8-7.2c.9-.3 1.6.2 1.4 1.9z"/>
                             </svg>
                           )}
-                        </button>
-                      )}
-                      {lesson.is_completed && (
-                        <button
-                          onClick={() => generateLessonSummary(lesson)}
-                          className="btn btn-outline btn-xs"
-                          title="Сводка для родителей"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                          </svg>
                         </button>
                       )}
                     </div>
