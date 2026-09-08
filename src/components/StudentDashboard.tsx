@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { materialHref } from '../lib/materials'
+import { uploadAvatar, MAX_AVATAR_SIZE } from '../lib/avatar'
 import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote, LibraryItem } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -30,6 +31,8 @@ export function StudentDashboard() {
     d.setHours(0, 0, 0, 0)
     return d
   })
+  const [myAvatar, setMyAvatar] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const navigate = useNavigate()
 
   const groupId = localStorage.getItem('group_id')
@@ -81,6 +84,14 @@ export function StudentDashboard() {
           notesData.forEach((n: StudentNote) => { nMap[n.lesson_id] = n })
           setNotesMap(nMap)
         }
+
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', studentId)
+          .maybeSingle()
+
+        if (profileData) setMyAvatar(profileData.avatar_url)
       }
 
       const { data: libItems } = await supabase
@@ -135,6 +146,32 @@ export function StudentDashboard() {
     }
     loadData()
   }, [loadData])
+
+  const handleMyAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !studentId) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Можно загружать только изображения')
+      return
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      showToast('error', 'Файл слишком большой (максимум 5 МБ)')
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      const url = await uploadAvatar(studentId, file)
+      setMyAvatar(url)
+      showToast('success', 'Фото обновлено')
+    } catch {
+      showToast('error', 'Не удалось загрузить фото')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   const loadAllModuleLessons = async (modulesData: Module[]) => {
     if (modulesData.length === 0) return
@@ -655,9 +692,33 @@ export function StudentDashboard() {
   return (
     <div className="dashboard view-enter">
       <header className="dashboard-header">
-        <div className="header-title">
-          <h1>{groupName || 'Speak'}</h1>
-          <p>{studentName}</p>
+        <div className="header-title header-title-with-avatar">
+          <label className="avatar-editable" title="Изменить фото">
+            {myAvatar ? (
+              <img src={myAvatar} className="avatar-img" alt="" />
+            ) : (
+              <span className="avatar-letter">{studentName?.charAt(0).toUpperCase() || '👤'}</span>
+            )}
+            <span className="avatar-edit-overlay">
+              {uploadingAvatar ? '...' : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              )}
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              className="avatar-input"
+              onChange={handleMyAvatarChange}
+              disabled={uploadingAvatar}
+            />
+          </label>
+          <div>
+            <h1>{groupName || 'Speak'}</h1>
+            <p>{studentName}</p>
+          </div>
         </div>
         <button onClick={handleLogout} className="btn btn-outline btn-logout">
           Выйти

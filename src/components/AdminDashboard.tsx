@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { deleteAvatar } from '../lib/avatar'
 import type { Profile, Group, Lesson, LibraryItem } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -52,6 +53,8 @@ export function AdminDashboard() {
   const [directorChats, setDirectorChats] = useState<{ id: number; title: string }[]>([])
   const [loadingDirectorChats, setLoadingDirectorChats] = useState(false)
   const [savingDirectorChat, setSavingDirectorChat] = useState(false)
+  const [allStudents, setAllStudents] = useState<Pick<Profile, 'id' | 'group_id' | 'name' | 'avatar_url'>[]>([])
+  const [deletingAvatar, setDeletingAvatar] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const loadDirectorChat = async () => {
@@ -177,14 +180,19 @@ export function AdminDashboard() {
     if (groupIds.length > 0) {
       const { data: studentsData } = await supabase
         .from('profiles')
-        .select('group_id')
+        .select('id, group_id, name, avatar_url')
         .eq('role', 'student')
         .in('group_id', groupIds)
       if (studentsData) {
+        setAllStudents(studentsData)
         studentsData.forEach(s => {
           studentCounts[s.group_id] = (studentCounts[s.group_id] || 0) + 1
         })
+      } else {
+        setAllStudents([])
       }
+    } else {
+      setAllStudents([])
     }
 
     let totalStudentsPerTeacher: Record<string, number> = {}
@@ -430,6 +438,22 @@ export function AdminDashboard() {
     }
   }
 
+  const handleAdminDeleteAvatar = async (profileId: string) => {
+    if (!confirm('Удалить фото пользователя?')) return
+
+    setDeletingAvatar(profileId)
+    try {
+      await deleteAvatar(profileId)
+      setAllStudents(prev => prev.map(s => s.id === profileId ? { ...s, avatar_url: null } : s))
+      setSelectedTeacher(prev => prev && prev.id === profileId ? { ...prev, avatar_url: null } : prev)
+      showToast('success', 'Фото удалено')
+    } catch {
+      showToast('error', 'Не удалось удалить фото')
+    } finally {
+      setDeletingAvatar(null)
+    }
+  }
+
   const handleDeleteTeacher = async (teacherId: string) => {
     if (!confirm('Удалить преподавателя и все его группы, модули, уроки?')) return
 
@@ -670,7 +694,23 @@ export function AdminDashboard() {
                   &larr; Назад
                 </button>
                 <div className="teacher-hero-info">
-                  <div className="teacher-avatar teacher-avatar-lg">{(selectedTeacher.full_name || selectedTeacher.name).charAt(0)}</div>
+                  <div className="avatar-wrap">
+                    <div className="teacher-avatar teacher-avatar-lg">
+                      {selectedTeacher.avatar_url
+                        ? <img src={selectedTeacher.avatar_url} className="avatar-img" alt="" />
+                        : (selectedTeacher.full_name || selectedTeacher.name).charAt(0)}
+                    </div>
+                    {selectedTeacher.avatar_url && (
+                      <button
+                        onClick={() => handleAdminDeleteAvatar(selectedTeacher.id)}
+                        className="avatar-delete-btn"
+                        title="Удалить фото"
+                        disabled={deletingAvatar === selectedTeacher.id}
+                      >
+                        {deletingAvatar === selectedTeacher.id ? '...' : '✕'}
+                      </button>
+                    )}
+                  </div>
                   <div>
                     <h2 className="teacher-detail-name">{selectedTeacher.full_name || selectedTeacher.name}</h2>
                     <code className="teacher-detail-code">{selectedTeacher.login_code || '-'}</code>
@@ -778,6 +818,51 @@ export function AdminDashboard() {
                     })}
                   </div>
                 )}
+              </div>
+
+              <div className="teacher-section-block">
+                <h4 className="section-title">Ученики</h4>
+                {(() => {
+                  const groupStudents = selectedTeacher.groups
+                    .map(g => ({ group: g, students: allStudents.filter(s => s.group_id === g.id) }))
+                    .filter(x => x.students.length > 0)
+
+                  if (groupStudents.length === 0) {
+                    return <p className="empty-text">Учеников нет</p>
+                  }
+
+                  return (
+                    <div className="admin-students-groups">
+                      {groupStudents.map(({ group, students }) => (
+                        <div key={group.id} className="admin-students-group">
+                          <div className="admin-students-group-name">{group.name}</div>
+                          <div className="admin-students-list">
+                            {students.map(s => (
+                              <div key={s.id} className="admin-student-row">
+                                <div className="student-avatar admin-student-avatar">
+                                  {s.avatar_url
+                                    ? <img src={s.avatar_url} className="avatar-img" alt="" />
+                                    : s.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="admin-student-name">{s.name}</span>
+                                {s.avatar_url && (
+                                  <button
+                                    onClick={() => handleAdminDeleteAvatar(s.id)}
+                                    className="avatar-delete-btn"
+                                    title="Удалить фото"
+                                    disabled={deletingAvatar === s.id}
+                                  >
+                                    {deletingAvatar === s.id ? '...' : '✕'}
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
 
               <div className="teacher-section-block">

@@ -7,6 +7,7 @@
 //   bind_director     — список чатов + текущий chat_id директора (admin)
 //   set_director_chat — сохранить/сбросить chat_id директора (admin)
 //   send_director     — отправить отчёт директору (teacher или admin)
+//   delete_avatar     — удалить фото профиля (admin)
 //
 // Секреты:
 //   TELEGRAM_BOT_TOKEN — токен бота (@BotFather), задаётся через `supabase secrets set`
@@ -261,6 +262,31 @@ Deno.serve(async (req) => {
 
       const sendErr = await sendToChat(botToken, directorChatId, text)
       if (sendErr) return json({ ok: false, error: sendErr })
+
+      return json({ ok: true })
+    }
+
+    // Удаление фото профиля администратором
+    if (action === 'delete_avatar') {
+      const adminProfile = await verifyProfile('admin')
+      if (!adminProfile) return json({ ok: false, error: 'forbidden' }, 403)
+
+      const profileId = body.profile_id
+      if (!profileId || typeof profileId !== 'string') {
+        return json({ ok: false, error: 'profile_id required' })
+      }
+
+      // Удаляем файл (ошибка не критична — файла может не быть)
+      await admin.storage.from('avatars').remove([`${profileId}/avatar`])
+
+      const { error: updErr } = await admin
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', profileId)
+
+      if (updErr) {
+        return json({ ok: false, error: 'db_error' })
+      }
 
       return json({ ok: true })
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { materialHref } from '../lib/materials'
+import { uploadAvatar, MAX_AVATAR_SIZE } from '../lib/avatar'
 import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem, ModuleTemplate, ModuleTemplateLesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -84,6 +85,8 @@ export function TeacherDashboard() {
   const [loadingChats, setLoadingChats] = useState(false)
   const [savingChat, setSavingChat] = useState(false)
   const [sendingDirector, setSendingDirector] = useState(false)
+  const [teacherAvatar, setTeacherAvatar] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -149,6 +152,13 @@ export function TeacherDashboard() {
       return
     }
 
+    const { data: ownProfile } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', profileId)
+      .maybeSingle()
+    setTeacherAvatar(ownProfile?.avatar_url ?? null)
+
     try {
       const { data, error } = await supabase
         .from('groups')
@@ -183,6 +193,35 @@ export function TeacherDashboard() {
       .order('sort_order')
 
     if (modulesData) setModules(modulesData)
+  }
+
+  const handleTeacherAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Можно загружать только изображения')
+      return
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      showToast('error', 'Файл слишком большой (максимум 5 МБ)')
+      return
+    }
+
+    const teacherId = localStorage.getItem('teacher_id')
+    if (!teacherId) return
+
+    setUploadingAvatar(true)
+    try {
+      const url = await uploadAvatar(teacherId, file)
+      setTeacherAvatar(url)
+      showToast('success', 'Фото обновлено')
+    } catch {
+      showToast('error', 'Не удалось загрузить фото')
+    } finally {
+      setUploadingAvatar(false)
+    }
   }
 
   const loadGroupLibrary = async (groupId: string) => {
@@ -1688,7 +1727,9 @@ export function TeacherDashboard() {
                                 onDoubleClick={() => loadStudentProfile(s)}
                                 title={`${s.name} — клик: сменить посещаемость, двойной клик: профиль`}
                               >
-                                <span className="attendance-avatar">{s.name.charAt(0).toUpperCase()}</span>
+                                <span className="attendance-avatar">
+                                  {s.avatar_url ? <img src={s.avatar_url} className="avatar-img" alt="" /> : s.name.charAt(0).toUpperCase()}
+                                </span>
                                 <span className="attendance-name">{s.name.split(' ')[0]}</span>
                               </button>
                             )
@@ -1848,7 +1889,9 @@ export function TeacherDashboard() {
               <div className="students-list">
                 {students.map(s => (
                   <div key={s.id} className="student-item">
-                    <button className="student-avatar" onClick={() => loadStudentProfile(s)} title="Открыть профиль">{s.name.charAt(0).toUpperCase()}</button>
+                    <button className="student-avatar" onClick={() => loadStudentProfile(s)} title="Открыть профиль">
+                      {s.avatar_url ? <img src={s.avatar_url} className="avatar-img" alt="" /> : s.name.charAt(0).toUpperCase()}
+                    </button>
                     <div className="student-info">
                       <button className="student-name" onClick={() => loadStudentProfile(s)} title="Открыть профиль">{s.name}</button>
                       {s.invite_code && (
@@ -1997,7 +2040,9 @@ export function TeacherDashboard() {
                                   const isPresent = att[s.id] === true
                                   return (
                                     <div key={s.id} className={`homework-student ${hwItem ? 'submitted' : ''}`}>
-                                      <span className="homework-student-avatar">{s.name.charAt(0).toUpperCase()}</span>
+                                      <span className="homework-student-avatar">
+                                        {s.avatar_url ? <img src={s.avatar_url} className="avatar-img" alt="" /> : s.name.charAt(0).toUpperCase()}
+                                      </span>
                                       <span className="homework-student-name">{s.name}</span>
                                       <span className={`homework-status ${isPresent ? 'green' : 'gray'}`}>
                                         {isPresent ? 'На уроке' : 'Не был'}
@@ -2246,9 +2291,33 @@ export function TeacherDashboard() {
   return (
     <div className="dashboard view-enter">
       <header className="dashboard-header">
-        <div className="header-title">
-          <h1>Панель преподавателя</h1>
-          <p>Управление группами и курсами</p>
+        <div className="header-title header-title-with-avatar">
+          <label className="avatar-editable" title="Изменить фото">
+            {teacherAvatar ? (
+              <img src={teacherAvatar} className="avatar-img" alt="" />
+            ) : (
+              <span className="avatar-letter">👤</span>
+            )}
+            <span className="avatar-edit-overlay">
+              {uploadingAvatar ? '...' : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              )}
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              className="avatar-input"
+              onChange={handleTeacherAvatarChange}
+              disabled={uploadingAvatar}
+            />
+          </label>
+          <div>
+            <h1>Панель преподавателя</h1>
+            <p>Управление группами и курсами</p>
+          </div>
         </div>
         <button onClick={handleLogout} className="btn btn-outline btn-logout">
           Выйти

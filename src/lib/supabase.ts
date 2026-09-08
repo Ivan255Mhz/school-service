@@ -15,6 +15,7 @@ export type Profile = {
   invite_code: string | null
   price_per_lesson: number | null
   bonus_per_student: number | null
+  avatar_url: string | null
 }
 
 export type Group = {
