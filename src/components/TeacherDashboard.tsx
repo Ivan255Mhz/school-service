@@ -83,6 +83,7 @@ export function TeacherDashboard() {
   const [telegramChats, setTelegramChats] = useState<{ id: number; title: string }[]>([])
   const [loadingChats, setLoadingChats] = useState(false)
   const [savingChat, setSavingChat] = useState(false)
+  const [sendingDirector, setSendingDirector] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -657,6 +658,70 @@ export function TeacherDashboard() {
       showToast('success', 'Сводка за день скопирована')
     } catch {
       showToast('error', 'Не удалось скопировать')
+    }
+  }
+
+  const sendDirectorReport = async (dateStr: string) => {
+    const dayLessons = allGroupLessons.filter(l => l.date === dateStr)
+    if (dayLessons.length === 0) {
+      showToast('info', 'Нет уроков на эту дату')
+      return
+    }
+
+    const loginCode = localStorage.getItem('login_code')
+    if (!loginCode) {
+      showToast('error', 'Код входа не найден. Перевойдите в систему.')
+      return
+    }
+
+    const dateObj = new Date(dateStr + 'T00:00:00')
+    const dateFormatted = dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+
+    let text = `Отчёт за ${dateFormatted}\n`
+
+    for (const lesson of dayLessons) {
+      const { data: studentsData } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .eq('group_id', lesson.group_id)
+        .eq('role', 'student')
+
+      const { data: attendanceData } = await supabase
+        .from('attendance')
+        .select('student_id, present')
+        .eq('lesson_id', lesson.id)
+
+      const students = studentsData || []
+      const attendance = attendanceData || []
+
+      const present = students
+        .filter(s => attendance.find(a => a.student_id === s.id)?.present)
+        .map(s => s.name)
+
+      text += `\n${lesson.group_name} (${present.length}/${students.length}): ${present.length > 0 ? present.join(', ') : '—'}\n`
+    }
+
+    setSendingDirector(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('send-telegram', {
+        body: { action: 'send_director', login_code: loginCode, text: text.trim() },
+      })
+
+      if (error || !data?.ok) {
+        showToast(
+          'error',
+          data?.error === 'director_not_bound'
+            ? 'Чат директора не подключён. Привяжите его в админ-панели.'
+            : 'Не удалось отправить отчёт директору'
+        )
+        return
+      }
+
+      showToast('success', 'Отчёт отправлен директору в Telegram')
+    } catch {
+      showToast('error', 'Не удалось отправить отчёт директору')
+    } finally {
+      setSendingDirector(false)
     }
   }
 
@@ -2424,6 +2489,13 @@ export function TeacherDashboard() {
             const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
             generateDaySummary(todayStr)
           }} className="btn btn-outline btn-sm">Сводка за день</button>
+          <button onClick={() => {
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            sendDirectorReport(todayStr)
+          }} className="btn btn-outline btn-sm" disabled={sendingDirector}>
+            {sendingDirector ? '...' : 'Отчёт директору'}
+          </button>
         </div>
       </div>
       </>)}

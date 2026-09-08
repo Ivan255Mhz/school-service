@@ -2296,11 +2296,15 @@ body {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin: 0 24px 12px;
+  margin: 0 0 12px;
   padding: 10px 14px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+
+.telegram-bar-inline {
+  margin-bottom: 20px;
 }
 
 .tg-status {
@@ -2318,7 +2322,7 @@ body {
 }
 
 .telegram-bind {
-  margin: 0 24px 12px;
+  margin: 0 0 12px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -2353,14 +2357,6 @@ body {
   flex-direction: column;
   gap: 6px;
   margin-top: 10px;
-}
-
-@media (max-width: 640px) {
-  .telegram-bar,
-  .telegram-bind {
-    margin-left: 16px;
-    margin-right: 16px;
-  }
 }
 
 .template-picker-count {

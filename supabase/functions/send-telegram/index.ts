@@ -1,7 +1,12 @@
 // Edge Function: send-telegram
 // Действия:
-//   send  — отправить сводку в родительский чат группы
-//   bind  — получить список групповых чатов, где бот получает сообщения
+//   send              — отправить сводку в родительский чат группы (teacher)
+//   bind              — список групповых чатов, где бот получает сообщения (teacher)
+//   set_chat          — сохранить/сбросить привязку чата к группе (teacher)
+//   get_director      — текущий chat_id директора (admin)
+//   bind_director     — список чатов + текущий chat_id директора (admin)
+//   set_director_chat — сохранить/сбросить chat_id директора (admin)
+//   send_director     — отправить отчёт директору (teacher или admin)
 //
 // Секреты:
 //   TELEGRAM_BOT_TOKEN — токен бота (@BotFather), задаётся через `supabase secrets set`
@@ -13,6 +18,10 @@ const CORS_HEADERS = {
 }
 
 const MAX_MESSAGE_LENGTH = 4000
+const DIRECTOR_CHAT_KEY = 'director_chat_id'
+
+type Profile = { id: string; role: string }
+type Chat = { id: number; title: string }
 
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -37,6 +46,65 @@ function splitText(text: string): string[] {
     rest = rest.slice(cut).replace(/^\n+/, '')
   }
   return chunks
+}
+
+async function listGroupChats(botToken: string): Promise<{ chats: Chat[]; error?: string }> {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?limit=100&allowed_updates=["message","my_chat_member"]`)
+  const data = await res.json()
+  if (!data.ok) {
+    return { chats: [], error: `Telegram API: ${data.description ?? 'unknown error'}` }
+  }
+
+  const chats = new Map<number, string>()
+  for (const upd of data.result ?? []) {
+    const chat = upd.message?.chat ?? upd.my_chat_member?.chat
+    if (chat && (chat.type === 'group' || chat.type === 'supergroup')) {
+      chats.set(chat.id, chat.title ?? '')
+    }
+  }
+
+  return { chats: Array.from(chats.entries()).map(([id, title]) => ({ id, title })) }
+}
+
+async function sendToChat(botToken: string, chatId: number, text: string): Promise<string | null> {
+  for (const chunk of splitText(text)) {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: chunk,
+        disable_web_page_preview: true,
+      }),
+    })
+    const data = await res.json()
+    if (!data.ok) {
+      return `Telegram API: ${data.description ?? 'unknown error'}`
+    }
+  }
+  return null
+}
+
+async function getDirectorChatId(admin: any): Promise<number | null> {
+  const { data: setting } = await admin
+    .from('app_settings')
+    .select('value')
+    .eq('key', DIRECTOR_CHAT_KEY)
+    .maybeSingle()
+  if (!setting?.value) return null
+  const parsed = Number(setting.value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+async function setDirectorChatId(admin: any, chatId: number | null): Promise<boolean> {
+  if (chatId === null) {
+    const { error } = await admin.from('app_settings').delete().eq('key', DIRECTOR_CHAT_KEY)
+    return !error
+  }
+  const { error } = await admin
+    .from('app_settings')
+    .upsert({ key: DIRECTOR_CHAT_KEY, value: String(chatId) }, { onConflict: 'key' })
+  return !error
 }
 
 Deno.serve(async (req) => {
@@ -64,26 +132,57 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'unauthorized' }, 401)
     }
 
-    // Сервисный клиент: обходит RLS для проверки кода преподавателя и группы
+    // Сервисный клиент: обходит RLS для проверки кода и чтения настроек
     const admin = createClient(supabaseUrl, serviceRoleKey)
 
     const body = await req.json()
-    const { action, login_code, group_id, text } = body ?? {}
+    const { action, login_code, group_id, text, chat_id } = body ?? {}
 
     if (!login_code || typeof login_code !== 'string') {
       return json({ ok: false, error: 'login_code required' })
     }
 
-    const { data: teacher } = await admin
-      .from('profiles')
-      .select('id, role')
-      .eq('login_code', login_code.toUpperCase())
-      .eq('role', 'teacher')
-      .maybeSingle()
+    const code = login_code.toUpperCase()
 
-    if (!teacher) {
-      return json({ ok: false, error: 'forbidden' }, 403)
+    const verifyProfile = async (role: string): Promise<Profile | null> => {
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('id, role')
+        .eq('login_code', code)
+        .eq('role', role)
+        .maybeSingle()
+      return profile ?? null
     }
+
+    // === Действия директора/администратора ===
+    if (action === 'get_director' || action === 'bind_director' || action === 'set_director_chat') {
+      const adminProfile = await verifyProfile('admin')
+      if (!adminProfile) return json({ ok: false, error: 'forbidden' }, 403)
+
+      if (action === 'get_director') {
+        return json({ ok: true, director_chat_id: await getDirectorChatId(admin) })
+      }
+
+      if (action === 'bind_director') {
+        const { chats, error: tgErr } = await listGroupChats(botToken)
+        if (tgErr) return json({ ok: false, error: tgErr })
+        return json({ ok: true, chats, director_chat_id: await getDirectorChatId(admin) })
+      }
+
+      // set_director_chat
+      const newChatId = chat_id ?? null
+      if (newChatId !== null && typeof newChatId !== 'number') {
+        return json({ ok: false, error: 'invalid chat_id' })
+      }
+      if (!(await setDirectorChatId(admin, newChatId))) {
+        return json({ ok: false, error: 'db_error' })
+      }
+      return json({ ok: true })
+    }
+
+    // === Действия преподавателя (групповые чаты) ===
+    const teacher = await verifyProfile('teacher')
+    if (!teacher) return json({ ok: false, error: 'forbidden' }, 403)
 
     const verifyGroup = async () => {
       const { data: group } = await admin
@@ -95,44 +194,30 @@ Deno.serve(async (req) => {
       return group
     }
 
-    // === Привязка чата: список групповых чатов из последних сообщений бота ===
+    // Привязка чата: список групповых чатов из последних сообщений бота
     if (action === 'bind') {
       const group = await verifyGroup()
       if (!group) return json({ ok: false, error: 'forbidden' }, 403)
 
-      const res = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?limit=100&allowed_updates=["message","my_chat_member"]`)
-      const data = await res.json()
-      if (!data.ok) {
-        return json({ ok: false, error: `Telegram API: ${data.description ?? 'unknown error'}` })
-      }
+      const { chats, error: tgErr } = await listGroupChats(botToken)
+      if (tgErr) return json({ ok: false, error: tgErr })
 
-      const chats = new Map<number, string>()
-      for (const upd of data.result ?? []) {
-        const chat = upd.message?.chat ?? upd.my_chat_member?.chat
-        if (chat && (chat.type === 'group' || chat.type === 'supergroup')) {
-          chats.set(chat.id, chat.title ?? '')
-        }
-      }
-
-      return json({
-        ok: true,
-        chats: Array.from(chats.entries()).map(([id, title]) => ({ id, title })),
-      })
+      return json({ ok: true, chats })
     }
 
-    // === Сохранение/сброс привязки чата к группе ===
+    // Сохранение/сброс привязки чата к группе
     if (action === 'set_chat') {
       const group = await verifyGroup()
       if (!group) return json({ ok: false, error: 'forbidden' }, 403)
 
-      const chatId = body.chat_id ?? null
-      if (chatId !== null && typeof chatId !== 'number') {
+      const newChatId = chat_id ?? null
+      if (newChatId !== null && typeof newChatId !== 'number') {
         return json({ ok: false, error: 'invalid chat_id' })
       }
 
       const { error: updErr } = await admin
         .from('groups')
-        .update({ telegram_chat_id: chatId })
+        .update({ telegram_chat_id: newChatId })
         .eq('id', group_id)
 
       if (updErr) {
@@ -142,7 +227,7 @@ Deno.serve(async (req) => {
       return json({ ok: true })
     }
 
-    // === Отправка сводки в привязанный чат группы ===
+    // Отправка сводки в привязанный чат группы
     if (action === 'send') {
       const group = await verifyGroup()
       if (!group) return json({ ok: false, error: 'forbidden' }, 403)
@@ -153,21 +238,25 @@ Deno.serve(async (req) => {
         return json({ ok: false, error: 'text required' })
       }
 
-      for (const chunk of splitText(text)) {
-        const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: group.telegram_chat_id,
-            text: chunk,
-            disable_web_page_preview: true,
-          }),
-        })
-        const data = await res.json()
-        if (!data.ok) {
-          return json({ ok: false, error: `Telegram API: ${data.description ?? 'unknown error'}` })
-        }
+      const sendErr = await sendToChat(botToken, group.telegram_chat_id, text)
+      if (sendErr) return json({ ok: false, error: sendErr })
+
+      return json({ ok: true })
+    }
+
+    // Отправка отчёта директору (разрешено преподавателю или админу)
+    if (action === 'send_director') {
+      if (!text || typeof text !== 'string') {
+        return json({ ok: false, error: 'text required' })
       }
+
+      const directorChatId = await getDirectorChatId(admin)
+      if (!directorChatId) {
+        return json({ ok: false, error: 'director_not_bound' })
+      }
+
+      const sendErr = await sendToChat(botToken, directorChatId, text)
+      if (sendErr) return json({ ok: false, error: sendErr })
 
       return json({ ok: true })
     }

@@ -47,7 +47,28 @@ export function AdminDashboard() {
   const [newLibGroupId, setNewLibGroupId] = useState('')
   const [newLibFile, setNewLibFile] = useState<File | null>(null)
   const [uploadingLib, setUploadingLib] = useState(false)
+  const [directorChatId, setDirectorChatId] = useState<number | null>(null)
+  const [showBindDirector, setShowBindDirector] = useState(false)
+  const [directorChats, setDirectorChats] = useState<{ id: number; title: string }[]>([])
+  const [loadingDirectorChats, setLoadingDirectorChats] = useState(false)
+  const [savingDirectorChat, setSavingDirectorChat] = useState(false)
   const navigate = useNavigate()
+
+  const loadDirectorChat = async () => {
+    const loginCode = localStorage.getItem('login_code')
+    if (!loginCode) return
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-telegram', {
+        body: { action: 'get_director', login_code: loginCode },
+      })
+      if (!error && data?.ok) {
+        setDirectorChatId(typeof data.director_chat_id === 'number' ? data.director_chat_id : null)
+      }
+    } catch {
+      // не критично — статус можно обновить кнопкой
+    }
+  }
 
   useEffect(() => {
     const role = localStorage.getItem('user_role')
@@ -59,6 +80,7 @@ export function AdminDashboard() {
       try {
         setLoading(true)
         await Promise.all([loadTeachers(), loadAllLessons(), loadLibrary()])
+        loadDirectorChat()
       } catch (e) {
         console.error('Load error:', e)
         setError('Ошибка загрузки данных')
@@ -67,6 +89,68 @@ export function AdminDashboard() {
       }
     })()
   }, [])
+
+  const fetchDirectorChats = async () => {
+    const loginCode = localStorage.getItem('login_code')
+    if (!loginCode) {
+      showToast('error', 'Код входа не найден. Перевойдите в систему.')
+      return
+    }
+
+    setLoadingDirectorChats(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('send-telegram', {
+        body: { action: 'bind_director', login_code: loginCode },
+      })
+
+      if (error || !data?.ok) {
+        showToast('error', 'Не удалось получить список чатов')
+        return
+      }
+
+      setDirectorChats(data.chats || [])
+      if (typeof data.director_chat_id === 'number') {
+        setDirectorChatId(data.director_chat_id)
+      }
+    } catch {
+      showToast('error', 'Не удалось получить список чатов')
+    } finally {
+      setLoadingDirectorChats(false)
+    }
+  }
+
+  const setDirectorChat = async (chatId: number | null) => {
+    const loginCode = localStorage.getItem('login_code')
+    if (!loginCode) {
+      showToast('error', 'Код входа не найден. Перевойдите в систему.')
+      return
+    }
+
+    setSavingDirectorChat(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('send-telegram', {
+        body: { action: 'set_director_chat', login_code: loginCode, chat_id: chatId },
+      })
+
+      if (error || !data?.ok) {
+        showToast('error', chatId === null ? 'Не удалось отвязать чат' : 'Не удалось привязать чат')
+        return
+      }
+
+      setDirectorChatId(chatId)
+
+      if (chatId === null) {
+        showToast('success', 'Telegram-чат директора отвязан')
+      } else {
+        setShowBindDirector(false)
+        showToast('success', 'Telegram-чат директора привязан')
+      }
+    } catch {
+      showToast('error', chatId === null ? 'Не удалось отвязать чат' : 'Не удалось привязать чат')
+    } finally {
+      setSavingDirectorChat(false)
+    }
+  }
 
   const loadTeachers = async () => {
     const { data: teachersData } = await supabase
@@ -494,6 +578,70 @@ export function AdminDashboard() {
               + Создать преподавателя
             </button>
           </div>
+
+          <div className="telegram-bar telegram-bar-inline">
+            {directorChatId ? (
+              <>
+                <span className="tg-status tg-status-ok">✓ Telegram-чат директора подключён</span>
+                <div className="tg-actions">
+                  <button
+                    onClick={() => { setShowBindDirector(true); setDirectorChats([]); fetchDirectorChats() }}
+                    className="btn btn-outline btn-xs"
+                    disabled={savingDirectorChat}
+                  >
+                    Изменить
+                  </button>
+                  <button onClick={() => setDirectorChat(null)} className="btn btn-outline btn-xs" disabled={savingDirectorChat}>
+                    Отвязать
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="tg-status">Telegram-чат директора не подключён</span>
+                <button
+                  onClick={() => { setShowBindDirector(true); setDirectorChats([]); fetchDirectorChats() }}
+                  className="btn btn-outline btn-xs"
+                >
+                  Привязать чат
+                </button>
+              </>
+            )}
+          </div>
+
+          {showBindDirector && (
+            <div className="telegram-bind">
+              <div className="telegram-bind-header">
+                <span>Привязка Telegram-чата директора</span>
+                <button onClick={() => setShowBindDirector(false)} className="btn btn-outline btn-xs">✕</button>
+              </div>
+              <p className="telegram-bind-hint">
+                Добавьте бота в чат директора и напишите там любое сообщение,
+                затем нажмите «Обновить список» и выберите чат.
+              </p>
+              <button onClick={fetchDirectorChats} className="btn btn-outline btn-sm" disabled={loadingDirectorChats}>
+                {loadingDirectorChats ? 'Загрузка...' : 'Обновить список'}
+              </button>
+              {loadingDirectorChats ? null : directorChats.length === 0 ? (
+                <p className="telegram-bind-empty">
+                  Чаты не найдены. Убедитесь, что бот добавлен в чат и в нём есть свежие сообщения.
+                </p>
+              ) : (
+                <div className="telegram-bind-list">
+                  {directorChats.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => setDirectorChat(c.id)}
+                      className="btn btn-outline btn-sm"
+                      disabled={savingDirectorChat}
+                    >
+                      {c.title || `Чат ${c.id}`}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {showCreateTeacher && (
             <form onSubmit={handleCreateTeacher} className="create-form">

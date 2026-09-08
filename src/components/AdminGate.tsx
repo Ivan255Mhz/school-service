@@ -31,6 +31,7 @@ export function AdminGate() {
 
       localStorage.setItem('user_role', 'admin')
       localStorage.setItem('admin_id', admin.id)
+      localStorage.setItem('login_code', code.trim().toUpperCase())
       setAuthorized(true)
     } catch {
       setError('Произошла ошибка')
