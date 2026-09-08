@@ -1761,15 +1761,16 @@ export function TeacherDashboard() {
               <button onClick={() => setShowBindChat(false)} className="btn btn-outline btn-xs">✕</button>
             </div>
             <p className="telegram-bind-hint">
-              Добавьте бота в родительский чат группы и напишите там любое сообщение,
-              затем нажмите «Обновить список» и выберите чат.
+              Для группы: добавьте бота в родительский чат и напишите там любое сообщение.
+              Для личной отправки: пользователь открывает бота и нажимает «Запустить».
+              Затем нажмите «Обновить список» и выберите чат.
             </p>
             <button onClick={fetchTelegramChats} className="btn btn-outline btn-sm" disabled={loadingChats}>
               {loadingChats ? 'Загрузка...' : 'Обновить список'}
             </button>
             {loadingChats ? null : telegramChats.length === 0 ? (
               <p className="telegram-bind-empty">
-                Чаты не найдены. Убедитесь, что бот добавлен в чат и в нём есть свежие сообщения.
+                Чаты не найдены. Добавьте бота в чат группы или нажмите «Запустить» у бота в Telegram, затем «Обновить список».
               </p>
             ) : (
               <div className="telegram-bind-list">

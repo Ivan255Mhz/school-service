@@ -616,15 +616,15 @@ export function AdminDashboard() {
                 <button onClick={() => setShowBindDirector(false)} className="btn btn-outline btn-xs">✕</button>
               </div>
               <p className="telegram-bind-hint">
-                Добавьте бота в чат директора и напишите там любое сообщение,
-                затем нажмите «Обновить список» и выберите чат.
+                Директор должен открыть бота в Telegram и нажать «Запустить» (или написать /start) —
+                бот сможет присылать ему отчёты напрямую в личку. Затем нажмите «Обновить список» и выберите чат.
               </p>
               <button onClick={fetchDirectorChats} className="btn btn-outline btn-sm" disabled={loadingDirectorChats}>
                 {loadingDirectorChats ? 'Загрузка...' : 'Обновить список'}
               </button>
               {loadingDirectorChats ? null : directorChats.length === 0 ? (
                 <p className="telegram-bind-empty">
-                  Чаты не найдены. Убедитесь, что бот добавлен в чат и в нём есть свежие сообщения.
+                  Чаты не найдены. Директор должен нажать «Запустить» у бота в Telegram, а вы — «Обновить список».
                 </p>
               ) : (
                 <div className="telegram-bind-list">

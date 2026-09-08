@@ -58,8 +58,12 @@ async function listGroupChats(botToken: string): Promise<{ chats: Chat[]; error?
   const chats = new Map<number, string>()
   for (const upd of data.result ?? []) {
     const chat = upd.message?.chat ?? upd.my_chat_member?.chat
-    if (chat && (chat.type === 'group' || chat.type === 'supergroup')) {
+    if (!chat) continue
+    if (chat.type === 'group' || chat.type === 'supergroup') {
       chats.set(chat.id, chat.title ?? '')
+    } else if (chat.type === 'private') {
+      const title = [chat.first_name, chat.last_name].filter(Boolean).join(' ') || chat.username || `Чат ${chat.id}`
+      chats.set(chat.id, title)
     }
   }
 
