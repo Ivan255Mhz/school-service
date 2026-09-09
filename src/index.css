@@ -5002,3 +5002,38 @@ textarea.input:focus {
     height: 40px;
   }
 }
+
+/* ============================================================
+   Mobile: module view header fix
+   ============================================================ */
+@media (max-width: 768px) {
+  .dashboard-header .module-cover-lg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dashboard-header .module-cover-lg svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .header-title-with-avatar {
+    min-width: 0;
+    flex: 1;
+    gap: 10px;
+  }
+
+  .header-title-with-avatar h1 {
+    font-size: 0.95em;
+  }
+
+  .header-title-with-avatar .invite-code-inline {
+    display: none;
+  }
+
+  .btn-back {
+    flex-shrink: 0;
+    padding: 8px 10px;
+    font-size: 0.8125em;
+  }
+}
