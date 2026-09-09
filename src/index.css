@@ -4868,3 +4868,8 @@ textarea.input:focus {
   flex-direction: column;
   gap: 8px;
 }
+
+/* --- Profile settings: full-width inputs --- */
+.settings-section .input {
+  width: 100%;
+}
