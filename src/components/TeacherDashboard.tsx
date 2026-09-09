@@ -208,6 +208,7 @@ export function TeacherDashboard() {
       if (data) {
         setGroups(data)
         loadAllGroupLessons()
+        loadTemplates()
       }
     } catch {
       showToast('error', 'Не удалось загрузить группы')
@@ -1979,7 +1980,7 @@ export function TeacherDashboard() {
                   <span>Выберите шаблон для группы «{selectedGroup?.name}»</span>
                   <button onClick={() => setShowTemplatePicker(false)} className="btn btn-outline btn-xs">✕</button>
                 </div>
-                {loadingTemplates ? (
+                {loadingTemplates && templates.length === 0 ? (
                   <p className="template-picker-empty">Загрузка...</p>
                 ) : templates.length === 0 ? (
                   <p className="template-picker-empty">Шаблонов нет. Создайте их на вкладке «Шаблоны модулей» главного экрана.</p>
@@ -2379,7 +2380,7 @@ export function TeacherDashboard() {
         <button className={`tab ${mainTab === 'schedule' ? 'active' : ''}`} onClick={() => setMainTab('schedule')}>
           Расписание
         </button>
-        <button className={`tab ${mainTab === 'templates' ? 'active' : ''}`} onClick={() => setMainTab('templates')}>
+        <button className={`tab ${mainTab === 'templates' ? 'active' : ''}`} onClick={() => { setMainTab('templates'); if (templates.length === 0) loadTemplates() }}>
           Шаблоны модулей
         </button>
       </div>
@@ -2681,7 +2682,7 @@ export function TeacherDashboard() {
             </form>
           )}
 
-          {loadingTemplates ? (
+          {loadingTemplates && templates.length === 0 ? (
             <div className="groups-grid">
               <div className="skeleton skeleton-card" />
               <div className="skeleton skeleton-card" />
