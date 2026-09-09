@@ -1862,10 +1862,14 @@ export function TeacherDashboard() {
                           <span className="lesson-attendance-title">Посещаемость:</span>
                           <button
                             onClick={() => handleMarkAllPresent(lesson.id)}
-                            className="btn btn-outline btn-xs"
+                            className="btn btn-outline btn-sm"
                             disabled={markingAttendance === lesson.id}
                             title="Отметить всех учеников присутствующими"
                           >
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M1.5 6.5l3 3L11 2.5"/>
+                              <path d="M6 6.5l1 1L11 2.5" opacity="0.4"/>
+                            </svg>
                             {markingAttendance === lesson.id ? '...' : 'Отметить всех'}
                           </button>
                         </div>
@@ -2764,7 +2768,7 @@ export function TeacherDashboard() {
                 <span className={`today-lesson-status ${l.is_completed ? 'done' : ''}`} />
                 <span className="today-lesson-group">{l.group_name}</span>
                 <span className="today-lesson-topic">Урок {l.lesson_number}: {l.topic}</span>
-                <button onClick={() => openLessonFromCalendar(l)} className="btn btn-outline btn-xs">
+                <button onClick={() => openLessonFromCalendar(l)} className="btn btn-outline btn-sm">
                   Открыть
                 </button>
               </div>
