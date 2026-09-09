@@ -4,6 +4,7 @@ import { materialHref } from '../lib/materials'
 import { uploadAvatar, uploadModuleCover, uploadTemplateCover, MAX_AVATAR_SIZE } from '../lib/avatar'
 import { pushView, closeView } from '../lib/viewHistory'
 import { usePullToRefresh } from '../lib/pullToRefresh'
+import { getCached, setCached } from '../lib/dataCache'
 import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem, ModuleTemplate, ModuleTemplateLesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -217,6 +218,10 @@ export function TeacherDashboard() {
     setTeacherName(ownProfile?.name ?? '')
 
     try {
+      const groupsKey = `teacher:${profileId}:groups`
+      const cachedGroups = getCached<Group[]>(groupsKey)
+      if (cachedGroups) setGroups(cachedGroups)
+
       const { data, error } = await supabase
         .from('groups')
         .select('*')
@@ -225,6 +230,7 @@ export function TeacherDashboard() {
       if (error) throw error
       if (data) {
         setGroups(data)
+        setCached(groupsKey, data)
         loadAllGroupLessons()
         loadTemplates()
       }
@@ -236,6 +242,13 @@ export function TeacherDashboard() {
   }
 
   const loadGroupData = async (groupId: string) => {
+    const groupKey = `group:${groupId}:data`
+    const cachedGroup = getCached<{ students: Profile[]; modules: Module[] }>(groupKey)
+    if (cachedGroup) {
+      setStudents(cachedGroup.students)
+      setModules(cachedGroup.modules)
+    }
+
     const { data: studentsData } = await supabase
       .from('profiles')
       .select('*')
@@ -251,6 +264,10 @@ export function TeacherDashboard() {
       .order('sort_order')
 
     if (modulesData) setModules(modulesData)
+
+    if (studentsData && modulesData) {
+      setCached(groupKey, { students: studentsData, modules: modulesData })
+    }
   }
 
   const handleTeacherAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -415,6 +432,13 @@ export function TeacherDashboard() {
     setLoadingTemplates(true)
 
     try {
+      const tplKey = `teacher:${teacherId}:templates`
+      const cachedTpl = getCached<(ModuleTemplate & { lessons: ModuleTemplateLesson[] })[]>(tplKey)
+      if (cachedTpl) {
+        setTemplates(cachedTpl)
+        setLoadingTemplates(false)
+      }
+
       const { data: templatesData, error } = await supabase
         .from('module_templates')
         .select('*')
@@ -442,7 +466,9 @@ export function TeacherDashboard() {
         }
       }
 
-      setTemplates((templatesData || []).map(t => ({ ...t, lessons: lessonsByTemplate[t.id] || [] })))
+      const mergedTemplates = (templatesData || []).map(t => ({ ...t, lessons: lessonsByTemplate[t.id] || [] }))
+      setTemplates(mergedTemplates)
+      setCached(`teacher:${teacherId}:templates`, mergedTemplates)
     } catch {
       showToast('error', 'Не удалось загрузить шаблоны')
     } finally {
@@ -882,6 +908,10 @@ export function TeacherDashboard() {
     const teacherId = localStorage.getItem('teacher_id')
     if (!teacherId) return
 
+    const calKey = `teacher:${teacherId}:calendar`
+    const cachedLessons = getCached<(Lesson & { group_name: string })[]>(calKey)
+    if (cachedLessons) setAllGroupLessons(cachedLessons)
+
     const { data: teacherGroups } = await supabase
       .from('groups')
       .select('id, name')
@@ -910,11 +940,13 @@ export function TeacherDashboard() {
     const modGroupIdMap: Record<string, string> = {}
     mods.forEach(m => { modGroupIdMap[m.id] = m.group_id })
 
-    setAllGroupLessons(less.map(l => ({
+    const merged = less.map(l => ({
       ...l,
       group_id: modGroupIdMap[l.module_id] || l.group_id || '',
       group_name: groupMap[modGroupIdMap[l.module_id]] || ''
-    })))
+    }))
+    setAllGroupLessons(merged)
+    setCached(calKey, merged)
   }
 
   const loadStudentProfile = async (student: Profile) => {
@@ -948,6 +980,10 @@ export function TeacherDashboard() {
   }
 
   const loadModuleLessons = async (moduleId: string) => {
+    const lessonsKey = `module:${moduleId}:lessons`
+    const cachedLessons = getCached<Lesson[]>(lessonsKey)
+    if (cachedLessons) setLessons(cachedLessons)
+
     const { data: lessonsData } = await supabase
       .from('lessons')
       .select('*')
@@ -956,6 +992,7 @@ export function TeacherDashboard() {
 
     if (lessonsData) {
       setLessons(lessonsData)
+      setCached(lessonsKey, lessonsData)
       await loadMaterialsAndHomework(lessonsData.map(l => l.id))
     } else {
       setLessons([])

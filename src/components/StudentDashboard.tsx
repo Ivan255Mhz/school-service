@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { materialHref } from '../lib/materials'
 import { uploadAvatar, MAX_AVATAR_SIZE } from '../lib/avatar'
 import { pushView, closeView } from '../lib/viewHistory'
+import { getCached, setCached } from '../lib/dataCache'
 import { usePullToRefresh } from '../lib/pullToRefresh'
 import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote, LibraryItem } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
@@ -59,6 +60,14 @@ export function StudentDashboard() {
     if (!groupId) {
       navigate('/')
       return
+    }
+
+    const snapKey = `student:${studentId}:main`
+    const cached = getCached<{ modules: Module[]; moduleLessonsMap: Record<string, Lesson[]>; allLessons: Lesson[] }>(snapKey)
+    if (cached) {
+      setModules(cached.modules)
+      setModuleLessonsMap(cached.moduleLessonsMap)
+      setAllLessons(cached.allLessons)
     }
 
     try {
@@ -154,6 +163,7 @@ export function StudentDashboard() {
     } finally {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, studentId, navigate])
 
   const ptr = usePullToRefresh(async () => {
@@ -216,6 +226,7 @@ export function StudentDashboard() {
 
     setModuleLessonsMap(moduleMap)
     setAllLessons(allLess)
+    setCached(`student:${studentId}:main`, { modules: modulesData, moduleLessonsMap: moduleMap, allLessons: allLess })
 
     if (allLess.length > 0) {
       await loadMaterials(allLess.map(l => l.id))

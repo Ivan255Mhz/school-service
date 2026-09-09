@@ -8,6 +8,7 @@ import { NotificationBell } from './NotificationBell'
 import { ProfileSettings } from './ProfileSettings'
 import { pushView, closeView } from '../lib/viewHistory'
 import { usePullToRefresh } from '../lib/pullToRefresh'
+import { getCached, setCached } from '../lib/dataCache'
 
 type TeacherWithStats = Profile & {
   groups: Group[]
@@ -94,7 +95,12 @@ export function AdminDashboard() {
       navigate('/')
       return
     }
-    (async () => {
+    ;(async () => {
+      const cachedTeachers = getCached<TeacherWithStats[]>('admin:teachers')
+      const cachedLessons = getCached<LessonWithAttendance[]>('admin:lessons')
+      if (cachedTeachers) setTeachers(cachedTeachers)
+      if (cachedLessons) setAllLessons(cachedLessons)
+      if (cachedTeachers && cachedLessons) setLoading(false)
       try {
         setLoading(true)
         await Promise.all([loadTeachers(), loadAllLessons(), loadLibrary()])
@@ -245,6 +251,7 @@ export function AdminDashboard() {
     }))
 
     setTeachers(teachersWithStats)
+    setCached('admin:teachers', teachersWithStats)
   }
 
   const loadAllLessons = async () => {
@@ -312,6 +319,7 @@ export function AdminDashboard() {
     })
 
     setAllLessons(lessonsWithAttendance)
+    setCached('admin:lessons', lessonsWithAttendance)
   }
 
   const loadLibrary = async () => {
