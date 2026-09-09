@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { startOAuth, exchangeOAuthToken } from '../lib/oauth'
 import type { OAuthProvider } from '../lib/oauth'
+import { YandexLogo } from './YandexLogo'
 import { useNavigate } from 'react-router-dom'
 
 export function LoginScreen() {
@@ -230,6 +231,7 @@ export function LoginScreen() {
             className="btn btn-outline btn-full"
             disabled={oauthLoading !== null}
           >
+            <YandexLogo size={18} />
             {oauthLoading === 'yandex' ? 'Переход...' : 'Войти через Яндекс ID'}
           </button>
         </div>

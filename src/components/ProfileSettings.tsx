@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { uploadAvatar, MAX_AVATAR_SIZE } from '../lib/avatar'
 import { startOAuth, unlinkSocial } from '../lib/oauth'
 import type { OAuthProvider } from '../lib/oauth'
+import { YandexLogo } from './YandexLogo'
 import { showToast } from './Toast'
 
 type Props = {
@@ -111,7 +112,7 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
 
   const providerRow = (title: string, linked: boolean) => (
     <div className="oauth-row">
-      <span className="oauth-provider-badge">Я</span>
+      <YandexLogo size={34} />
       <div className="oauth-provider-info">
         <span className="oauth-provider-name">{title}</span>
         <span className={`oauth-status ${linked ? 'linked' : ''}`}>
