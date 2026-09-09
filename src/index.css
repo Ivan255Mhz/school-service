@@ -5037,3 +5037,51 @@ textarea.input:focus {
     font-size: 0.8125em;
   }
 }
+
+/* ============================================================
+   Module hero card (below compact header)
+   ============================================================ */
+.module-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #181818, #131313);
+  border: 1px solid #272727;
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.module-hero-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.module-hero-info h2 {
+  font-size: 1.05em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .module-hero {
+    padding: 12px 14px;
+  }
+
+  .module-hero .module-cover-lg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .module-hero-info h2 {
+    font-size: 0.95em;
+    white-space: normal;
+    line-height: 1.3;
+  }
+}

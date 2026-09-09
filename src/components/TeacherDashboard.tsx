@@ -1579,38 +1579,6 @@ export function TeacherDashboard() {
             <button onClick={() => { setSelectedModule(null); setLessons([]); setEditingLesson(null); }} className="btn btn-back">
               &larr; Назад к модулям
             </button>
-            <div className="header-title header-title-with-avatar">
-              <label className="module-cover module-cover-lg" title="Загрузить фото модуля">
-                {selectedModule.cover_url ? (
-                  <img src={selectedModule.cover_url} className="avatar-img" alt="" />
-                ) : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <path d="M21 15l-5-5L5 21"/>
-                  </svg>
-                )}
-                <span className="avatar-edit-overlay">
-                  {uploadingCover === selectedModule.id ? '...' : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-                      <circle cx="12" cy="13" r="4"/>
-                    </svg>
-                  )}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="avatar-input"
-                  onChange={(e) => handleModuleCoverChange(selectedModule.id, e)}
-                  disabled={uploadingCover === selectedModule.id}
-                />
-              </label>
-              <div>
-                <h1>{selectedModule.name}</h1>
-                <p className="invite-code-inline">Группа: {selectedGroup.name}</p>
-              </div>
-            </div>
           </div>
           <div className="header-actions">
             <NotificationBell recipientId={teacherId} />
@@ -1622,6 +1590,39 @@ export function TeacherDashboard() {
             </button>
           </div>
         </header>
+
+        <div className="module-hero">
+          <label className="module-cover module-cover-lg" title="Загрузить фото модуля">
+            {selectedModule.cover_url ? (
+              <img src={selectedModule.cover_url} className="avatar-img" alt="" />
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+            )}
+            <span className="avatar-edit-overlay">
+              {uploadingCover === selectedModule.id ? '...' : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              )}
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              className="avatar-input"
+              onChange={(e) => handleModuleCoverChange(selectedModule.id, e)}
+              disabled={uploadingCover === selectedModule.id}
+            />
+          </label>
+          <div className="module-hero-info">
+            <h2>{selectedModule.name}</h2>
+            <p className="invite-code-inline">Группа: {selectedGroup.name}</p>
+          </div>
+        </div>
 
         {showSettings && (
           <ProfileSettings
