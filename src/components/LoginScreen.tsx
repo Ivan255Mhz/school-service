@@ -1,13 +1,64 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { startOAuth, exchangeOAuthToken } from '../lib/oauth'
+import type { OAuthProvider } from '../lib/oauth'
 import { useNavigate } from 'react-router-dom'
 
 export function LoginScreen() {
   const [mode, setMode] = useState<'student' | 'teacher'>('student')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null)
+  const [oauthParams] = useState(() => new URLSearchParams(window.location.search))
+  const oauthError = oauthParams.get('oauth_error')
+  const oauthToken = oauthParams.get('t')
+  const [oauthExchange, setOauthExchange] = useState(() => !!new URLSearchParams(window.location.search).get('t'))
   const [error, setError] = useState('')
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!oauthToken) return
+
+    ;(async () => {
+      try {
+        const profile = await exchangeOAuthToken(oauthToken)
+        await supabase.auth.signInAnonymously()
+
+        if (profile.role === 'teacher') {
+          localStorage.setItem('user_role', 'teacher')
+          localStorage.setItem('teacher_id', profile.id)
+          localStorage.setItem('login_code', profile.login_code || '')
+          navigate('/teacher')
+        } else if (profile.role === 'student') {
+          localStorage.setItem('user_role', 'student')
+          localStorage.setItem('student_id', profile.id)
+          localStorage.setItem('student_name', profile.name)
+          localStorage.setItem('group_id', profile.group_id || '')
+          localStorage.setItem('group_name', profile.groups?.name || '')
+          localStorage.setItem('student_invite_code', profile.invite_code || '')
+          navigate('/student')
+        } else {
+          setOauthExchange(false)
+        }
+        window.history.replaceState({}, '', '/')
+      } catch {
+        setOauthExchange(false)
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [oauthToken])
+
+  const handleOAuthLogin = async (provider: OAuthProvider) => {
+    setError('')
+    setOauthLoading(provider)
+    try {
+      const url = await startOAuth(provider, 'login')
+      window.location.href = url
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e))
+      setOauthLoading(null)
+    }
+  }
 
   const handleStudentLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,6 +89,7 @@ export function LoginScreen() {
       localStorage.setItem('group_name', group?.name || '')
       localStorage.setItem('student_name', studentProfile.name)
       localStorage.setItem('student_id', studentProfile.id)
+      localStorage.setItem('student_invite_code', studentProfile.invite_code || '')
       navigate('/student')
     } catch {
       setError('Произошла ошибка')
@@ -78,6 +130,16 @@ export function LoginScreen() {
     }
   }
 
+  if (oauthExchange) {
+    return (
+      <div className="login-container">
+        <div className="login-card">
+          <p className="login-subtitle" style={{ textAlign: 'center' }}>Вход...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="login-container">
       <div className="login-card">
@@ -95,16 +157,18 @@ export function LoginScreen() {
           <p className="login-subtitle">м. Купчино</p>
         </div>
 
+        {oauthError && <div className="error-message">{oauthError}</div>}
+
         <div className="login-tabs">
           <button
             className={`login-tab ${mode === 'student' ? 'active' : ''}`}
-            onClick={() => { setMode('student'); setError(''); setCode(''); }}
+            onClick={() => { setMode('student'); setError(''); setCode('') }}
           >
             Ученик
           </button>
           <button
             className={`login-tab ${mode === 'teacher' ? 'active' : ''}`}
-            onClick={() => { setMode('teacher'); setError(''); setCode(''); }}
+            onClick={() => { setMode('teacher'); setError(''); setCode('') }}
           >
             Преподаватель
           </button>
@@ -155,6 +219,27 @@ export function LoginScreen() {
             </button>
           </form>
         )}
+
+        <div className="oauth-divider">
+          <span>или быстрый вход</span>
+        </div>
+
+        <div className="oauth-buttons">
+          <button
+            onClick={() => handleOAuthLogin('vk')}
+            className="btn btn-outline btn-full"
+            disabled={oauthLoading !== null}
+          >
+            {oauthLoading === 'vk' ? 'Переход...' : 'Войти через VK ID'}
+          </button>
+          <button
+            onClick={() => handleOAuthLogin('yandex')}
+            className="btn btn-outline btn-full"
+            disabled={oauthLoading !== null}
+          >
+            {oauthLoading === 'yandex' ? 'Переход...' : 'Войти через Яндекс ID'}
+          </button>
+        </div>
       </div>
 
       <a href="/admin" className="admin-login-link">

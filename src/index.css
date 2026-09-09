@@ -4690,3 +4690,181 @@ textarea.input:focus {
   background: var(--green);
   color: #fff;
 }
+
+/* ============================================================
+   Profile settings (gear modal) + social OAuth rows
+   ============================================================ */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+}
+
+.settings-card {
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #181818, #131313);
+  border: 1px solid #272727;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-pop);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.settings-header h2 {
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.settings-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.settings-avatar {
+  width: 72px;
+  height: 72px;
+  cursor: pointer;
+}
+
+.settings-avatar .avatar-letter {
+  font-size: 1.6em;
+}
+
+.settings-avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-role {
+  font-size: 0.9375em;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-hint {
+  font-size: 0.75em;
+  color: var(--text-dim);
+}
+
+.settings-section {
+  margin-top: 20px;
+}
+
+.settings-label {
+  display: block;
+  font-size: 0.6875em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.settings-section .btn-full {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.settings-note {
+  font-size: 0.75em;
+  color: var(--text-dim);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.oauth-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.oauth-provider-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75em;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.oauth-provider-badge.vk {
+  background: #0077ff;
+}
+
+.oauth-provider-badge.yandex {
+  background: #fc3f1d;
+}
+
+.oauth-provider-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.oauth-provider-name {
+  font-size: 0.875em;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.oauth-status {
+  font-size: 0.75em;
+  color: var(--text-dim);
+}
+
+.oauth-status.linked {
+  color: var(--green);
+}
+
+/* Login screen: social buttons */
+.oauth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 14px;
+  color: var(--text-dim);
+  font-size: 0.75em;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

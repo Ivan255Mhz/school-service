@@ -6,6 +6,7 @@ import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote,
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
 import { NotificationBell } from './NotificationBell'
+import { ProfileSettings } from './ProfileSettings'
 
 export function StudentDashboard() {
   const [modules, setModules] = useState<Module[]>([])
@@ -33,7 +34,9 @@ export function StudentDashboard() {
     return d
   })
   const [myAvatar, setMyAvatar] = useState<string | null>(null)
+  const [myInviteCode, setMyInviteCode] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const navigate = useNavigate()
 
   const groupId = localStorage.getItem('group_id')
@@ -88,11 +91,14 @@ export function StudentDashboard() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('avatar_url')
+          .select('avatar_url, invite_code')
           .eq('id', studentId)
           .maybeSingle()
 
-        if (profileData) setMyAvatar(profileData.avatar_url)
+        if (profileData) {
+          setMyAvatar(profileData.avatar_url)
+          setMyInviteCode(profileData.invite_code)
+        }
       }
 
       const { data: libItems } = await supabase
@@ -753,11 +759,35 @@ export function StudentDashboard() {
         </div>
         <div className="header-actions">
           {studentId && <NotificationBell recipientId={studentId} />}
+          {studentId && (
+            <button className="notif-bell" onClick={() => setShowSettings(true)} title="Настройки профиля">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+              </svg>
+            </button>
+          )}
           <button onClick={handleLogout} className="btn btn-outline btn-logout">
             Выйти
           </button>
         </div>
       </header>
+
+      {showSettings && studentId && (
+        <ProfileSettings
+          role="student"
+          profileId={studentId}
+          loginCode={null}
+          inviteCode={myInviteCode || localStorage.getItem('student_invite_code')}
+          initialName={studentName || ''}
+          initialAvatar={myAvatar}
+          onClose={() => setShowSettings(false)}
+          onSaved={(newName, newAvatar) => {
+            setMyAvatar(newAvatar)
+            localStorage.setItem('student_name', newName)
+          }}
+        />
+      )}
 
       <div className="tabs">
         <button

@@ -6,6 +6,7 @@ import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Modu
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
 import { NotificationBell } from './NotificationBell'
+import { ProfileSettings } from './ProfileSettings'
 
 const getContentType = (ext: string): string => {
   switch ((ext || '').toLowerCase()) {
@@ -46,6 +47,7 @@ const uploadMaterialFile = async (file: File, lessonId: string, index: number): 
 
 export function TeacherDashboard() {
   const teacherId = localStorage.getItem('teacher_id') || ''
+  const teacherLoginCode = localStorage.getItem('login_code')
   const [groups, setGroups] = useState<Group[]>([])
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
   const [modules, setModules] = useState<Module[]>([])
@@ -125,6 +127,8 @@ export function TeacherDashboard() {
   const [savingChat, setSavingChat] = useState(false)
   const [sendingDirector, setSendingDirector] = useState(false)
   const [teacherAvatar, setTeacherAvatar] = useState<string | null>(null)
+  const [teacherName, setTeacherName] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState<string | null>(null)
   const [uploadingTplCover, setUploadingTplCover] = useState<string | null>(null)
@@ -195,10 +199,11 @@ export function TeacherDashboard() {
 
     const { data: ownProfile } = await supabase
       .from('profiles')
-      .select('avatar_url')
+      .select('name, avatar_url')
       .eq('id', profileId)
       .maybeSingle()
     setTeacherAvatar(ownProfile?.avatar_url ?? null)
+    setTeacherName(ownProfile?.name ?? '')
 
     try {
       const { data, error } = await supabase
@@ -1891,6 +1896,12 @@ export function TeacherDashboard() {
           </div>
           <div className="header-actions">
             <NotificationBell recipientId={teacherId} />
+            <button className="notif-bell" onClick={() => setShowSettings(true)} title="Настройки профиля">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+              </svg>
+            </button>
             <button onClick={handleLogout} className="btn btn-outline btn-logout">
               Выйти
             </button>
@@ -2462,6 +2473,19 @@ export function TeacherDashboard() {
             )}
           </div>
         )}
+
+        {showSettings && (
+          <ProfileSettings
+            role="teacher"
+            profileId={teacherId}
+            loginCode={teacherLoginCode}
+            inviteCode={null}
+            initialName={teacherName}
+            initialAvatar={teacherAvatar}
+            onClose={() => setShowSettings(false)}
+            onSaved={(newName, newAvatar) => { setTeacherName(newName); setTeacherAvatar(newAvatar) }}
+          />
+        )}
       </div>
     )
   }
@@ -2518,6 +2542,12 @@ export function TeacherDashboard() {
         </div>
         <div className="header-actions">
           <NotificationBell recipientId={teacherId} />
+          <button className="notif-bell" onClick={() => setShowSettings(true)} title="Настройки профиля">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+          </button>
           <button onClick={handleLogout} className="btn btn-outline btn-logout">
             Выйти
           </button>
@@ -2916,6 +2946,19 @@ export function TeacherDashboard() {
             </div>
           )}
         </div>
+      )}
+
+      {showSettings && (
+        <ProfileSettings
+          role="teacher"
+          profileId={teacherId}
+          loginCode={teacherLoginCode}
+          inviteCode={null}
+          initialName={teacherName}
+          initialAvatar={teacherAvatar}
+          onClose={() => setShowSettings(false)}
+          onSaved={(newName, newAvatar) => { setTeacherName(newName); setTeacherAvatar(newAvatar) }}
+        />
       )}
     </div>
   )

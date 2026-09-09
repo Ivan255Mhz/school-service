@@ -16,6 +16,8 @@ export type Profile = {
   price_per_lesson: number | null
   bonus_per_student: number | null
   avatar_url: string | null
+  vk_id: string | null
+  yandex_id: string | null
 }
 
 export type Group = {
