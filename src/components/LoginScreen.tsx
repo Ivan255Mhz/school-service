@@ -226,13 +226,6 @@ export function LoginScreen() {
 
         <div className="oauth-buttons">
           <button
-            onClick={() => handleOAuthLogin('vk')}
-            className="btn btn-outline btn-full"
-            disabled={oauthLoading !== null}
-          >
-            {oauthLoading === 'vk' ? 'Переход...' : 'Войти через VK'}
-          </button>
-          <button
             onClick={() => handleOAuthLogin('yandex')}
             className="btn btn-outline btn-full"
             disabled={oauthLoading !== null}

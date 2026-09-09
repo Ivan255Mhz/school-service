@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-export type OAuthProvider = 'vk' | 'yandex'
+export type OAuthProvider = 'yandex'
 
 export type OAuthProfile = {
   id: string

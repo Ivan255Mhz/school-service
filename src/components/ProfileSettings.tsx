@@ -19,7 +19,6 @@ type Props = {
 export function ProfileSettings({ role, profileId, loginCode, inviteCode, initialName, initialAvatar, onClose, onSaved }: Props) {
   const [name, setName] = useState(initialName)
   const [avatar, setAvatar] = useState<string | null>(initialAvatar)
-  const [vkLinked, setVkLinked] = useState(false)
   const [yandexLinked, setYandexLinked] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -29,11 +28,10 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
     ;(async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('vk_id, yandex_id')
+        .select('yandex_id')
         .eq('id', profileId)
         .maybeSingle()
       if (data) {
-        setVkLinked(!!data.vk_id)
         setYandexLinked(!!data.yandex_id)
       }
     })()
@@ -102,8 +100,7 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
     setUnlinking(provider)
     try {
       await unlinkSocial(provider, loginCode || inviteCode || '')
-      if (provider === 'vk') setVkLinked(false)
-      else setYandexLinked(false)
+      setYandexLinked(false)
       showToast('success', 'Аккаунт отвязан')
     } catch (err) {
       showToast('error', String(err instanceof Error ? err.message : err))
@@ -112,9 +109,9 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
     }
   }
 
-  const providerRow = (provider: OAuthProvider, title: string, linked: boolean) => (
+  const providerRow = (title: string, linked: boolean) => (
     <div className="oauth-row">
-      <span className={`oauth-provider-badge ${provider}`}>{provider === 'vk' ? 'VK' : 'Я'}</span>
+      <span className="oauth-provider-badge">Я</span>
       <div className="oauth-provider-info">
         <span className="oauth-provider-name">{title}</span>
         <span className={`oauth-status ${linked ? 'linked' : ''}`}>
@@ -122,9 +119,9 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
         </span>
       </div>      {linked ? (
         <button
-          onClick={() => handleUnlink(provider)}
+          onClick={() => handleUnlink('yandex')}
           className="btn btn-outline btn-sm"
-          disabled={unlinking === provider}
+          disabled={unlinking === 'yandex'}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M2 2l8 8M10 2l-8 8"/>
@@ -132,7 +129,7 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
           Отвязать
         </button>
       ) : (
-        <button onClick={() => handleLink(provider)} className="btn btn-outline btn-sm">
+        <button onClick={() => handleLink('yandex')} className="btn btn-outline btn-sm">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M5 6.5a2.5 2.5 0 003.77.27l1.5-1.5a2.5 2.5 0 00-3.54-3.54l-.86.86"/>
             <path d="M7 5.5a2.5 2.5 0 00-3.77-.27l-1.5 1.5a2.5 2.5 0 003.54 3.54l.86-.86"/>
@@ -194,8 +191,7 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
 
         <div className="settings-section">
           <span className="settings-label">Быстрый вход</span>
-          {providerRow('vk', 'VK', vkLinked)}
-          {providerRow('yandex', 'Яндекс ID', yandexLinked)}
+          {providerRow('Яндекс ID', yandexLinked)}
           <p className="settings-note">
             После привязки вы сможете входить одним нажатием. Отвязка не отключает вход по коду.
           </p>

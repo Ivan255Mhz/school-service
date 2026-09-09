@@ -1,14 +1,14 @@
 // Edge Function: oauth
-// Быстрый вход и привязка VK ID / Яндекс ID
+// Быстрый вход и привязка Яндекс ID
 //
 // POST /functions/v1/oauth   — JSON-действия:
-//   start    { provider, mode: 'link'|'login', login_code? } -> { url }
-//   unlink   { provider, login_code }                        -> отвязать
-//   exchange { token }                                       -> { profile }
+//   start    { mode: 'link'|'login', login_code?, invite_code? } -> { url }
+//   unlink   { login_code?, invite_code? }                       -> отвязать
+//   exchange { token }                                           -> { profile }
 // GET  /functions/v1/oauth  — OAuth callback от провайдера (?code=&state=)
 //
 // Секреты:
-//   VK_APP_ID, VK_APP_SECRET, YANDEX_APP_ID, YANDEX_APP_SECRET,
+//   YANDEX_APP_ID, YANDEX_APP_SECRET,
 //   OAUTH_REDIRECT_BASE (по умолчанию https://school-service-nine.vercel.app)
 //
 // Deploy: supabase functions deploy oauth --no-verify-jwt
@@ -67,10 +67,6 @@ async function verifyProfileRole(admin: any, loginCode: unknown, inviteCode?: un
   return null
 }
 
-function getProviderColumn(provider: string): string {
-  return provider === 'vk' ? 'vk_id' : 'yandex_id'
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
@@ -88,17 +84,16 @@ Deno.serve(async (req) => {
   // === POST: JSON-действия ===
   try {
     const body = await req.json()
-    const { action, provider, mode, login_code, invite_code, token } = body ?? {}
+    const { action, mode, login_code, invite_code, token } = body ?? {}
 
     // Отвязка соцаккаунта
     if (action === 'unlink') {
-      if (provider !== 'vk' && provider !== 'yandex') return json({ ok: false, error: 'invalid provider' })
       const profile = await verifyProfileRole(admin, login_code, invite_code)
       if (!profile) return json({ ok: false, error: 'forbidden' }, 403)
 
       const { error } = await admin
         .from('profiles')
-        .update({ [getProviderColumn(provider)]: null })
+        .update({ yandex_id: null })
         .eq('id', profile.id)
 
       if (error) return json({ ok: false, error: 'db_error' })
@@ -133,55 +128,37 @@ Deno.serve(async (req) => {
 
     // URL авторизации провайдера
     if (action === 'start') {
-      if (provider !== 'vk' && provider !== 'yandex') return json({ ok: false, error: 'invalid provider' })
       if (mode !== 'link' && mode !== 'login') return json({ ok: false, error: 'invalid mode' })
 
       let profileId: string | null = null
       if (mode === 'link') {
-        const profile = await verifyProfileRole(admin, login_code)
+        const profile = await verifyProfileRole(admin, login_code, invite_code)
         if (!profile) return json({ ok: false, error: 'forbidden' }, 403)
         profileId = profile.id
       }
 
+      const appId = Deno.env.get('YANDEX_APP_ID')
+      if (!appId) return json({ ok: false, error: 'YANDEX_APP_ID не задан' })
+
       const state = randomHex(16)
-      const stateData: Record<string, unknown> = {
-        provider,
-        mode,
-        login_code: login_code || null,
-        profile_id: profileId,
-      }
-
-      let url: string
-      if (provider === 'vk') {
-        const appId = Deno.env.get('VK_APP_ID')
-        if (!appId) return json({ ok: false, error: 'VK_APP_ID не задан' })
-
-        url = 'https://oauth.vk.com/authorize?' + new URLSearchParams({
-          response_type: 'code',
-          client_id: appId,
-          redirect_uri: functionUrl(),
-          display: 'page',
-          v: '5.199',
-          state,
-        }).toString()
-      } else {
-        const appId = Deno.env.get('YANDEX_APP_ID')
-        if (!appId) return json({ ok: false, error: 'YANDEX_APP_ID не задан' })
-
-        url = 'https://oauth.yandex.ru/authorize?' + new URLSearchParams({
-          response_type: 'code',
-          client_id: appId,
-          redirect_uri: functionUrl(),
-          state,
-        }).toString()
-      }
-
       const { error: stErr } = await admin.from('oauth_states').insert({
         state,
-        data: stateData,
+        data: {
+          mode,
+          login_code: login_code || null,
+          invite_code: invite_code || null,
+          profile_id: profileId,
+        },
         expires_at: new Date(Date.now() + STATE_TTL_MS).toISOString(),
       })
       if (stErr) return json({ ok: false, error: 'db_error' })
+
+      const url = 'https://oauth.yandex.ru/authorize?' + new URLSearchParams({
+        response_type: 'code',
+        client_id: appId,
+        redirect_uri: functionUrl(),
+        state,
+      }).toString()
 
       return json({ ok: true, url })
     }
@@ -218,29 +195,24 @@ async function handleCallback(req: Request, admin: any) {
   if (new Date(stateRow.expires_at).getTime() < Date.now()) return fail('State истёк')
 
   const st = typeof stateRow.data === 'string' ? JSON.parse(stateRow.data) : stateRow.data
-  const provider = st.provider as string
   const mode = st.mode as string
-  const column = getProviderColumn(provider)
 
   try {
-    const socialId = provider === 'vk'
-      ? await resolveVkId(code)
-      : await resolveYandexId(code)
-
+    const socialId = await resolveYandexId(code)
     if (!socialId) return fail('Не удалось получить ID от провайдера')
 
     if (mode === 'link') {
       const { data: clash } = await admin
         .from('profiles')
         .select('id')
-        .eq(column, String(socialId))
+        .eq('yandex_id', socialId)
         .neq('id', st.profile_id)
         .maybeSingle()
       if (clash) return fail('Этот аккаунт уже привязан к другому профилю')
 
       const { error } = await admin
         .from('profiles')
-        .update({ [column]: String(socialId) })
+        .update({ yandex_id: socialId })
         .eq('id', st.profile_id)
       if (error) return fail('Ошибка сохранения')
 
@@ -250,15 +222,15 @@ async function handleCallback(req: Request, admin: any) {
         .eq('id', st.profile_id)
         .maybeSingle()
       const path = linkProfile?.role === 'teacher' ? '/teacher' : '/student'
-      return new Response(null, { status: 302, headers: { Location: `${base}${path}?linked=${provider}` } })
+      return new Response(null, { status: 302, headers: { Location: `${base}${path}?linked=yandex` } })
     }
 
     const { data: profile } = await admin
       .from('profiles')
       .select('id')
-      .eq(column, String(socialId))
+      .eq('yandex_id', socialId)
       .maybeSingle()
-    if (!profile) return fail('Профиль с этим соцаккаунтом не найден. Сначала войдите по коду и привяжите аккаунт в настройках.')
+    if (!profile) return fail('Профиль с этим Яндекс ID не найден. Сначала войдите по коду и привяжите аккаунт в настройках.')
 
     const token = randomHex(24)
     const { error: tokErr } = await admin.from('oauth_tokens').insert({
@@ -272,35 +244,6 @@ async function handleCallback(req: Request, admin: any) {
   } catch (e) {
     return fail(`Ошибка обмена кода: ${String(e)}`)
   }
-}
-
-async function resolveVkId(code: string): Promise<string> {
-  const appId = Deno.env.get('VK_APP_ID')
-  const appSecret = Deno.env.get('VK_APP_SECRET')
-  if (!appId || !appSecret) throw new Error('VK_APP_ID/SECRET не заданы')
-
-  const res = await fetch('https://oauth.vk.com/access_token?' + new URLSearchParams({
-    client_id: appId,
-    client_secret: appSecret,
-    redirect_uri: functionUrl(),
-    code,
-  }).toString())
-  const data = await res.json()
-  if (!res.ok || data.error) {
-    throw new Error(`VK token: ${data.error_description || data.error || res.status}`)
-  }
-
-  if (data.user_id) return String(data.user_id)
-
-  const vkRes = await fetch('https://api.vk.com/method/users.get?v=5.199', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ access_token: data.access_token }).toString(),
-  })
-  const vkData = await vkRes.json()
-  const vkId = vkData?.response?.[0]?.id
-  if (!vkId) throw new Error('VK: не удалось определить user_id')
-  return String(vkId)
 }
 
 async function resolveYandexId(code: string): Promise<string> {
