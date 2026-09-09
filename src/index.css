@@ -5153,3 +5153,28 @@ textarea.input:focus {
 @keyframes ptr-rotate {
   to { transform: rotate(360deg); }
 }
+
+/* ============================================================
+   Template cards: keep content inside bounds
+   ============================================================ */
+.groups-grid > .group-card,
+.groups-grid > .module-card,
+.modules-grid > .module-card {
+  min-width: 0;
+}
+
+.template-lessons-list {
+  min-width: 0;
+}
+
+.template-lesson-topic {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-picker-item .template-picker-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
