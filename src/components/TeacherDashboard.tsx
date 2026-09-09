@@ -127,6 +127,7 @@ export function TeacherDashboard() {
   const [showBindChat, setShowBindChat] = useState(false)
   const [telegramChats, setTelegramChats] = useState<{ id: number; title: string }[]>([])
   const [loadingChats, setLoadingChats] = useState(false)
+  const [bindTotal, setBindTotal] = useState(0)
   const [savingChat, setSavingChat] = useState(false)
   const [sendingDirector, setSendingDirector] = useState(false)
   const [teacherAvatar, setTeacherAvatar] = useState<string | null>(null)
@@ -715,6 +716,7 @@ export function TeacherDashboard() {
       }
 
       setTelegramChats(data.chats || [])
+      setBindTotal(typeof data.total === 'number' ? data.total : 0)
     } catch {
       showToast('error', 'Не удалось получить список чатов')
     } finally {
@@ -2103,9 +2105,20 @@ export function TeacherDashboard() {
               )}
             </button>
             {loadingChats ? null : telegramChats.length === 0 ? (
-              <p className="telegram-bind-empty">
-                Чаты не найдены. Добавьте бота в чат группы или нажмите «Запустить» у бота в Telegram, затем «Обновить список».
-              </p>
+              <div className="telegram-bind-empty">
+                {bindTotal === 0 ? (
+                  <>
+                    <p>Бот не получает свежих сообщений. Что сделать:</p>
+                    <p>1. Напишите <b>прямо сейчас</b> любое сообщение в родительском чате — подойдёт команда <code>/start@имя_бота</code> (команды доходят всегда).</p>
+                    <p>2. Если снова пусто: в Telegram у <b>@BotFather</b> → /mybots → ваш бот → Bot Settings → Group Privacy → <b>Turn off</b>, затем напишите сообщение в чате и нажмите «Обновить список».</p>
+                  </>
+                ) : (
+                  <>
+                    <p>Бот получает сообщения, но групповых среди них нет.</p>
+                    <p>Напишите сообщение <b>внутри родительского чата</b> (не боту в личку) — подойдёт <code>/start@имя_бота</code> — и нажмите «Обновить список».</p>
+                  </>
+                )}
+              </div>
             ) : (
               <div className="telegram-bind-list">
                 {telegramChats.map(c => (

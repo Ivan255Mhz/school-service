@@ -49,15 +49,16 @@ function splitText(text: string): string[] {
   return chunks
 }
 
-async function listGroupChats(botToken: string): Promise<{ chats: Chat[]; error?: string }> {
+async function listGroupChats(botToken: string): Promise<{ chats: Chat[]; total: number; error?: string }> {
   const res = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?limit=100&allowed_updates=["message","my_chat_member"]`)
   const data = await res.json()
   if (!data.ok) {
-    return { chats: [], error: `Telegram API: ${data.description ?? 'unknown error'}` }
+    return { chats: [], total: 0, error: `Telegram API: ${data.description ?? 'unknown error'}` }
   }
 
+  const updates = data.result ?? []
   const chats = new Map<number, string>()
-  for (const upd of data.result ?? []) {
+  for (const upd of updates) {
     const chat = upd.message?.chat ?? upd.my_chat_member?.chat
     if (!chat) continue
     if (chat.type === 'group' || chat.type === 'supergroup') {
@@ -68,7 +69,7 @@ async function listGroupChats(botToken: string): Promise<{ chats: Chat[]; error?
     }
   }
 
-  return { chats: Array.from(chats.entries()).map(([id, title]) => ({ id, title })) }
+  return { chats: Array.from(chats.entries()).map(([id, title]) => ({ id, title })), total: updates.length }
 }
 
 async function sendToChat(botToken: string, chatId: number, text: string): Promise<string | null> {
@@ -169,9 +170,9 @@ Deno.serve(async (req) => {
       }
 
       if (action === 'bind_director') {
-        const { chats, error: tgErr } = await listGroupChats(botToken)
+        const { chats, total, error: tgErr } = await listGroupChats(botToken)
         if (tgErr) return json({ ok: false, error: tgErr })
-        return json({ ok: true, chats, director_chat_id: await getDirectorChatId(admin) })
+        return json({ ok: true, chats, total, director_chat_id: await getDirectorChatId(admin) })
       }
 
       // set_director_chat
@@ -204,10 +205,10 @@ Deno.serve(async (req) => {
       const group = await verifyGroup()
       if (!group) return json({ ok: false, error: 'forbidden' }, 403)
 
-      const { chats, error: tgErr } = await listGroupChats(botToken)
+      const { chats, total, error: tgErr } = await listGroupChats(botToken)
       if (tgErr) return json({ ok: false, error: tgErr })
 
-      return json({ ok: true, chats })
+      return json({ ok: true, chats, total })
     }
 
     // Сохранение/сброс привязки чата к группе

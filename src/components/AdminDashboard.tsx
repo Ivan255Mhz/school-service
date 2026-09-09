@@ -59,6 +59,7 @@ export function AdminDashboard() {
   const [directorChats, setDirectorChats] = useState<{ id: number; title: string }[]>([])
   const [loadingDirectorChats, setLoadingDirectorChats] = useState(false)
   const [savingDirectorChat, setSavingDirectorChat] = useState(false)
+  const [directorTotal, setDirectorTotal] = useState(0)
   const [allStudents, setAllStudents] = useState<Pick<Profile, 'id' | 'group_id' | 'name' | 'avatar_url'>[]>([])
   const [deletingAvatar, setDeletingAvatar] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -140,6 +141,7 @@ export function AdminDashboard() {
       }
 
       setDirectorChats(data.chats || [])
+      setDirectorTotal(typeof data.total === 'number' ? data.total : 0)
       if (typeof data.director_chat_id === 'number') {
         setDirectorChatId(data.director_chat_id)
       }
@@ -746,9 +748,20 @@ export function AdminDashboard() {
                 )}
               </button>
               {loadingDirectorChats ? null : directorChats.length === 0 ? (
-                <p className="telegram-bind-empty">
-                  Чаты не найдены. Директор должен нажать «Запустить» у бота в Telegram, а вы — «Обновить список».
-                </p>
+                <div className="telegram-bind-empty">
+                  {directorTotal === 0 ? (
+                    <>
+                      <p>Бот не получает свежих сообщений. Директор (или администратор) должен:</p>
+                      <p>1. Написать <b>прямо сейчас</b> любое сообщение в чате — подойдёт команда <code>/start@имя_бота</code> (команды доходят всегда).</p>
+                      <p>2. Если снова пусто: в Telegram у <b>@BotFather</b> → /mybots → ваш бот → Bot Settings → Group Privacy → <b>Turn off</b>, затем написать сообщение и «Обновить список».</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>Бот получает сообщения, но групповых среди них нет.</p>
+                      <p>Напишите сообщение <b>внутри нужного чата</b> (не боту в личку) — подойдёт <code>/start@имя_бота</code> — и нажмите «Обновить список».</p>
+                    </>
+                  )}
+                </div>
               ) : (
                 <div className="telegram-bind-list">
                   {directorChats.map(c => (
