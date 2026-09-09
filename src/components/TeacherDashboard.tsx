@@ -1874,7 +1874,7 @@ export function TeacherDashboard() {
               <div className="tg-actions">
                 <button
                   onClick={() => { setShowBindChat(true); setTelegramChats([]); fetchTelegramChats() }}
-                  className="btn btn-outline btn-xs"
+                  className="btn btn-outline btn-sm"
                   disabled={savingChat}
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -1882,7 +1882,7 @@ export function TeacherDashboard() {
                   </svg>
                   Изменить
                 </button>
-                <button onClick={() => setGroupTelegramChat(null)} className="btn btn-outline btn-xs" disabled={savingChat}>
+                <button onClick={() => setGroupTelegramChat(null)} className="btn btn-outline btn-sm" disabled={savingChat}>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M2 2l8 8M10 2l-8 8"/>
                   </svg>
@@ -1895,7 +1895,7 @@ export function TeacherDashboard() {
               <span className="tg-status">Telegram-чат не подключён</span>
               <button
                 onClick={() => { setShowBindChat(true); setTelegramChats([]); fetchTelegramChats() }}
-                className="btn btn-outline btn-xs"
+                className="btn btn-outline btn-sm"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M5 6.5a2.5 2.5 0 003.77.27l1.5-1.5a2.5 2.5 0 00-3.54-3.54l-.86.86"/>
@@ -1911,7 +1911,11 @@ export function TeacherDashboard() {
           <div className="telegram-bind">
             <div className="telegram-bind-header">
               <span>Привязка Telegram-чата</span>
-              <button onClick={() => setShowBindChat(false)} className="btn btn-outline btn-xs">✕</button>
+                  <button onClick={() => setShowBindChat(false)} className="btn btn-outline btn-xs" title="Закрыть">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M2 2l8 8M10 2l-8 8"/>
+                    </svg>
+                  </button>
             </div>
             <p className="telegram-bind-hint">
               Для группы: добавьте бота в родительский чат и напишите там любое сообщение.
@@ -2052,7 +2056,11 @@ export function TeacherDashboard() {
               <div className="template-picker">
                 <div className="template-picker-header">
                   <span>Выберите шаблон для группы «{selectedGroup?.name}»</span>
-                  <button onClick={() => setShowTemplatePicker(false)} className="btn btn-outline btn-xs">✕</button>
+                  <button onClick={() => setShowTemplatePicker(false)} className="btn btn-outline btn-xs" title="Закрыть">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M2 2l8 8M10 2l-8 8"/>
+                    </svg>
+                  </button>
                 </div>
                 {loadingTemplates && templates.length === 0 ? (
                   <p className="template-picker-empty">Загрузка...</p>
@@ -2568,11 +2576,15 @@ export function TeacherDashboard() {
                       className="input"
                       autoFocus
                     />
-                    <button onClick={() => handleRenameGroup(group.id)} className="btn btn-primary btn-xs" disabled={savingGroupName}>
-                      {savingGroupName ? '...' : 'OK'}
+                    <button onClick={() => handleRenameGroup(group.id)} className="btn btn-primary btn-xs" disabled={savingGroupName} title="Сохранить">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M2 7l3.5 3.5L12 3"/>
+                      </svg>
                     </button>
-                    <button onClick={() => setEditingGroup(null)} className="btn btn-outline btn-xs">
-                      ✕
+                    <button onClick={() => setEditingGroup(null)} className="btn btn-outline btn-xs" title="Отмена">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M2 2l8 8M10 2l-8 8"/>
+                      </svg>
                     </button>
                   </div>
                 ) : (

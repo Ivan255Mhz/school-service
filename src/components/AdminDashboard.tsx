@@ -615,7 +615,7 @@ export function AdminDashboard() {
                 <div className="tg-actions">
                   <button
                     onClick={() => { setShowBindDirector(true); setDirectorChats([]); fetchDirectorChats() }}
-                    className="btn btn-outline btn-xs"
+                    className="btn btn-outline btn-sm"
                     disabled={savingDirectorChat}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -623,7 +623,7 @@ export function AdminDashboard() {
                     </svg>
                     Изменить
                   </button>
-                  <button onClick={() => setDirectorChat(null)} className="btn btn-outline btn-xs" disabled={savingDirectorChat}>
+                  <button onClick={() => setDirectorChat(null)} className="btn btn-outline btn-sm" disabled={savingDirectorChat}>
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <path d="M2 2l8 8M10 2l-8 8"/>
                     </svg>
@@ -636,7 +636,7 @@ export function AdminDashboard() {
                 <span className="tg-status">Telegram-чат директора не подключён</span>
                 <button
                   onClick={() => { setShowBindDirector(true); setDirectorChats([]); fetchDirectorChats() }}
-                  className="btn btn-outline btn-xs"
+                  className="btn btn-outline btn-sm"
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M5 6.5a2.5 2.5 0 003.77.27l1.5-1.5a2.5 2.5 0 00-3.54-3.54l-.86.86"/>
@@ -652,7 +652,11 @@ export function AdminDashboard() {
             <div className="telegram-bind">
               <div className="telegram-bind-header">
                 <span>Привязка Telegram-чата директора</span>
-                <button onClick={() => setShowBindDirector(false)} className="btn btn-outline btn-xs">✕</button>
+                <button onClick={() => setShowBindDirector(false)} className="btn btn-outline btn-xs" title="Закрыть">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M2 2l8 8M10 2l-8 8"/>
+                  </svg>
+                </button>
               </div>
               <p className="telegram-bind-hint">
                 Директор должен открыть бота в Telegram и нажать «Запустить» (или написать /start) —
@@ -793,7 +797,7 @@ export function AdminDashboard() {
                                   setGroupPrice(String(group.price_per_lesson || 0))
                                   setGroupBonus(String(group.bonus_per_student || 0))
                                 }}
-                                className="btn btn-outline btn-xs"
+                                className="btn btn-outline btn-sm"
                               >
                                 Настроить
                               </button>
