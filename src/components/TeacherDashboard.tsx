@@ -1854,8 +1854,10 @@ export function TeacherDashboard() {
                                 onDoubleClick={() => loadStudentProfile(s)}
                                 title={`${s.name} — клик: сменить посещаемость, двойной клик: профиль`}
                               >
-                                <span className="attendance-avatar">
-                                  {s.avatar_url ? <img src={s.avatar_url} className="avatar-img" alt="" /> : s.name.charAt(0).toUpperCase()}
+                                <span className="attendance-track">
+                                  <span className="attendance-avatar">
+                                    {s.avatar_url ? <img src={s.avatar_url} className="avatar-img" alt="" /> : s.name.charAt(0).toUpperCase()}
+                                  </span>
                                 </span>
                                 <span className="attendance-name">{s.name.split(' ')[0]}</span>
                               </button>
