@@ -1877,9 +1877,15 @@ export function TeacherDashboard() {
                   className="btn btn-outline btn-xs"
                   disabled={savingChat}
                 >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                  </svg>
                   Изменить
                 </button>
                 <button onClick={() => setGroupTelegramChat(null)} className="btn btn-outline btn-xs" disabled={savingChat}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M15 7h3a5 5 0 010 10h-3m-6 0H6A5 5 0 016 7h3m2 5h2"/>
+                  </svg>
                   Отвязать
                 </button>
               </div>
@@ -1891,6 +1897,10 @@ export function TeacherDashboard() {
                 onClick={() => { setShowBindChat(true); setTelegramChats([]); fetchTelegramChats() }}
                 className="btn btn-outline btn-xs"
               >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                </svg>
                 Привязать чат
               </button>
             </>
@@ -1909,7 +1919,15 @@ export function TeacherDashboard() {
               Затем нажмите «Обновить список» и выберите чат.
             </p>
             <button onClick={fetchTelegramChats} className="btn btn-outline btn-sm" disabled={loadingChats}>
-              {loadingChats ? 'Загрузка...' : 'Обновить список'}
+              {loadingChats ? 'Загрузка...' : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                  </svg>
+                  Обновить список
+                </>
+              )}
             </button>
             {loadingChats ? null : telegramChats.length === 0 ? (
               <p className="telegram-bind-empty">
