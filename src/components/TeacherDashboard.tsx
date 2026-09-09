@@ -1877,14 +1877,14 @@ export function TeacherDashboard() {
                   className="btn btn-outline btn-xs"
                   disabled={savingChat}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M8.5 1.5l2 2M1 11l.5-2.5L9 1l2 2L3.5 10.5 1 11z"/>
                   </svg>
                   Изменить
                 </button>
                 <button onClick={() => setGroupTelegramChat(null)} className="btn btn-outline btn-xs" disabled={savingChat}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M15 7h3a5 5 0 010 10h-3m-6 0H6A5 5 0 016 7h3m2 5h2"/>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M2 2l8 8M10 2l-8 8"/>
                   </svg>
                   Отвязать
                 </button>
@@ -1897,9 +1897,9 @@ export function TeacherDashboard() {
                 onClick={() => { setShowBindChat(true); setTelegramChats([]); fetchTelegramChats() }}
                 className="btn btn-outline btn-xs"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
-                  <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M5 6.5a2.5 2.5 0 003.77.27l1.5-1.5a2.5 2.5 0 00-3.54-3.54l-.86.86"/>
+                  <path d="M7 5.5a2.5 2.5 0 00-3.77-.27l-1.5 1.5a2.5 2.5 0 003.54 3.54l.86-.86"/>
                 </svg>
                 Привязать чат
               </button>
@@ -1921,9 +1921,9 @@ export function TeacherDashboard() {
             <button onClick={fetchTelegramChats} className="btn btn-outline btn-sm" disabled={loadingChats}>
               {loadingChats ? 'Загрузка...' : (
                 <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="23 4 23 10 17 10"/>
-                    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <polyline points="11.5 2 11.5 5 8.5 5"/>
+                    <path d="M10.25 7.5a4.5 4.5 0 11-1.06-4.68L11.5 5"/>
                   </svg>
                   Обновить список
                 </>
