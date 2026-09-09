@@ -4158,10 +4158,6 @@ h1, h2, h3 {
   background: rgba(59, 130, 246, 0.08);
 }
 
-.btn-danger {
-  box-shadow: 0 2px 12px rgba(244, 63, 94, 0.25);
-}
-
 /* --- Tabs: segmented pills --- */
 .tabs {
   display: flex;
