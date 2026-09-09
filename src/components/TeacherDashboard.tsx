@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { materialHref } from '../lib/materials'
-import { uploadAvatar, MAX_AVATAR_SIZE } from '../lib/avatar'
+import { uploadAvatar, uploadModuleCover, MAX_AVATAR_SIZE } from '../lib/avatar'
 import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem, ModuleTemplate, ModuleTemplateLesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -126,6 +126,7 @@ export function TeacherDashboard() {
   const [sendingDirector, setSendingDirector] = useState(false)
   const [teacherAvatar, setTeacherAvatar] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -261,6 +262,33 @@ export function TeacherDashboard() {
       showToast('error', 'Не удалось загрузить фото')
     } finally {
       setUploadingAvatar(false)
+    }
+  }
+
+  const handleModuleCoverChange = async (moduleId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Можно загружать только изображения')
+      return
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      showToast('error', 'Файл слишком большой (максимум 5 МБ)')
+      return
+    }
+
+    setUploadingCover(moduleId)
+    try {
+      const url = await uploadModuleCover(moduleId, file)
+      setModules(prev => prev.map(m => m.id === moduleId ? { ...m, cover_url: url } : m))
+      setSelectedModule(prev => prev && prev.id === moduleId ? { ...prev, cover_url: url } : prev)
+      showToast('success', 'Фото модуля обновлено')
+    } catch {
+      showToast('error', 'Не удалось загрузить фото модуля')
+    } finally {
+      setUploadingCover(null)
     }
   }
 
@@ -1518,9 +1546,37 @@ export function TeacherDashboard() {
             <button onClick={() => { setSelectedModule(null); setLessons([]); setEditingLesson(null); }} className="btn btn-back">
               &larr; Назад к модулям
             </button>
-            <div className="header-title">
-              <h1>{selectedModule.name}</h1>
-              <p className="invite-code-inline">Группа: {selectedGroup.name}</p>
+            <div className="header-title header-title-with-avatar">
+              <label className="module-cover module-cover-lg" title="Загрузить фото модуля">
+                {selectedModule.cover_url ? (
+                  <img src={selectedModule.cover_url} className="avatar-img" alt="" />
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <path d="M21 15l-5-5L5 21"/>
+                  </svg>
+                )}
+                <span className="avatar-edit-overlay">
+                  {uploadingCover === selectedModule.id ? '...' : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  )}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="avatar-input"
+                  onChange={(e) => handleModuleCoverChange(selectedModule.id, e)}
+                  disabled={uploadingCover === selectedModule.id}
+                />
+              </label>
+              <div>
+                <h1>{selectedModule.name}</h1>
+                <p className="invite-code-inline">Группа: {selectedGroup.name}</p>
+              </div>
             </div>
           </div>
           <button onClick={handleLogout} className="btn btn-outline btn-logout">
@@ -2030,7 +2086,35 @@ export function TeacherDashboard() {
                 {modules.map(module => (
                   <div key={module.id} className="module-card">
                     <div className="module-card-header">
-                      <h3>{module.name}</h3>
+                      <div className="module-card-title">
+                        <label className="module-cover" title="Загрузить фото модуля">
+                          {module.cover_url ? (
+                            <img src={module.cover_url} className="avatar-img" alt="" />
+                          ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                              <rect x="3" y="3" width="18" height="18" rx="2"/>
+                              <circle cx="8.5" cy="8.5" r="1.5"/>
+                              <path d="M21 15l-5-5L5 21"/>
+                            </svg>
+                          )}
+                          <span className="avatar-edit-overlay">
+                            {uploadingCover === module.id ? '...' : (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                              </svg>
+                            )}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="avatar-input"
+                            onChange={(e) => handleModuleCoverChange(module.id, e)}
+                            disabled={uploadingCover === module.id}
+                          />
+                        </label>
+                        <h3>{module.name}</h3>
+                      </div>
                       <button
                         onClick={() => handleDeleteModule(module.id)}
                         className="btn btn-danger btn-xs"

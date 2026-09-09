@@ -4607,3 +4607,56 @@ textarea.input:focus {
     padding: 12px;
   }
 }
+
+/* ============================================================
+   Module covers (square photo frames)
+   ============================================================ */
+.module-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.module-card-title h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-cover {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.module-cover .avatar-img {
+  border-radius: 10px;
+}
+
+.module-cover .avatar-edit-overlay {
+  border-radius: 10px;
+}
+
+.module-cover-static {
+  cursor: default;
+}
+
+.module-cover-static .avatar-edit-overlay {
+  display: none;
+}
+
+.module-cover-lg {
+  width: 64px;
+  height: 64px;
+}

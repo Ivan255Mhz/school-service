@@ -45,6 +45,7 @@ export type Module = {
   group_id: string
   name: string
   sort_order: number
+  cover_url: string | null
 }
 
 export type Attendance = {
