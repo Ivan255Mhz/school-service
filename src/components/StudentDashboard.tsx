@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { materialHref } from '../lib/materials'
 import { uploadAvatar, MAX_AVATAR_SIZE } from '../lib/avatar'
+import { pushView, closeView } from '../lib/viewHistory'
+import { usePullToRefresh } from '../lib/pullToRefresh'
 import type { Lesson, Attendance, Homework, LessonMaterial, Module, StudentNote, LibraryItem } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -38,6 +40,15 @@ export function StudentDashboard() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const onPop = () => {
+      if (selectedLesson) setSelectedLesson(null)
+      else if (selectedModule) setSelectedModule(null)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [selectedLesson, selectedModule])
 
   const groupId = localStorage.getItem('group_id')
   const groupName = localStorage.getItem('group_name')
@@ -145,6 +156,9 @@ export function StudentDashboard() {
     }
   }, [groupId, studentId, navigate])
 
+  const ptr = usePullToRefresh(async () => {
+    await loadData()
+  })
   useEffect(() => {
     const role = localStorage.getItem('user_role')
     if (role !== 'student') {
@@ -419,6 +433,7 @@ export function StudentDashboard() {
       return
     }
     const mod = modules.find(m => m.id === lesson.module_id) || null
+    pushView()
     setSelectedModule(mod)
     setSelectedLesson(lesson)
   }
@@ -446,7 +461,7 @@ export function StudentDashboard() {
       <div className="lesson-view">
         <header className="dashboard-header">
           <div className="header-left">
-            <button onClick={() => setSelectedLesson(null)} className="btn btn-back">
+            <button onClick={() => closeView(() => setSelectedLesson(null))} className="btn btn-back">
               &larr; Назад к урокам
             </button>
             <div className="header-title">
@@ -626,10 +641,13 @@ export function StudentDashboard() {
     const currentModuleLessons = getCurrentModuleLessons()
 
     return (
-      <div className="dashboard view-enter">
+      <div className="dashboard view-enter" {...ptr.containerProps}>
+      <div className="ptr-indicator" style={{ height: ptr.indicatorHeight }}>
+        <span className={'ptr-spinner' + (ptr.ready || ptr.refreshing ? ' active' : '')} />
+      </div>
         <header className="dashboard-header">
           <div className="header-left">
-            <button onClick={() => { setSelectedModule(null); }} className="btn btn-back">
+            <button onClick={() => closeView(() => setSelectedModule(null))} className="btn btn-back">
               &larr; Назад к модулям
             </button>
             <div className="header-title">
@@ -685,7 +703,7 @@ export function StudentDashboard() {
                   </div>
 
                   <button
-                    onClick={() => setSelectedLesson(lesson)}
+                    onClick={() => { pushView(); setSelectedLesson(lesson) }}
                     className="btn btn-primary btn-sm"
                   >
                     Открыть урок
@@ -727,7 +745,10 @@ export function StudentDashboard() {
   const stats = getGlobalStats()
 
   return (
-    <div className="dashboard view-enter">
+    <div className="dashboard view-enter" {...ptr.containerProps}>
+      <div className="ptr-indicator" style={{ height: ptr.indicatorHeight }}>
+        <span className={'ptr-spinner' + (ptr.ready || ptr.refreshing ? ' active' : '')} />
+      </div>
       <header className="dashboard-header">
         <div className="header-title header-title-with-avatar">
           <label className="avatar-editable" title="Изменить фото">
@@ -878,6 +899,7 @@ export function StudentDashboard() {
                     </div>
                     <button
                       onClick={() => {
+                        pushView()
                         setSelectedModule(module)
                       }}
                       className="btn btn-primary btn-sm"

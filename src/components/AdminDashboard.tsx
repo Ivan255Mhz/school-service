@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
 import { NotificationBell } from './NotificationBell'
 import { ProfileSettings } from './ProfileSettings'
+import { pushView, closeView } from '../lib/viewHistory'
+import { usePullToRefresh } from '../lib/pullToRefresh'
 
 type TeacherWithStats = Profile & {
   groups: Group[]
@@ -61,6 +63,14 @@ export function AdminDashboard() {
   const [showSettings, setShowSettings] = useState(false)
   const [adminProfile, setAdminProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const onPop = () => {
+      if (selectedTeacher) setSelectedTeacher(null)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [selectedTeacher])
 
   const loadDirectorChat = async () => {
     const loginCode = localStorage.getItem('login_code')
@@ -541,6 +551,29 @@ export function AdminDashboard() {
     return `${val.toLocaleString('ru-RU')} ₽`
   }
 
+  const getAdminFab = (): { title: string; onClick: () => void } | null => {
+    if (activeTab === 'teachers') return { title: 'Создать преподавателя', onClick: () => setShowCreateTeacher(true) }
+    if (activeTab === 'library') return { title: 'Добавить материал', onClick: () => setShowAddLibraryItem(true) }
+    return null
+  }
+
+  const renderFab = () => {
+    const fab = getAdminFab()
+    if (!fab) return null
+    return (
+      <button className="fab" onClick={fab.onClick} title={fab.title}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    )
+  }
+
+  const ptr = usePullToRefresh(async () => {
+    await Promise.all([loadTeachers(), loadAllLessons(), loadLibrary()])
+    loadDirectorChat()
+  })
   if (loading) {
     return (
       <div className="dashboard">
@@ -565,7 +598,10 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="dashboard view-enter">
+    <div className="dashboard view-enter" {...ptr.containerProps}>
+      <div className="ptr-indicator" style={{ height: ptr.indicatorHeight }}>
+        <span className={'ptr-spinner' + (ptr.ready || ptr.refreshing ? ' active' : '')} />
+      </div>
       <header className="dashboard-header">
         <div className="header-title">
           <h1>Админ-панель</h1>
@@ -745,7 +781,7 @@ export function AdminDashboard() {
           {selectedTeacher && (
             <div className="teacher-detail">
               <div className="teacher-detail-hero">
-                <button onClick={() => setSelectedTeacher(null)} className="btn btn-back">
+                <button onClick={() => closeView(() => setSelectedTeacher(null))} className="btn btn-back">
                   &larr; Назад
                 </button>
                 <div className="teacher-hero-info">
@@ -981,6 +1017,7 @@ export function AdminDashboard() {
               ) : (
                 teachers.map(teacher => (
                   <button key={teacher.id} className="teacher-card" onClick={() => {
+                    pushView()
                     setSelectedTeacher(teacher)
                   }}>
                     <div className="teacher-card-left">
@@ -1315,7 +1352,9 @@ export function AdminDashboard() {
           )}
         </div>
       )}
-        {showSettings && (
+          {renderFab()}
+
+      {showSettings && (
           <ProfileSettings
             role="admin"
             profileId={adminId}

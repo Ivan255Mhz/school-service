@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { materialHref } from '../lib/materials'
 import { uploadAvatar, uploadModuleCover, uploadTemplateCover, MAX_AVATAR_SIZE } from '../lib/avatar'
+import { pushView, closeView } from '../lib/viewHistory'
+import { usePullToRefresh } from '../lib/pullToRefresh'
 import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem, ModuleTemplate, ModuleTemplateLesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -160,6 +162,15 @@ export function TeacherDashboard() {
       loadHomeworkData(selectedGroup.id)
     }
   }, [selectedGroup, activeTab])
+
+  useEffect(() => {
+    const onPop = () => {
+      if (selectedModule) setSelectedModule(null)
+      else if (selectedGroup) setSelectedGroup(null)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [selectedModule, selectedGroup])
 
   const loadGroups = async () => {
     const role = localStorage.getItem('user_role')
@@ -725,6 +736,7 @@ export function TeacherDashboard() {
     const group = groups.find(g => g.id === lesson.group_id)
     if (!group) return
 
+    pushView()
     setSelectedGroup(group)
     loadGroupLibrary(group.id)
     setActiveTab('journal')
@@ -741,6 +753,7 @@ export function TeacherDashboard() {
     }
 
     const mod = modulesData.find(m => m.id === lesson.module_id) || modulesData[0]
+    pushView()
     setSelectedModule(mod)
     loadModuleLessons(mod.id)
   }
@@ -1475,6 +1488,7 @@ export function TeacherDashboard() {
 
     setSearchQuery('')
     setSearchResults([])
+    pushView()
     setSelectedGroup(group)
     loadGroupLibrary(group.id)
     setActiveTab('students')
@@ -1570,13 +1584,60 @@ export function TeacherDashboard() {
     return 'file'
   }
 
+  const getFab = (): { title: string; onClick: () => void } | null => {
+    if (selectedModule) {
+      return { title: 'Добавить урок', onClick: () => { setShowCreateLesson(true); setEditingLesson(null) } }
+    }
+    if (selectedGroup) {
+      if (activeTab === 'students') return { title: 'Добавить ученика', onClick: () => setShowAddStudent(true) }
+      if (activeTab === 'journal') return { title: 'Добавить урок', onClick: () => { setShowCreateLesson(true); setEditingLesson(null) } }
+      if (activeTab === 'library') return { title: 'Добавить материал', onClick: () => setShowAddLibraryItem(true) }
+      return null
+    }
+    if (mainTab === 'groups') return { title: 'Создать группу', onClick: () => setShowCreateGroup(true) }
+    if (mainTab === 'templates') {
+      return {
+        title: 'Создать шаблон',
+        onClick: () => {
+          setEditingTemplate(null)
+          setShowCreateTemplate(true)
+          setTemplateLessonsDraft([{ topic: '', homework: '' }])
+        },
+      }
+    }
+    return null
+  }
+
+  const renderFab = () => {
+    const fab = getFab()
+    if (!fab) return null
+    return (
+      <button className="fab" onClick={fab.onClick} title={fab.title}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    )
+  }
+
+  const ptr = usePullToRefresh(async () => {
+    await loadGroups()
+    if (selectedGroup) {
+      await loadGroupData(selectedGroup.id)
+      if (selectedModule) await loadModuleLessons(selectedModule.id)
+    }
+  })
   // === VIEW: Selected Module ===
   if (selectedModule && selectedGroup) {
     return (
-      <div className="dashboard view-enter">
+      <div className="dashboard view-enter" {...ptr.containerProps}>
+        <div className="ptr-indicator" style={{ height: ptr.indicatorHeight }}>
+          <span className={'ptr-spinner' + (ptr.ready || ptr.refreshing ? ' active' : '')} />
+        </div>
         <header className="dashboard-header">
           <div className="header-left">
-            <button onClick={() => { setSelectedModule(null); setLessons([]); setEditingLesson(null); }} className="btn btn-back">
+            <button onClick={() => closeView(() => { setSelectedModule(null); setLessons([]); setEditingLesson(null) })} className="btn btn-back">
               &larr; Назад к модулям
             </button>
           </div>
@@ -1623,6 +1684,8 @@ export function TeacherDashboard() {
             <p className="invite-code-inline">Группа: {selectedGroup.name}</p>
           </div>
         </div>
+
+        {renderFab()}
 
         {showSettings && (
           <ProfileSettings
@@ -1909,10 +1972,13 @@ export function TeacherDashboard() {
   // === VIEW: Selected Group ===
   if (selectedGroup) {
     return (
-      <div className="dashboard view-enter">
+      <div className="dashboard view-enter" {...ptr.containerProps}>
+        <div className="ptr-indicator" style={{ height: ptr.indicatorHeight }}>
+          <span className={'ptr-spinner' + (ptr.ready || ptr.refreshing ? ' active' : '')} />
+        </div>
         <header className="dashboard-header">
           <div className="header-left">
-            <button onClick={() => { setSelectedGroup(null); setSelectedModule(null); }} className="btn btn-back">
+            <button onClick={() => closeView(() => { setSelectedGroup(null); setSelectedModule(null) })} className="btn btn-back">
               &larr; Назад к группам
             </button>
             <div className="header-title">
@@ -2241,7 +2307,7 @@ export function TeacherDashboard() {
                       </button>
                     </div>
                     <button
-                      onClick={() => setSelectedModule(module)}
+                      onClick={() => { pushView(); setSelectedModule(module) }}
                       className="btn btn-primary btn-sm"
                     >
                       Открыть уроки
@@ -2511,6 +2577,8 @@ export function TeacherDashboard() {
           </div>
         )}
 
+        {renderFab()}
+
         {showSettings && (
           <ProfileSettings
             role="teacher"
@@ -2548,7 +2616,10 @@ export function TeacherDashboard() {
   }
 
   return (
-    <div className="dashboard view-enter">
+    <div className="dashboard view-enter" {...ptr.containerProps}>
+      <div className="ptr-indicator" style={{ height: ptr.indicatorHeight }}>
+        <span className={'ptr-spinner' + (ptr.ready || ptr.refreshing ? ' active' : '')} />
+      </div>
       <header className="dashboard-header">
         <div className="header-title header-title-with-avatar">
           <label className="avatar-editable" title="Изменить фото">
@@ -2709,7 +2780,8 @@ export function TeacherDashboard() {
                   <div
                     className="group-card-left"
                     onClick={() => {
-                      setSelectedGroup(group)
+                      pushView()
+    setSelectedGroup(group)
                       loadGroupLibrary(group.id)
                       setActiveTab('students')
                     }}
@@ -2994,6 +3066,8 @@ export function TeacherDashboard() {
           )}
         </div>
       )}
+
+      {renderFab()}
 
       {showSettings && (
         <ProfileSettings
