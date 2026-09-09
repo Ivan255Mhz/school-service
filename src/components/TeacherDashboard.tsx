@@ -2946,8 +2946,13 @@ export function TeacherDashboard() {
               />
               <div className="template-lessons-draft">
                 {templateLessonsDraft.map((l, i) => (
-                  <div key={i} className="material-row">
-                    <span className="template-lesson-num">{i + 1}</span>
+                  <div key={i} className="tpl-draft-row">
+                    <div className="tpl-draft-head">
+                      <span className="template-lesson-num">{i + 1}</span>
+                      <button type="button" onClick={() => setTemplateLessonsDraft(templateLessonsDraft.filter((_, j) => j !== i))} className="btn btn-danger btn-xs" title="Удалить урок">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={l.topic}
@@ -2970,9 +2975,6 @@ export function TeacherDashboard() {
                       placeholder="Домашнее задание (необязательно)"
                       className="input"
                     />
-                    <button type="button" onClick={() => setTemplateLessonsDraft(templateLessonsDraft.filter((_, j) => j !== i))} className="btn btn-danger btn-xs">
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 2l8 8M10 2l-8 8"/></svg>
-                    </button>
                   </div>
                 ))}
                 <button type="button" onClick={() => setTemplateLessonsDraft([...templateLessonsDraft, { topic: '', homework: '' }])} className="btn btn-outline btn-sm">

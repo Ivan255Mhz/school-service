@@ -5236,3 +5236,32 @@ textarea.input:focus {
     min-height: 44px;
   }
 }
+
+/* ============================================================
+   Template draft rows: explicit full-width layout
+   ============================================================ */
+.tpl-draft-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.tpl-draft-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tpl-draft-row .input {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .tpl-draft-row {
+    padding: 10px;
+  }
+}
