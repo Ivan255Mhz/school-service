@@ -68,6 +68,18 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 - Посмотреть/изменить: `supabase secrets list` / `supabase secrets set TELEGRAM_BOT_TOKEN=...`
 - Сам токен бота можно посмотреть в Telegram у @BotFather → /mybots
 
+### Быстрый вход через Яндекс ID (OAuth)
+- Работает: привязка в шестерёнке профиля (ученик/преподаватель) → вход кнопкой «Войти через Яндекс ID»
+- **VK убран по решению пользователя** (требовал ИП/организацию); колонка `profiles.vk_id` в БД осталась, не используется
+- Секреты Supabase: `YANDEX_APP_ID`, `YANDEX_APP_SECRET` (приложение на oauth.yandex.ru)
+- Redirect URI: `https://vduonltjzejrnnrujtkz.supabase.co/functions/v1/oauth` (зарегистрирован в приложении Яндекса)
+- Edge Function `oauth` (задеплоена с `--no-verify-jwt` — колбэк приходит без JWT):
+  `start` (URL авторизации) / `callback` (обмен кода + одноразовый токен) / `exchange` / `unlink`
+- Вход работает только для уже привязанных аккаунтов; привязка требует код входа из сессии
+  (teacher: login_code, student: invite_code из localStorage `student_invite_code`)
+- Приложение Яндекса в черновике — авторизуются только владелец + тестовые пользователи;
+  для публичного доступа — модерация в oauth.yandex.ru
+
 ### Supabase CLI / Management API
 - CLI: `supabase login` (браузер) **или** `supabase login --token <sbp_...>`
 - PAT-токен: https://supabase.com/dashboard/account/tokens (логин = GitHub)
@@ -155,8 +167,12 @@ notifications, app_settings`
   новый материал завершённого урока (→ ученикам)
 - ✅ **Фото профиля**: аватарки преподавателя и ученика (клик — смена), фото видны
   в списках/посещаемости/ДЗ; админ удаляет любые фото (через Edge Function)
+- ✅ **Фото модулей и шаблонов** (cover_url, бакет module-covers)
+- ✅ **Настройки профиля** (шестерёнка в шапке): имя, аватар, привязка Яндекс ID
+- ✅ **Быстрый вход через Яндекс ID** (OAuth, только Яндекс; VK убран)
 - ✅ **UI-полировка**: шрифт Inter, градиентный фон, градиентные кнопки,
-  сегментированные табы-пилюли, стеклянные карточки/логин, градиентные аватары
+  сегментированные табы-пилюли, стеклянные карточки/логин, градиентные аватары,
+  анимация-тумблер на чипах посещаемости
 - ✅ **Мобильный UX**: хедер в одну строку, тач-цели 44px, скроллящиеся табы,
   действия урока отдельной строкой, инпуты 16px (без iOS-зума), safe-area
 - ✅ **Палитра**: кислотные цвета заменены (мятный #34d399, роза #f43f5e)
@@ -165,7 +181,9 @@ notifications, app_settings`
 - Edge Function `send-telegram` — ACTIVE, verify_jwt=true. Действия:
   `send, bind, set_chat, get_director, bind_director, set_director_chat,
   send_director, delete_avatar`
-- Секрет `TELEGRAM_BOT_TOKEN` задан
+- Edge Function `oauth` — ACTIVE, verify_jwt=**false**. Действия:
+  `start, unlink, exchange` + GET callback
+- Секреты: `TELEGRAM_BOT_TOKEN`, `YANDEX_APP_ID`, `YANDEX_APP_SECRET` заданы
 - Все миграции из `supabase/migrations/` выполнены в прод-БД
 
 ---
@@ -209,5 +227,7 @@ notifications, app_settings`
 3. `git push origin main` → Vercel задеплоит автоматически (~30 сек)
 4. Если менялся `supabase/functions/send-telegram`:
    `supabase functions deploy send-telegram --project-ref vduonltjzejrnnrujtkz`
-5. Если новая SQL-миграция: выполнить через Management API или SQL Editor,
+5. Если менялся `supabase/functions/oauth`:
+   `supabase functions deploy oauth --no-verify-jwt --project-ref vduonltjzejrnnrujtkz`
+6. Если новая SQL-миграция: выполнить через Management API или SQL Editor,
    файл сохранить в `supabase/migrations/`
