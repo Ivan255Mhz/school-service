@@ -5178,3 +5178,61 @@ textarea.input:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ============================================================
+   Mobile: template creation form comfort
+   ============================================================ */
+@media (max-width: 768px) {
+  .create-form > .input {
+    width: 100%;
+  }
+
+  .create-form .input {
+    padding: 12px 14px;
+    min-width: 0;
+  }
+
+  .template-lessons-draft .material-row {
+    flex-wrap: wrap;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .template-lessons-draft .material-row .input {
+    min-width: 0;
+  }
+
+  .template-lessons-draft .material-row .input:nth-of-type(1) {
+    flex: 1 1 110px;
+  }
+
+  .template-lessons-draft .material-row .input:nth-of-type(2) {
+    flex: 1 1 100%;
+  }
+
+  .template-lessons-draft .material-row .btn {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  .template-lessons-draft > .btn-outline {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .template-lessons-draft {
+    gap: 10px;
+  }
+
+  .form-actions {
+    gap: 8px;
+  }
+
+  .form-actions .btn {
+    min-height: 44px;
+  }
+}
