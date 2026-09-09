@@ -18,6 +18,13 @@ export function LoginScreen() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    const role = localStorage.getItem('user_role')
+    if (role === 'teacher') navigate('/teacher')
+    else if (role === 'student') navigate('/student')
+    else if (role === 'admin') navigate('/admin')
+  }, [navigate])
+
+  useEffect(() => {
     if (!oauthToken) return
 
     ;(async () => {

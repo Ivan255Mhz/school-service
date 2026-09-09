@@ -7,7 +7,7 @@ import { YandexLogo } from './YandexLogo'
 import { showToast } from './Toast'
 
 type Props = {
-  role: 'student' | 'teacher'
+  role: 'student' | 'teacher' | 'admin'
   profileId: string
   loginCode: string | null
   inviteCode: string | null
@@ -15,9 +15,10 @@ type Props = {
   initialAvatar: string | null
   onClose: () => void
   onSaved: (name: string, avatarUrl: string | null) => void
+  onLogout?: () => void
 }
 
-export function ProfileSettings({ role, profileId, loginCode, inviteCode, initialName, initialAvatar, onClose, onSaved }: Props) {
+export function ProfileSettings({ role, profileId, loginCode, inviteCode, initialName, initialAvatar, onClose, onSaved, onLogout }: Props) {
   const [name, setName] = useState(initialName)
   const [avatar, setAvatar] = useState<string | null>(initialAvatar)
   const [yandexLinked, setYandexLinked] = useState(false)
@@ -171,7 +172,7 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
             <input type="file" accept="image/*" className="avatar-input" onChange={handleAvatarChange} disabled={uploading} />
           </label>
           <div className="settings-avatar-info">
-            <span className="settings-role">{role === 'teacher' ? 'Преподаватель' : 'Ученик'}</span>
+            <span className="settings-role">{role === 'teacher' ? 'Преподаватель' : role === 'admin' ? 'Администратор' : 'Ученик'}</span>
             <span className="settings-hint">Нажмите на фото, чтобы изменить</span>
           </div>
         </div>
@@ -190,13 +191,26 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
           </button>
         </div>
 
-        <div className="settings-section">
-          <span className="settings-label">Быстрый вход</span>
-          {providerRow('Яндекс ID', yandexLinked)}
-          <p className="settings-note">
-            После привязки вы сможете входить одним нажатием. Отвязка не отключает вход по коду.
-          </p>
-        </div>
+        {role !== 'admin' && (
+          <div className="settings-section">
+            <span className="settings-label">Быстрый вход</span>
+            {providerRow('Яндекс ID', yandexLinked)}
+            <p className="settings-note">
+              После привязки вы сможете входить одним нажатием. Отвязка не отключает вход по коду.
+            </p>
+          </div>
+        )}
+
+        {onLogout && (
+          <button onClick={onLogout} className="btn btn-outline btn-sm btn-full settings-logout">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Выйти из аккаунта
+          </button>
+        )}
       </div>
     </div>
   )

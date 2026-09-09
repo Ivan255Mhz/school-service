@@ -4873,3 +4873,132 @@ textarea.input:focus {
 .settings-section .input {
   width: 100%;
 }
+
+/* ============================================================
+   MOBILE REDESIGN (bottom navigation, compact header)
+   ============================================================ */
+.tab-icon {
+  display: none;
+  line-height: 0;
+}
+
+.settings-logout {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .settings-logout {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  /* --- Header: no overlap, logout moved to settings --- */
+  .dashboard-header {
+    gap: 8px;
+  }
+
+  .header-actions {
+    flex-shrink: 0;
+    gap: 6px;
+  }
+
+  .btn-logout {
+    display: none;
+  }
+
+  .notif-bell {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* --- Bottom tab bar --- */
+  .dashboard {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom));
+  }
+
+  .tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 90;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid var(--border);
+    padding: 4px 6px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+    background: rgba(16, 16, 16, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.35);
+    overflow: visible;
+  }
+
+  .tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 52px;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px 2px;
+    font-size: 0.6875em;
+    line-height: 1.25;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .tab-icon {
+    display: block;
+  }
+
+  .tab.active {
+    background: rgba(59, 130, 246, 0.16);
+    box-shadow: none;
+  }
+
+  /* --- Logout button inside settings (mobile only) --- */
+  .settings-logout {
+    display: flex;
+    width: 100%;
+    margin-top: 18px;
+    color: var(--red);
+    border-color: rgba(244, 63, 94, 0.35);
+    justify-content: center;
+  }
+
+  .settings-logout:hover:not(:disabled) {
+    background: rgba(244, 63, 94, 0.1);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  /* --- Header title full stop --- */
+  .header-left {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* --- Telegram bars / cards spacing above bottom bar --- */
+  .telegram-bind {
+    margin-bottom: 12px;
+  }
+
+  .section-header {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab {
+    font-size: 0.625em;
+    padding: 4px 2px;
+  }
+
+  .header-title-with-avatar .avatar-editable {
+    width: 40px;
+    height: 40px;
+  }
+}

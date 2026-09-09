@@ -786,6 +786,7 @@ export function StudentDashboard() {
             setMyAvatar(newAvatar)
             localStorage.setItem('student_name', newName)
           }}
+          onLogout={handleLogout}
         />
       )}
 
@@ -794,18 +795,27 @@ export function StudentDashboard() {
           className={`tab ${activeTab === 'modules' ? 'active' : ''}`}
           onClick={() => setActiveTab('modules')}
         >
+          <span className="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 010 8H2V3z"/><path d="M22 3h-6a4 4 0 000 8h6V3z"/><line x1="12" y1="11" x2="12" y2="22"/></svg>
+          </span>
           Уроки
         </button>
         <button
           className={`tab ${activeTab === 'schedule' ? 'active' : ''}`}
           onClick={() => setActiveTab('schedule')}
         >
+          <span className="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
           Расписание
         </button>
         <button
           className={`tab ${activeTab === 'library' ? 'active' : ''}`}
           onClick={() => setActiveTab('library')}
         >
+          <span className="tab-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/></svg>
+          </span>
           Библиотека
         </button>
       </div>
