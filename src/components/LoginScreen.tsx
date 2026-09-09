@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { startOAuth, exchangeOAuthToken } from '../lib/oauth'
 import type { OAuthProvider } from '../lib/oauth'
 import { YandexLogo } from './YandexLogo'
+import { BrandEmblem } from './BrandEmblem'
 import { useNavigate } from 'react-router-dom'
 
 export function LoginScreen() {
@@ -153,13 +154,7 @@ export function LoginScreen() {
       <div className="login-card">
         <div className="login-logo">
           <div className="logo-icon">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <rect width="40" height="40" rx="12" fill="#3b82f6"/>
-              <path d="M12 20C12 15.58 15.58 12 20 12C24.42 12 28 15.58 28 20" stroke="#fff" strokeWidth="3" strokeLinecap="round"/>
-              <circle cx="20" cy="20" r="3" fill="#fff"/>
-              <path d="M14 26L12 28L14 30" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M26 26L28 28L26 30" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <BrandEmblem size={56} />
           </div>
           <h1>Speak</h1>
           <p className="login-subtitle">м. Купчино</p>
