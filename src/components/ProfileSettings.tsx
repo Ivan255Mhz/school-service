@@ -120,8 +120,7 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
         <span className={`oauth-status ${linked ? 'linked' : ''}`}>
           {linked ? 'Привязан' : 'Не привязан'}
         </span>
-      </div>
-      {linked ? (
+      </div>      {linked ? (
         <button
           onClick={() => handleUnlink(provider)}
           className="btn btn-outline btn-sm"
@@ -195,7 +194,7 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
 
         <div className="settings-section">
           <span className="settings-label">Быстрый вход</span>
-          {providerRow('vk', 'VK ID', vkLinked)}
+          {providerRow('vk', 'VK', vkLinked)}
           {providerRow('yandex', 'Яндекс ID', yandexLinked)}
           <p className="settings-note">
             После привязки вы сможете входить одним нажатием. Отвязка не отключает вход по коду.

@@ -35,28 +35,6 @@ function randomHex(len = 16): string {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
 }
 
-function base64urlEncode(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
-  let bin = ''
-  for (const b of bytes) bin += String.fromCharCode(b)
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-async function sha256Base64url(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
-  return base64urlEncode(digest)
-}
-
-function decodeJwtPayload(jwt: string): Record<string, unknown> | null {
-  try {
-    const part = jwt.split('.')[1]
-    const json = atob(part.replace(/-/g, '+').replace(/_/g, '/'))
-    return JSON.parse(json)
-  } catch {
-    return null
-  }
-}
-
 function redirectBase(): string {
   return (Deno.env.get('OAUTH_REDIRECT_BASE') || 'https://school-service-nine.vercel.app').replace(/\/$/, '')
 }
@@ -178,18 +156,13 @@ Deno.serve(async (req) => {
         const appId = Deno.env.get('VK_APP_ID')
         if (!appId) return json({ ok: false, error: 'VK_APP_ID не задан' })
 
-        const verifier = randomHex(24)
-        stateData.code_verifier = verifier
-        stateData.device_id = randomHex(8)
-
-        url = 'https://id.vk.com/authorize?' + new URLSearchParams({
+        url = 'https://oauth.vk.com/authorize?' + new URLSearchParams({
           response_type: 'code',
           client_id: appId,
           redirect_uri: functionUrl(),
+          display: 'page',
+          v: '5.199',
           state,
-          code_challenge: await sha256Base64url(verifier),
-          code_challenge_method: 'S256',
-          scope: 'vkid_openid',
         }).toString()
       } else {
         const appId = Deno.env.get('YANDEX_APP_ID')
@@ -251,7 +224,7 @@ async function handleCallback(req: Request, admin: any) {
 
   try {
     const socialId = provider === 'vk'
-      ? await resolveVkId(code, st.code_verifier, st.device_id)
+      ? await resolveVkId(code)
       : await resolveYandexId(code)
 
     if (!socialId) return fail('Не удалось получить ID от провайдера')
@@ -301,35 +274,23 @@ async function handleCallback(req: Request, admin: any) {
   }
 }
 
-async function resolveVkId(code: string, verifier: string, deviceId?: string): Promise<string> {
+async function resolveVkId(code: string): Promise<string> {
   const appId = Deno.env.get('VK_APP_ID')
   const appSecret = Deno.env.get('VK_APP_SECRET')
   if (!appId || !appSecret) throw new Error('VK_APP_ID/SECRET не заданы')
 
-  const form = new URLSearchParams({
-    grant_type: 'authorization_code',
-    code,
+  const res = await fetch('https://oauth.vk.com/access_token?' + new URLSearchParams({
     client_id: appId,
-    code_verifier: verifier,
-    redirect_uri: functionUrl(),
     client_secret: appSecret,
-  })
-  if (deviceId) form.set('device_id', deviceId)
-
-  const res = await fetch('https://id.vk.com/oauth2/auth', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: form.toString(),
-  })
+    redirect_uri: functionUrl(),
+    code,
+  }).toString())
   const data = await res.json()
   if (!res.ok || data.error) {
     throw new Error(`VK token: ${data.error_description || data.error || res.status}`)
   }
 
   if (data.user_id) return String(data.user_id)
-  const payload = data.id_token ? decodeJwtPayload(data.id_token) : null
-  if (payload?.sub) return String(payload.sub)
-  if (payload?.user_id) return String(payload.user_id)
 
   const vkRes = await fetch('https://api.vk.com/method/users.get?v=5.199', {
     method: 'POST',
