@@ -5,6 +5,7 @@ import { uploadAvatar, uploadModuleCover, uploadTemplateCover, MAX_AVATAR_SIZE }
 import { pushView, closeView } from '../lib/viewHistory'
 import { usePullToRefresh } from '../lib/pullToRefresh'
 import { getCached, setCached } from '../lib/dataCache'
+import { CopyCode } from './CopyCode'
 import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem, ModuleTemplate, ModuleTemplateLesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -2213,7 +2214,7 @@ export function TeacherDashboard() {
                     <div className="student-info">
                       <button className="student-name" onClick={() => loadStudentProfile(s)} title="Открыть профиль">{s.name}</button>
                       {s.invite_code && (
-                        <span className="student-code">Код: <code>{s.invite_code}</code></span>
+                        <span className="student-code">Код: <CopyCode code={s.invite_code} /></span>
                       )}
                     </div>
                     <button
@@ -2447,7 +2448,7 @@ export function TeacherDashboard() {
               <div className="student-profile-header">
                 <button onClick={() => setSelectedStudentProfile(null)} className="btn btn-back">&larr; Назад</button>
                 <h2>{selectedStudentProfile.name}</h2>
-                <span className="student-profile-code">{selectedStudentProfile.invite_code || '-'}</span>
+                {selectedStudentProfile.invite_code && <CopyCode code={selectedStudentProfile.invite_code} />}
               </div>
 
               {(() => {

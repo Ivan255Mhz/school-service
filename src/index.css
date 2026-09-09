@@ -5265,3 +5265,43 @@ textarea.input:focus {
     padding: 10px;
   }
 }
+
+/* ============================================================
+   Copy-code chip
+   ============================================================ */
+.copy-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+  vertical-align: middle;
+}
+
+.copy-code code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-dim);
+  font-size: 0.75em;
+  letter-spacing: 0.5px;
+}
+
+.copy-code svg {
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.copy-code:hover {
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.copy-code:hover code,
+.copy-code:hover svg {
+  color: var(--accent);
+}

@@ -5,6 +5,7 @@ import { startOAuth, unlinkSocial } from '../lib/oauth'
 import type { OAuthProvider } from '../lib/oauth'
 import { YandexLogo } from './YandexLogo'
 import { showToast } from './Toast'
+import { CopyCode } from './CopyCode'
 
 type Props = {
   role: 'student' | 'teacher' | 'admin'
@@ -190,6 +191,13 @@ export function ProfileSettings({ role, profileId, loginCode, inviteCode, initia
             {saving ? 'Сохранение...' : 'Сохранить имя'}
           </button>
         </div>
+
+        {(loginCode || inviteCode) && (
+          <div className="settings-section">
+            <span className="settings-label">Ваш код входа</span>
+            <CopyCode code={loginCode || inviteCode || ''} />
+          </div>
+        )}
 
         {role !== 'admin' && (
           <div className="settings-section">

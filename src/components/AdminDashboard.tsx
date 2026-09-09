@@ -9,6 +9,7 @@ import { ProfileSettings } from './ProfileSettings'
 import { pushView, closeView } from '../lib/viewHistory'
 import { usePullToRefresh } from '../lib/pullToRefresh'
 import { getCached, setCached } from '../lib/dataCache'
+import { CopyCode } from './CopyCode'
 
 type TeacherWithStats = Profile & {
   groups: Group[]
@@ -825,7 +826,7 @@ export function AdminDashboard() {
                   </div>
                   <div>
                     <h2 className="teacher-detail-name">{selectedTeacher.full_name || selectedTeacher.name}</h2>
-                    <code className="teacher-detail-code">{selectedTeacher.login_code || '-'}</code>
+                    {selectedTeacher.login_code && <CopyCode code={selectedTeacher.login_code} />}
                   </div>
                 </div>
                 <button
@@ -873,7 +874,7 @@ export function AdminDashboard() {
                           <div className="group-item-header">
                             <div className="group-item-title">
                               <span className="group-name">{group.name}</span>
-                              <code className="group-code-small">{group.invite_code}</code>
+                              <CopyCode code={group.invite_code} />
                             </div>
                             {!isEditing && (
                               <button
@@ -1045,7 +1046,7 @@ export function AdminDashboard() {
                       <div className="teacher-avatar">{(teacher.full_name || teacher.name).charAt(0)}</div>
                       <div className="teacher-card-info">
                         <div className="teacher-card-name">{teacher.full_name || teacher.name}</div>
-                        <code className="teacher-card-code">{teacher.login_code || '-'}</code>
+                        {teacher.login_code && <CopyCode code={teacher.login_code} />}
                       </div>
                     </div>
                     <div className="teacher-card-right">
