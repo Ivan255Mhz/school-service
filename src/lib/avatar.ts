@@ -42,6 +42,26 @@ export async function uploadModuleCover(moduleId: string, file: File): Promise<s
   return url
 }
 
+export async function uploadTemplateCover(templateId: string, file: File): Promise<string> {
+  const path = `${templateId}/cover`
+  const { error: upErr } = await supabase.storage
+    .from('module-covers')
+    .upload(path, file, { upsert: true, contentType: file.type })
+
+  if (upErr) throw upErr
+
+  const { data } = supabase.storage.from('module-covers').getPublicUrl(path)
+  const url = `${data.publicUrl}?t=${Date.now()}`
+
+  const { error: updErr } = await supabase
+    .from('module_templates')
+    .update({ cover_url: url })
+    .eq('id', templateId)
+
+  if (updErr) throw updErr
+  return url
+}
+
 export async function deleteAvatar(profileId: string): Promise<void> {
   const loginCode = localStorage.getItem('login_code')
   if (!loginCode) throw new Error('no login_code')

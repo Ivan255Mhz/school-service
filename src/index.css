@@ -4651,3 +4651,8 @@ textarea.input:focus {
   width: 64px;
   height: 64px;
 }
+
+.module-cover-sm {
+  width: 32px;
+  height: 32px;
+}

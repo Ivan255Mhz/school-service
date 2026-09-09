@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { materialHref } from '../lib/materials'
-import { uploadAvatar, uploadModuleCover, MAX_AVATAR_SIZE } from '../lib/avatar'
+import { uploadAvatar, uploadModuleCover, uploadTemplateCover, MAX_AVATAR_SIZE } from '../lib/avatar'
 import type { Group, Lesson, Profile, Attendance, Homework, LessonMaterial, Module, LibraryItem, ModuleTemplate, ModuleTemplateLesson } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { showToast } from './Toast'
@@ -127,6 +127,7 @@ export function TeacherDashboard() {
   const [teacherAvatar, setTeacherAvatar] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState<string | null>(null)
+  const [uploadingTplCover, setUploadingTplCover] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -289,6 +290,33 @@ export function TeacherDashboard() {
       showToast('error', 'Не удалось загрузить фото модуля')
     } finally {
       setUploadingCover(null)
+    }
+  }
+
+  const handleTemplateCoverChange = async (templateId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Можно загружать только изображения')
+      return
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      showToast('error', 'Файл слишком большой (максимум 5 МБ)')
+      return
+    }
+
+    setUploadingTplCover(templateId)
+    try {
+      const url = await uploadTemplateCover(templateId, file)
+      setTemplates(prev => prev.map(t => t.id === templateId ? { ...t, cover_url: url } : t))
+      setEditingTemplate(prev => prev && prev.id === templateId ? { ...prev, cover_url: url } : prev)
+      showToast('success', 'Фото шаблона обновлено')
+    } catch {
+      showToast('error', 'Не удалось загрузить фото шаблона')
+    } finally {
+      setUploadingTplCover(null)
     }
   }
 
@@ -2075,6 +2103,17 @@ export function TeacherDashboard() {
                         className="template-picker-item"
                         disabled={applyingTemplate}
                       >
+                        <span className="module-cover module-cover-static module-cover-sm">
+                          {tpl.cover_url ? (
+                            <img src={tpl.cover_url} className="avatar-img" alt="" />
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                              <rect x="3" y="3" width="18" height="18" rx="2"/>
+                              <circle cx="8.5" cy="8.5" r="1.5"/>
+                              <path d="M21 15l-5-5L5 21"/>
+                            </svg>
+                          )}
+                        </span>
                         <span className="template-picker-name">{tpl.name}</span>
                         <span className="template-picker-count">{tpl.lessons.length} уроков</span>
                       </button>
@@ -2810,9 +2849,32 @@ export function TeacherDashboard() {
               {templates.map(tpl => (
                 <div key={tpl.id} className="group-card">
                   <div className="group-card-left" style={{ cursor: 'default' }}>
-                    <div className="group-avatar template-avatar">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                    </div>
+                    <label className="module-cover module-cover-lg" title="Загрузить фото шаблона">
+                      {tpl.cover_url ? (
+                        <img src={tpl.cover_url} className="avatar-img" alt="" />
+                      ) : (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <rect x="3" y="3" width="18" height="18" rx="2"/>
+                          <circle cx="8.5" cy="8.5" r="1.5"/>
+                          <path d="M21 15l-5-5L5 21"/>
+                        </svg>
+                      )}
+                      <span className="avatar-edit-overlay">
+                        {uploadingTplCover === tpl.id ? '...' : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                          </svg>
+                        )}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="avatar-input"
+                        onChange={(e) => handleTemplateCoverChange(tpl.id, e)}
+                        disabled={uploadingTplCover === tpl.id}
+                      />
+                    </label>
                     <div className="group-card-info">
                       <div className="group-card-name">{tpl.name}</div>
                       <span className="group-card-code">{tpl.lessons.length} уроков</span>

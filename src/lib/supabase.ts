@@ -100,6 +100,7 @@ export type ModuleTemplate = {
   teacher_id: string
   name: string
   created_at: string
+  cover_url: string | null
 }
 
 export type ModuleTemplateLesson = {
