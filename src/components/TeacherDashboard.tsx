@@ -2451,7 +2451,7 @@ export function TeacherDashboard() {
               </div>
 
               {(() => {
-                const studentLessons = allGroupLessons.filter(l => l.group_id === selectedStudentProfile.group_id)
+                const studentLessons = allGroupLessons.filter(l => l.group_id === selectedStudentProfile.group_id && l.is_completed)
                 const attended = studentProfileData.attendance.filter(a => a.present).length
                 const submitted = studentProfileData.homework.length
                 const total = studentLessons.length
