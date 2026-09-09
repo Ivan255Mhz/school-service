@@ -417,11 +417,6 @@ body {
   flex: 1;
 }
 
-.btn-back,
-.btn-logout {
-  font-style: italic;
-}
-
 .dashboard-header h1 {
   font-size: 1.375em;
   font-weight: 600;
