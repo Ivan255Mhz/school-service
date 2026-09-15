@@ -4,7 +4,7 @@
 
 - **Стек:** React 19 + TypeScript + Vite + Supabase (Postgres, Storage, Realtime, Edge Functions) + Vercel
 - **Прод:** https://school-service-nine.vercel.app
-- **Вход:** по кодам — ученик `STU-XXXXXX`, преподаватель `TCH-XXXXXX`, админ `ADM-XXXXXX` (по URL `/admin`)
+
 
 ## Возможности
 
@@ -32,6 +32,6 @@ npm run lint     # oxlint
 - **Vercel:** автодеплой из ветки `main`
 - **SQL-миграции:** `supabase/migrations/` (все выполнены в прод-БД)
 
-## Документация для продолжения работы
 
-Полный handoff (доступы, состояние, нюансы, план работ): **[CONTINUE.md](./CONTINUE.md)**
+
+
